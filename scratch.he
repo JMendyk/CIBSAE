@@ -1,0 +1,181 @@
+import String
+
+let ( $ ) f x = f x
+
+(* Chcielibyśmy mieć coś takiego: *)
+
+(* let _ = *)
+(*     handle buildA task *)
+(*     with schedulerAndRebuilder *)
+
+(* albo na przykład: *)
+
+(* let _ = *)
+(*     handle *)
+(*         handle buildB task *)
+(*         with scheduler *)
+(*     with rebuilder *)
+
+
+
+signature BuildEff (K: Type) (V: Type) =
+| fetch : K => V
+
+signature Store (K: Type) (V: Type) =
+| getInfo : Unit => Int
+| putInfo : Int => Unit
+| getValue : K => V
+| putValue : Pair K V => Unit
+
+let rec getValueKV k kvs =
+    match kvs with
+    | [] => 0
+    | (k', v')::kvs => if k = k' then v' else getValueKV k kvs
+    end
+
+let simpleInfoHandler i kvs =
+    handler
+    | getInfo () => fn (i, kvs) => resume i (i, kvs)
+    | putInfo  i => fn (_, kvs) => resume () (i, kvs)
+    | getValue k => fn (i, kvs) => resume (getValueKV k kvs) (i, kvs)
+    | putValue kv => fn (i, kvs) => resume () (i, kv::kvs)
+    | return   x => fn _ => x
+    | finally f => f (i, kvs)
+    end
+
+let funInfoHandler eq i kvs =
+    handler
+    | getInfo () => fn (i, kvs) => resume i (i, kvs)
+    | putInfo  i => fn (_, kvs) => resume () (i, kvs)
+    | getValue k => fn (i, kvs) => resume (kvs k) (i, kvs)
+    | putValue (k, v) => fn (i, kvs) => let kvs' = fn k' => if eq k' k then v else kvs k' in resume () (i, kvs')
+    | return   x => fn _ => x
+    | finally f => f (i, kvs)
+    end
+
+(* let task1 () = *)
+(*     let v1 = fetch 1 in *)
+(*     let v2 = fetch 2 in *)
+(*     v1 + v2 *)
+
+data TaskType (K: Type) (V: Type) = Task of ({`a: BuildEff K V} -> Unit ->[`a] V)
+let unTask (Task t) = t
+
+type Tasks (K: Type) (V: Type) = (K -> Option (TaskType K V))
+
+data SpreadsheetCell = B1 | B2 | C3 | C of String
+
+let sComp s1 s2 = match (s1, s2) with
+                  | (B1, B1) => True
+                  | (B2, B2) => True
+                  | (C3, C3) => True
+                  | (C c1, C c2) => String.equal c1 c2
+                  | _ => False
+                  end
+
+let sprsh1_B1 () =
+    fetch (C "A1") + fetch (C "A2") + fetch C3
+
+let sprsh1_B2 () =
+    2 * fetch B1 + fetch (C "A1")
+
+let sprsh1_C3 () =
+    3 * fetch (C "A1") + fetch (C "A2")
+
+let sprsh1 (cid: SpreadsheetCell) =
+    match cid with
+    | B1 => Some $ Task sprsh1_B1
+    | B2 => Some $ Task sprsh1_B2
+    | C3 => Some $ Task sprsh1_C3
+    | _ => None
+    end
+
+(* let rec busy tasks lookup = *)
+(*     handler *)
+(*     | fetch k => fn xs => match tasks k with *)
+(*                  | None => resume (xs k) xs *)
+(*                  | Some (Task task) => *)
+(*                    let v = handle task () with busy tasks xs in *)
+(*                    let lookup = fn k1 => if sComp k1 k then v else xs k1 in *)
+(*                    resume v lookup *)
+(*                  end *)
+(*     | return x => fn _ => x *)
+(*     | finally f => f lookup *)
+(*     end *)
+
+
+(* let rec withBusy = fn (f: TaskType SpreadsheetCell Int) (tasks: Tasks SpreadsheetCell Int) (lookup: SpreadsheetCell -> Int) => *)
+(*     handle (unTask f) () with *)
+(*     | fetch k => match tasks k with *)
+(*                  | None => resume (lookup k) *)
+(*                  | Some task => *)
+(*                    let v = withBusy task tasks lookup in *)
+(*                    resume v *)
+(*                  end *)
+(*     end *)
+
+(* let withBusy1 f (tasks: Tasks SpreadsheetCell Int) (lookup: SpreadsheetCell -> Int) = *)
+(*     let rec bound f1 = handle f1 () with *)
+(*     | fetch k => match tasks k with *)
+(*                  | None => resume (getValue k) *)
+(*                  | Some (Task task) => *)
+(*                    let v = 10 in *)
+(*                    putValue (k, v); *)
+(*                    resume v *)
+(*                  end *)
+(*     end in *)
+(*     handle bound f with funInfoHandler sComp 0 lookup *)
+
+(* let neww key (tasks: Tasks SpreadsheetCell Int) (lookup: SpreadsheetCell -> Int) = *)
+(*     match tasks key with *)
+(*     | None => lookup key *)
+(*     | Some (Task task) => withBusy1 task tasks lookup *)
+(*     end *)
+    
+
+let initState = fn key => match key with
+                          | (C c) => if String.equal c "A1" then 10 else 20
+                          | _ => 20
+                          end
+
+(* let build tasks key store = *)
+(*     match tasks key with *)
+(*     | None => store key *)
+(*     | Some (Task task) => handle task () with busy tasks store *)
+(*     end *)
+
+(* let _ = *)
+(*     match sprsh1 B1 with *)
+(*     | Some t => printInt (withBusy t sprsh1 initState) *)
+(*     | None => printStr ":(" *)
+(*     end *)
+(*     printInt $ build sprsh1 B1 initState; *)
+(*     (\* ignore sprsh1; *\) *)
+(*     (\* build sprsh1; *\) *)
+(*     (\* printInt (build sprsh1 B1 (initState (C "A1"))); *\) *)
+(*     () *)
+
+let cellToString x = match x with
+                     | B1 => "B1"
+                     | B2 => "B2"
+                     | C3 => "C3"
+                     | (C c) => c
+                     end
+
+let withBusy2020 keyy tasks =
+    let rec helper key =
+        printStr (cellToString key ++ " ");
+        printInt (getInfo ());
+        match tasks key with
+        | None => getValue key
+        | Some (Task t) => handle t () with
+                           | fetch k => putInfo (getInfo () + 1);
+                                        let v = helper k in
+                                        putValue (k, v);
+                                        resume v
+                           end
+        end
+    in helper keyy
+
+let _ =
+    printInt (handle withBusy2020 B2 sprsh1 with funInfoHandler sComp 0 initState)
