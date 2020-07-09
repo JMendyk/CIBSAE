@@ -1,7 +1,52 @@
 import String
+import Set
+
+let printInt' x = printStr (stringOfInt x)
+let printIntList xs =
+    let rec printWithSep xs sep = match xs with
+                              | [] => ()
+                              | [x] => printInt' x
+                              | (x::xs) => printInt' x; printStr ", "; printWithSep xs sep
+                              end
+    in
+    printStr "[";
+    printWithSep xs ",";
+    printStr "]"
+
+
+data SpreadsheetCell = B1 | B2 | C3 | C of String
+
+let sComp s1 s2 = match (s1, s2) with
+                  | (B1, B1) => True | (B2, B2) => True | (C3, C3) => True
+                  | (C c1, C c2) => String.equal c1 c2
+                  | _ => False
+                  end
 
 let ( $ ) f x = f x
 
+type CellOrder = struct
+     let type this = SpreadsheetCell
+     let compare c1 c2 = match (c1, c2) with
+                         | (B1, B1) => EQ
+                         | (B1, B2) => LT
+                         | (B1, C3) => LT
+                         | (B1, C _) => LT
+                         | (B2, B1) => GT
+                         | (B2, B2) => EQ
+                         | (B2, C3) => LT
+                         | (B2, C _) => LT
+                         | (C3, B1) => GT
+                         | (C3, B2) => GT
+                         | (C3, C3) => EQ
+                         | (C3, C _) => LT
+                         | (C _, B1) => GT
+                         | (C _, B2) => GT
+                         | (C _, C3) => GT
+                         | (C l, C r) => String.compare l r
+                         end
+end
+
+type SC = Set CellOrder
 (* Chcielibyśmy mieć coś takiego: *)
 
 (* let _ = *)
@@ -21,11 +66,30 @@ let ( $ ) f x = f x
 signature BuildEff (K: Type) (V: Type) =
 | fetch : K => V
 
-signature Store (K: Type) (V: Type) =
-| getInfo : Unit => Int
-| putInfo : Int => Unit
+signature State (T: Type) =
+| get : Unit => T
+| put : T => Unit
+
+let modifyState f = put (f (get ()))
+
+let runState init =
+    handler
+    | get () => fn s => resume  s s
+    | put  s => fn _ => resume () s
+    | return x => fn s => (s, x)
+    | finally f => f init
+    end
+
+
+signature Store (I: Type) (K: Type) (V: Type) =
+| getInfo : Unit => I
+| putInfo : I => Unit
 | getValue : K => V
 | putValue : Pair K V => Unit
+
+let modifyInfo f = putInfo (f (getInfo ()))
+let incInfo () = modifyInfo (fn x => x + 1)
+let decInfo () = modifyInfo (fn x => x - 1)
 
 let rec getValueKV k kvs =
     match kvs with
@@ -49,38 +113,20 @@ let funInfoHandler eq i kvs =
     | putInfo  i => fn (_, kvs) => resume () (i, kvs)
     | getValue k => fn (i, kvs) => resume (kvs k) (i, kvs)
     | putValue (k, v) => fn (i, kvs) => let kvs' = fn k' => if eq k' k then v else kvs k' in resume () (i, kvs')
-    | return   x => fn _ => x
+    | return   x => fn (i, kvs) => (x, (i, kvs))
     | finally f => f (i, kvs)
     end
-
-(* let task1 () = *)
-(*     let v1 = fetch 1 in *)
-(*     let v2 = fetch 2 in *)
-(*     v1 + v2 *)
 
 data TaskType (K: Type) (V: Type) = Task of ({`a: BuildEff K V} -> Unit ->[`a] V)
 let unTask (Task t) = t
 
 type Tasks (K: Type) (V: Type) = (K -> Option (TaskType K V))
 
-data SpreadsheetCell = B1 | B2 | C3 | C of String
 
-let sComp s1 s2 = match (s1, s2) with
-                  | (B1, B1) => True
-                  | (B2, B2) => True
-                  | (C3, C3) => True
-                  | (C c1, C c2) => String.equal c1 c2
-                  | _ => False
-                  end
 
-let sprsh1_B1 () =
-    fetch (C "A1") + fetch (C "A2") + fetch C3
-
-let sprsh1_B2 () =
-    2 * fetch B1 + fetch (C "A1")
-
-let sprsh1_C3 () =
-    3 * fetch (C "A1") + fetch (C "A2")
+let sprsh1_B1 () = fetch (C "A1") + fetch (C "A2") + fetch C3
+let sprsh1_B2 () = (fetch B1 + fetch B1) + fetch (C "A1")
+let sprsh1_C3 () = 3 * fetch (C "A1") + fetch (C "A2")
 
 let sprsh1 (cid: SpreadsheetCell) =
     match cid with
@@ -162,20 +208,106 @@ let cellToString x = match x with
                      | (C c) => c
                      end
 
-let withBusy2020 keyy tasks =
-    let rec helper key =
-        printStr (cellToString key ++ " ");
-        printInt (getInfo ());
+let printCellList xs =
+    let rec printWithSep xs sep = match xs with
+                              | [] => ()
+                              | [x] => printStr (cellToString x)
+                              | (x::xs) => printStr (cellToString x); printStr ", "; printWithSep xs sep
+                              end
+    in
+    printStr "[";
+    printWithSep xs ",";
+    printStr "]"
+
+let rec repeatStr n s = if n <= 0 then "" else s ++ repeatStr (n-1) s
+
+let withBusy (key: SpreadsheetCell) tasks =
+    let rec build key =
+        printStr (repeatStr (2 * getInfo ()) " ");
+        printStr (cellToString key ++ "\n");
+        incInfo ();
+        match tasks key with
+        | None => ()
+        | Some (Task task) =>
+               printStr (repeatStr (2 * getInfo ()) " ");
+               printStr ("Computing " ++ cellToString key ++ "...\n");
+               let ret = handle task () with
+                         | fetch k => resume (build k)
+                         end
+               in putValue (key, ret); ()
+        end;
+        decInfo ();
+        getValue key
+    in
+    printStr ("Building " ++ cellToString key ++ " with busy\n");
+    build key
+
+(* Chyba brak struktury podobnej do Applicative/statycznych zależności.
+   Możemy jednak śledzić/track obliczane taski potomne początkowego: *)
+
+let track (key: SpreadsheetCell) (tasks: Tasks SpreadsheetCell Int) =
+    let rec deps key =
         match tasks key with
         | None => getValue key
-        | Some (Task t) => handle t () with
-                           | fetch k => putInfo (getInfo () + 1);
-                                        let v = helper k in
-                                        putValue (k, v);
-                                        resume v
-                           end
+        | Some (Task task) =>
+               let ret = handle task () with
+               | fetch k => modifyState (fn s => k::s); resume (deps k)
+               end in putValue (key, ret); ret
         end
-    in helper keyy
+    in deps key
+
+(* Oblicz zadanie bez modyfikowania stanu (Carte 3.6) *)
+let compute task =
+    handle task () with
+    | fetch k => getValue k
+    end
+
+let rec mem n xs = match xs with
+                   | [] => False
+                   | (x::xs) => match CellOrder.compare n x with
+                                | EQ => True
+                                | _ => mem n xs
+                                end
+                   end
+
+let withSuspending (key: SpreadsheetCell) tasks =
+    handle
+        let rec build key =
+            printStr (repeatStr (2 * getInfo ()) " ");
+            printStr (cellToString key ++ "\n");
+            incInfo ();
+            let done = get () in 
+            match (tasks key, SC.mem key done) with
+            | (Some (Task task), False) =>
+               printStr (repeatStr (2 * getInfo ()) " ");
+               printStr ("Computing " ++ cellToString key ++ "...\n");
+               let value = getValue key in
+               (* TODO: Rebuilder *)
+               let ret = handle task () with
+                         | fetch k => resume (build k)
+                         end
+               in put (SC.add key done);
+                  putValue (key, ret);
+                  ()
+             | _ => ()
+             end;
+             decInfo ();
+             getValue key
+        in
+        printStr ("Building " ++ cellToString key ++ " with suspending\n");
+        build key
+    with runState SC.empty
 
 let _ =
-    printInt (handle withBusy2020 B2 sprsh1 with funInfoHandler sComp 0 initState)
+    (* let (s, _) = handle (handle withDependencies B2 sprsh1 with funInfoHandler sComp 0 initState) with runState [] in printCellList s; *)
+    (* printStr "\n"; *)
+    (* printInt (handle withBusy B2 sprsh1 with funInfoHandler sComp 0 initState); *)
+    let s = initState in
+    printIntList [s B1, s B2, s C3]; printStr "\n";
+    let (_, (_, s)) = 
+    handle
+        (* withBusy B2 sprsh1 *)
+        withSuspending B2 sprsh1
+    with funInfoHandler sComp 0 initState in
+    printIntList [s B1, s B2, s C3]; printStr "\n";
+    ()
