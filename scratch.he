@@ -62,70 +62,10 @@ let sprsh1 (cid: SpreadsheetCell) =
     | _ => None
     end
 
-(* let rec busy tasks lookup = *)
-(*     handler *)
-(*     | fetch k => fn xs => match tasks k with *)
-(*                  | None => resume (xs k) xs *)
-(*                  | Some (Task task) => *)
-(*                    let v = handle task () with busy tasks xs in *)
-(*                    let lookup = fn k1 => if sComp k1 k then v else xs k1 in *)
-(*                    resume v lookup *)
-(*                  end *)
-(*     | return x => fn _ => x *)
-(*     | finally f => f lookup *)
-(*     end *)
-
-
-(* let rec withBusy = fn (f: TaskType SpreadsheetCell Int) (tasks: Tasks SpreadsheetCell Int) (lookup: SpreadsheetCell -> Int) => *)
-(*     handle (unTask f) () with *)
-(*     | fetch k => match tasks k with *)
-(*                  | None => resume (lookup k) *)
-(*                  | Some task => *)
-(*                    let v = withBusy task tasks lookup in *)
-(*                    resume v *)
-(*                  end *)
-(*     end *)
-
-(* let withBusy1 f (tasks: Tasks SpreadsheetCell Int) (lookup: SpreadsheetCell -> Int) = *)
-(*     let rec bound f1 = handle f1 () with *)
-(*     | fetch k => match tasks k with *)
-(*                  | None => resume (getValue k) *)
-(*                  | Some (Task task) => *)
-(*                    let v = 10 in *)
-(*                    putValue (k, v); *)
-(*                    resume v *)
-(*                  end *)
-(*     end in *)
-(*     handle bound f with funInfoHandler sComp 0 lookup *)
-
-(* let neww key (tasks: Tasks SpreadsheetCell Int) (lookup: SpreadsheetCell -> Int) = *)
-(*     match tasks key with *)
-(*     | None => lookup key *)
-(*     | Some (Task task) => withBusy1 task tasks lookup *)
-(*     end *)
-    
-
 let initState = fn key => match key with
                           | (C c) => if String.equal c "A1" then 10 else 20
                           | _ => 20
                           end
-
-(* let build tasks key store = *)
-(*     match tasks key with *)
-(*     | None => store key *)
-(*     | Some (Task task) => handle task () with busy tasks store *)
-(*     end *)
-
-(* let _ = *)
-(*     match sprsh1 B1 with *)
-(*     | Some t => printInt (withBusy t sprsh1 initState) *)
-(*     | None => printStr ":(" *)
-(*     end *)
-(*     printInt $ build sprsh1 B1 initState; *)
-(*     (\* ignore sprsh1; *\) *)
-(*     (\* build sprsh1; *\) *)
-(*     (\* printInt (build sprsh1 B1 (initState (C "A1"))); *\) *)
-(*     () *)
 
 let cellToString x = match x with
                      | B1 => "B1"
@@ -225,9 +165,6 @@ let withSuspending (key: SpreadsheetCell) tasks =
     with runState SC.empty
 
 let _ =
-    (* let (s, _) = handle (handle withDependencies B2 sprsh1 with funInfoHandler sComp 0 initState) with runState [] in printCellList s; *)
-    (* printStr "\n"; *)
-    (* printInt (handle withBusy B2 sprsh1 with funInfoHandler sComp 0 initState); *)
     let s = initState in
     printIntList [s B1, s B2, s C3]; printStr "\n";
     let (_, (_, s)) = 
