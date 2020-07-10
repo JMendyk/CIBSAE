@@ -12,3 +12,11 @@ let runState init =
     | return x => fn s => (s, x)
     | finally f => f init
     end
+
+let execState init =
+    handler
+    | get () => fn s => resume  s s
+    | put  s => fn _ => resume () s
+    | return x => fn _ => x
+    | finally f => f init
+    end
