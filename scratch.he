@@ -85,25 +85,24 @@ let printCellList xs =
     printWithSep xs ",";
     printStr "]"
 
-let rec repeatStr n s = if n <= 0 then "" else s ++ repeatStr (n-1) s
-
 let withBusy (key: SpreadsheetCell) tasks =
-    let rec build key =
-        printStr (repeatStr (2 * getInfo ()) " ");
+    let rec busyHandler =
+        handler
+        | fetch k => build k; resume (getValue k)
+        end
+        and build key =
+        printStr (String.repeat (2 * getInfo ()) ' ');
         printStr (cellToString key ++ "\n");
         incInfo ();
         match tasks key with
         | None => ()
         | Some (Task task) =>
-               printStr (repeatStr (2 * getInfo ()) " ");
+               printStr (String.repeat (2 * getInfo ()) ' ');
                printStr ("Computing " ++ cellToString key ++ "...\n");
-               let ret = handle task () with
-                         | fetch k => resume (build k)
-                         end
-               in putValue (key, ret); ()
+               let ret = handle task () with busyHandler
+               in putValue (key, ret)
         end;
-        decInfo ();
-        getValue key
+        decInfo ()
     in
     printStr ("Building " ++ cellToString key ++ " with busy\n");
     build key
@@ -138,27 +137,27 @@ let rec mem n xs = match xs with
 
 let withSuspending (key: SpreadsheetCell) tasks =
     handle
-        let rec build key =
-            printStr (repeatStr (2 * getInfo ()) " ");
+        let rec suspendingHandler =
+            handler
+            | fetch k => build k; resume (getValue k)
+            end
+            and build key =
+            printStr (String.repeat (2 * getInfo ()) ' ');
             printStr (cellToString key ++ "\n");
             incInfo ();
             let done = get () in 
             match (tasks key, SC.mem key done) with
             | (Some (Task task), False) =>
-               printStr (repeatStr (2 * getInfo ()) " ");
+               printStr (String.repeat (2 * getInfo ()) ' ');
                printStr ("Computing " ++ cellToString key ++ "...\n");
                let value = getValue key in
                (* TODO: Rebuilder *)
-               let ret = handle task () with
-                         | fetch k => resume (build k)
-                         end
+               let newValue = handle task () with suspendingHandler
                in put (SC.add key done);
-                  putValue (key, ret);
-                  ()
+                  putValue (key, newValue)
              | _ => ()
              end;
-             decInfo ();
-             getValue key
+             decInfo ()
         in
         printStr ("Building " ++ cellToString key ++ " with suspending\n");
         build key
