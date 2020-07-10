@@ -1,0 +1,38 @@
+
+signature Store (I: Type) (K: Type) (V: Type) =
+| getInfo : Unit => I
+| putInfo : I => Unit
+| getValue : K => V
+| putValue : Pair K V => Unit
+
+let modifyInfo f = putInfo (f (getInfo ()))
+let incInfo () = modifyInfo (fn x => x + 1)
+let decInfo () = modifyInfo (fn x => x - 1)
+
+let rec getValueKV k kvs =
+    match kvs with
+    | [] => 0
+    | (k', v')::kvs => if k = k' then v' else getValueKV k kvs
+    end
+
+let simpleInfoHandler i kvs =
+    handler
+    | getInfo () => fn (i, kvs) => resume i (i, kvs)
+    | putInfo  i => fn (_, kvs) => resume () (i, kvs)
+    | getValue k => fn (i, kvs) => resume (getValueKV k kvs) (i, kvs)
+    | putValue kv => fn (i, kvs) => resume () (i, kv::kvs)
+    | return   x => fn _ => x
+    | finally f => f (i, kvs)
+    end
+
+let funInfoHandler eq i lookup =
+    handler
+    | getInfo () => fn (i, lookup) => resume i (i, lookup)
+    | putInfo  i => fn (_, lookup) => resume () (i, lookup)
+    | getValue k => fn (i, lookup) => resume (lookup k) (i, lookup)
+    | putValue (k, v) => fn (i, lookup) =>
+                         let lookup' x = if eq x k then v else lookup x
+                         in resume () (i, lookup')
+    | return   x => fn (i, lookup) => (x, (i, lookup))
+    | finally f => f (i, lookup)
+    end

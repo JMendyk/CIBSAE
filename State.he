@@ -1,0 +1,14 @@
+
+signature State (T: Type) =
+| get : Unit => T
+| put : T => Unit
+
+let modifyState f = put (f (get ()))
+
+let runState init =
+    handler
+    | get () => fn s => resume  s s
+    | put  s => fn _ => resume () s
+    | return x => fn s => (s, x)
+    | finally f => f init
+    end

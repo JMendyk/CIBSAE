@@ -1,6 +1,14 @@
 import String
 import Set
 
+import Spreadsheet
+import State
+import Store
+
+open Spreadsheet
+open State
+open Store
+
 let printInt' x = printStr (stringOfInt x)
 let printIntList xs =
     let rec printWithSep xs sep = match xs with
@@ -13,38 +21,7 @@ let printIntList xs =
     printWithSep xs ",";
     printStr "]"
 
-
-data SpreadsheetCell = B1 | B2 | C3 | C of String
-
-let sComp s1 s2 = match (s1, s2) with
-                  | (B1, B1) => True | (B2, B2) => True | (C3, C3) => True
-                  | (C c1, C c2) => String.equal c1 c2
-                  | _ => False
-                  end
-
 let ( $ ) f x = f x
-
-type CellOrder = struct
-     let type this = SpreadsheetCell
-     let compare c1 c2 = match (c1, c2) with
-                         | (B1, B1) => EQ
-                         | (B1, B2) => LT
-                         | (B1, C3) => LT
-                         | (B1, C _) => LT
-                         | (B2, B1) => GT
-                         | (B2, B2) => EQ
-                         | (B2, C3) => LT
-                         | (B2, C _) => LT
-                         | (C3, B1) => GT
-                         | (C3, B2) => GT
-                         | (C3, C3) => EQ
-                         | (C3, C _) => LT
-                         | (C _, B1) => GT
-                         | (C _, B2) => GT
-                         | (C _, C3) => GT
-                         | (C l, C r) => String.compare l r
-                         end
-end
 
 type SC = Set CellOrder
 (* Chcielibyśmy mieć coś takiego: *)
@@ -66,63 +43,12 @@ type SC = Set CellOrder
 signature BuildEff (K: Type) (V: Type) =
 | fetch : K => V
 
-signature State (T: Type) =
-| get : Unit => T
-| put : T => Unit
-
-let modifyState f = put (f (get ()))
-
-let runState init =
-    handler
-    | get () => fn s => resume  s s
-    | put  s => fn _ => resume () s
-    | return x => fn s => (s, x)
-    | finally f => f init
-    end
-
-
-signature Store (I: Type) (K: Type) (V: Type) =
-| getInfo : Unit => I
-| putInfo : I => Unit
-| getValue : K => V
-| putValue : Pair K V => Unit
-
-let modifyInfo f = putInfo (f (getInfo ()))
-let incInfo () = modifyInfo (fn x => x + 1)
-let decInfo () = modifyInfo (fn x => x - 1)
-
-let rec getValueKV k kvs =
-    match kvs with
-    | [] => 0
-    | (k', v')::kvs => if k = k' then v' else getValueKV k kvs
-    end
-
-let simpleInfoHandler i kvs =
-    handler
-    | getInfo () => fn (i, kvs) => resume i (i, kvs)
-    | putInfo  i => fn (_, kvs) => resume () (i, kvs)
-    | getValue k => fn (i, kvs) => resume (getValueKV k kvs) (i, kvs)
-    | putValue kv => fn (i, kvs) => resume () (i, kv::kvs)
-    | return   x => fn _ => x
-    | finally f => f (i, kvs)
-    end
-
-let funInfoHandler eq i kvs =
-    handler
-    | getInfo () => fn (i, kvs) => resume i (i, kvs)
-    | putInfo  i => fn (_, kvs) => resume () (i, kvs)
-    | getValue k => fn (i, kvs) => resume (kvs k) (i, kvs)
-    | putValue (k, v) => fn (i, kvs) => let kvs' = fn k' => if eq k' k then v else kvs k' in resume () (i, kvs')
-    | return   x => fn (i, kvs) => (x, (i, kvs))
-    | finally f => f (i, kvs)
-    end
-
 data TaskType (K: Type) (V: Type) = Task of ({`a: BuildEff K V} -> Unit ->[`a] V)
 let unTask (Task t) = t
 
 type Tasks (K: Type) (V: Type) = (K -> Option (TaskType K V))
 
-
+(* Zmodyfikowany przykład z Carte: *)
 
 let sprsh1_B1 () = fetch (C "A1") + fetch (C "A2") + fetch C3
 let sprsh1_B2 () = (fetch B1 + fetch B1) + fetch (C "A1")

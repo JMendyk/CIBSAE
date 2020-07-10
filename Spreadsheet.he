@@ -1,0 +1,32 @@
+
+import String
+
+data SpreadsheetCell = B1 | B2 | C3 | C of String
+
+let sComp s1 s2 = match (s1, s2) with
+                  | (B1, B1) => True | (B2, B2) => True | (C3, C3) => True
+                  | (C c1, C c2) => String.equal c1 c2
+                  | _ => False
+                  end
+
+type CellOrder = struct
+     let type this = SpreadsheetCell
+     let compare c1 c2 = match (c1, c2) with
+                         | (B1, B1) => EQ
+                         | (B1, B2) => LT
+                         | (B1, C3) => LT
+                         | (B1, C _) => LT
+                         | (B2, B1) => GT
+                         | (B2, B2) => EQ
+                         | (B2, C3) => LT
+                         | (B2, C _) => LT
+                         | (C3, B1) => GT
+                         | (C3, B2) => GT
+                         | (C3, C3) => EQ
+                         | (C3, C _) => LT
+                         | (C _, B1) => GT
+                         | (C _, B2) => GT
+                         | (C _, C3) => GT
+                         | (C l, C r) => String.compare l r
+                         end
+end
