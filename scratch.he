@@ -111,13 +111,18 @@ let withBusy (key: SpreadsheetCell) tasks =
    Możemy jednak śledzić/track obliczane taski potomne początkowego: *)
 
 let track (key: SpreadsheetCell) (tasks: Tasks SpreadsheetCell Int) =
-    let rec deps key =
+    let handle with runState [] in
+    let rec hTrack =
+        handler
+        (* Not really working as we would like to since it's tracking all (including transitive/offspring) dependencies*)
+        | fetch k => modifyState (fn s => k::s); ignore (deps k); resume (getValue k)
+        end
+        and deps key =
         match tasks key with
-        | None => getValue key
+        | None => ()
         | Some (Task task) =>
-               let ret = handle task () with
-               | fetch k => modifyState (fn s => k::s); resume (deps k)
-               end in putValue (key, ret); ret
+               let newValue = handle task () with hTrack in
+               putValue (key, newValue)
         end
     in deps key
 
@@ -128,7 +133,7 @@ let compute task =
     end
 
 let withSuspending (key: SpreadsheetCell) tasks =
-    handle
+    let handle with runState SC.empty in
         let rec suspendingHandler =
             handler
             | fetch k => build k; resume (getValue k)
@@ -153,15 +158,15 @@ let withSuspending (key: SpreadsheetCell) tasks =
         in
         printStr ("Building " ++ cellToString key ++ " with suspending\n");
         build key
-    with runState SC.empty
 
 let _ =
     let s = initState in
     printIntList [s B1, s B2, s C3]; printStr "\n";
-    let (_, (_, s)) = 
-    handle
-        (* withBusy B2 sprsh1 *)
-        withSuspending B2 sprsh1
-    with funInfoHandler sComp 0 initState in
+    let (_, (_, s)) =
+        handle
+            (* withBusy B2 sprsh1 *)
+            withSuspending B2 sprsh1
+        with funInfoHandler sComp 0 initState
+    in
     printIntList [s B1, s B2, s C3]; printStr "\n";
     ()
