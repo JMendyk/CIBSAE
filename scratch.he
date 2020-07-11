@@ -67,23 +67,6 @@ let initState = fn key => match key with
                           | _ => 20
                           end
 
-let cellToString x = match x with
-                     | B1 => "B1"
-                     | B2 => "B2"
-                     | C3 => "C3"
-                     | (C c) => c
-                     end
-
-let printCellList xs =
-    let rec printWithSep xs sep = match xs with
-                              | [] => ()
-                              | [x] => printStr (cellToString x)
-                              | (x::xs) => printStr (cellToString x); printStr ", "; printWithSep xs sep
-                              end
-    in
-    printStr "[";
-    printWithSep xs ",";
-    printStr "]"
 
 let withBusy (key: SpreadsheetCell) tasks =
     let rec busyHandler =
