@@ -1,0 +1,285 @@
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{amssymb}
+\usepackage[polish]{babel}
+% \usepackage[english]{babel}
+
+% Różne przydatne paczki:
+\usepackage{amsmath, amsfonts} % - znaczki matematyczne
+\usepackage{indentfirst} % - wcięcie na początku pierwszego akapitu
+\usepackage{hyperref} % - komenda \url
+\usepackage{graphics} % - dołączanie obrazków
+%% \usepackage[hdivide={2.54cm,*,2.54cm},vdivide={2.54cm,*,2.54cm}]{geometry}
+\usepackage[hdivide={2cm,*,2cm},vdivide={2cm,*,2cm}]{geometry}
+\frenchspacing
+\usepackage{enumitem} % - enumeracja z użyciem liter
+
+% \pagestyle{empty} % - brak numerów stron
+
+\usepackage{mathtools}
+\usepackage{amsthm}
+
+% Floor and ceil as single control sequence
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+\usepackage{titling}
+\usepackage{wasysym}
+\renewcommand\maketitlehooka{\null\mbox{}\vfill}
+\renewcommand\maketitlehookd{\vfill\null}
+
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{wrapfig}
+\usepackage{caption}
+\usepackage{multicol}
+
+\usepackage{xcolor} % text background color
+
+% Section name before numbering
+\usepackage[explicit]{titlesec}
+%% for implicit section numbering
+%% \titleformat{\section}{\normalfont\Large\bfseries}{}{0em}{#1\ \thesection}
+%% for explicit section numbering
+\titleformat{\section}{\normalfont\Large\bfseries}{}{0em}{#1}
+
+\newtheorem{tw}{Twierdzenie}[section]
+\newtheorem{fakt}{Fakt}[section]
+\newtheorem{defn}{Definicja}[section]
+\newtheorem{teza}{Teza}[section]
+\newtheorem*{teza*}{Teza}
+\newtheorem{lemat}{Lemat}[section]
+\newtheorem*{lemat*}{Lemat}
+\newtheorem*{defn*}{Definicja}
+\newtheorem{sidenote}[tw]{Uwaga}
+
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}%
+
+\usepackage{listings}% http://ctan.org/pkg/listings
+\usepackage{lstautogobble}
+\lstset{basicstyle=\ttfamily,mathescape}
+
+\lstnewenvironment{lstverbatim}[1][]{
+  \lstset { autogobble=true, basicstyle=\ttfamily, mathescape,
+    columns=fullflexible, breaklines=true, keepspaces=true,
+    belowskip=1em, aboveskip=12pt }, belowskip=12pt }{}
+
+% non-full-page \maketitle, https://tex.stackexchange.com/a/29595
+%% \makeatletter
+%% \def\@maketitle{%
+%%   \newpage
+%% %  \null% DELETED
+%% %  \vskip 2em% DELETED
+%%   \begin{center}%
+%%   \let \footnote \thanks
+%%     {\LARGE \@title \par}%
+%%     \vskip 1.5em%
+%%     {\large
+%%       \lineskip .5em%
+%%       \begin{tabular}[t]{c}%
+%%         \@author
+%%       \end{tabular}\par}%
+%%     \vskip 1em%
+%%     {\large \@date}%
+%%   \end{center}%
+%%   \par
+%%   \vskip 1.5em}
+%% \makeatother
+
+% Document metadata
+%% \title{%
+%% \LARGE{\textbf{Ćwiczenia z Baz Danych}} \\
+%%     \Large{Rozwiązania zadań z \textbf{listy 4}}
+%% }
+%% \author{Jakub Mendyk}
+%% \date{21 marca 2019 r.}
+
+\usepackage{ifdraft}
+
+\ifdraft{
+\usepackage{draftwatermark} % add watermark ("draft", "confidential"...)
+                            % option: [firstpage] (insert on only the first page)
+\SetWatermarkText{SZKIC ROZWIĄZANIA} %% COPY~---~DRAFT
+\SetWatermarkAngle{55}
+\SetWatermarkScale{6.0}
+\SetWatermarkLightness{0.85}
+\SetWatermarkFontSize{12 pt}
+}{}
+
+\usepackage[most]{tcolorbox}
+
+%% \renewcommand{\lstlisting}[2]{
+%% begin{tcblisting}{
+%%     enhanced,
+%%     attach boxed title to top right={yshift=-\tcboxedtitleheight},
+%%     boxed title style={
+%%         size=small,colback=gray!50,
+%%         colframe=gray!50,
+%%         sharp corners=downhill,
+%%         arc=.5cm,
+%%         top=1mm,bottom=1mm,left=1mm,right=1mm
+%%     },
+%%     fonttitle=\color{black}\itshape\ttfamily,
+%%     colframe=gray!20,
+%%     top=\tcboxedtitleheight,
+%%     bottom=\tcboxedtitleheight,
+%%     sharp corners=downhill,
+%%     arc=.5cm,
+%%     title={#1},#2,
+%%     listing only,
+%%     listing options={
+%%         language=Java,
+%%         basicstyle=\fontfamily{AnonymousPro}\selectfont,
+%%         keywordstyle=\bfseries\color{pblue},
+%%         stringstyle=\bfseries\itshape\color{green!40!black},
+%%         commentstyle=\bfseries\itshape\color{black!60},
+%%         showspaces=false,
+%%         showtabs=false,
+%%         breaklines=true,
+%%         showstringspaces=false,
+%%         tabsize=1,
+%%         emph={
+%%             downto, for, String, TextView, Toast, Button, EditText, ImageView, Typeface, Intent, WebView, WebSettings, SwipeRefreshLayout, RelativeLayout, Animation, AlertDialog, SharedPreferences, Editor, ToggleButton, CardView, LinearLayout, gradient, shape,
+%%         },
+%%         emphstyle={\bfseries\color{pblue}}
+%%     }
+%% }
+%% \end{tcblisting}
+%% }
+
+%% \newtcblisting{titledlisting}[2][]{%
+%%     enhanced,
+%%     attach boxed title to top right={yshift=-\tcboxedtitleheight},
+%%     boxed title style={
+%%         size=small,
+%%         colback=gray!50,
+%%         colframe=gray!50,
+%%         sharp corners=downhill,
+%%         arc=.5cm,
+%%         top=1mm,bottom=1mm,left=1mm,right=1mm},
+%%     fonttitle=\color{black}\itshape,
+%%     colframe=gray!20,
+%%     top=\tcboxedtitleheight,
+%%     bottom=\tcboxedtitleheight,
+%%     sharp corners=downhill,
+%%     arc=.5cm,
+%%     title={#2}
+%% }
+
+%% \newtcblisting{mycode}[2][]{%
+%%     enhanced,
+%%     attach boxed title to top right={yshift=-\tcboxedtitleheight},
+%%     boxed title style={
+%%         size=small,
+%%         colback=gray!50,
+%%         colframe=gray!50,
+%%         sharp corners=downhill,
+%%         arc=.5cm,
+%%         top=1mm,bottom=1mm,left=1mm,right=1mm},
+%%     fonttitle=\color{black}\itshape,
+%%     colframe=gray!20,
+%%     top=\tcboxedtitleheight,
+%%     bottom=\tcboxedtitleheight,
+%%     sharp corners=downhill,
+%%     arc=.5cm,
+%%     title={#2}
+%% }
+
+%% \usepackage{listings}
+\usepackage{xcolor}
+\usepackage{adjustbox,tikz}
+\definecolor{light-gray}{gray}{0.95}
+
+
+
+  %% %% ytopmargin=1em,
+  %% belowcaptionskip=1\baselineskip,
+  %% breaklines=true,
+  %% xleftmargin=\parindent,
+  %% %% %% language=sh,
+  %% showstringspaces=false,
+  %% basicstyle=\footnotesize\ttfamily,
+  %% %% %% keywordstyle=\bfseries\color{green!40!black},
+  %% %% %% commentstyle=\itshape\color{purple!40!black},
+  %% %% %% identifierstyle=\color{blue},
+  %% %% %% stringstyle=\color{orange},
+  %% tabsize=2,
+  %%   ,backgroundcolor=\color{light-gray}
+  %%   ,belowskip=0pt,
+  %% %% ,escapechar={§},
+  %% %% \renewcommand{\thelstnumber}{V1\#>}
+
+
+\lstdefinestyle{custom}{
+  frame=single,
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  language=haskell,
+  xleftmargin=\parindent,
+  showstringspaces=false,
+  basicstyle=\footnotesize\ttfamily,
+  tabsize=2,
+  backgroundcolor=\color{light-gray},
+  belowskip=0pt,
+  %% morecomment=[l][\color{green}]{*},
+  %% morecomment=[l][\color{red}]{\#},
+  deletekeywords=[2]{hash,apply},
+  escapechar={@},
+}
+
+
+\lstset{escapechar=@,style=custom}
+
+%% \lstdefinestyle{custom2}{
+%%   frame=single,
+%%   belowcaptionskip=1\baselineskip,
+%%   breaklines=true,
+%%   xleftmargin=\parindent,
+%%   xrightmargin=0em,
+%%   showstringspaces=false,
+%%   basicstyle=\footnotesize\ttfamily,
+%%   tabsize=2,
+%%   backgroundcolor=\color{light-gray},
+%%   belowskip=16pt
+%% }
+
+%% \makeatletter
+%% \newcommand{\mylabel}[1]{\color{gray}{\sffamily #1}}    
+
+%% \lstnewenvironment{remotelisting}[1]{
+%%     \lstset{style=custom2}%
+%%     \def\code@arg{#1}%
+%%     \setbox0\hbox%
+%%     \bgroup%
+%% }
+%% {%
+%%     \egroup\usebox0% printout the listing
+%%     \raisebox{\dimexpr-\dp0+\ht\strutbox\relax}{% move near bottom of listing
+%%         \makebox[\dimexpr-\wd0+\lst@linewidth\relax][r]{% makebox to right border
+%%             \mylabel{\code@arg}%
+%%         }%
+%%     }%
+%% }
+%% \makeatother
+
+\makeatletter
+\def\@maketitle{%
+  \newpage
+%  \null% DELETED
+%  \vskip 2em% DELETED
+  \begin{center}%
+  \let \footnote \thanks
+    {\LARGE \@title \par}%
+    \vskip 1.5em%
+    {\large
+      \lineskip .5em%
+      \begin{tabular}[t]{c}%
+        \@author
+      \end{tabular}\par}%
+    \vskip 1em%
+    {\large \@date}%
+  \end{center}%
+  \par
+  \vskip 1.5em}
+\makeatother
