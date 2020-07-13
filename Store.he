@@ -3,7 +3,12 @@ signature Store (I: Type) (K: Type) (V: Type) =
 | getInfo : Unit => I
 | putInfo : I => Unit
 | getValue : K => V
-| putValue : Pair K V => Unit
+| putValue : K, V => Unit
+
+(* Równania:
+   putInfo i; getInfo ()  ==  i
+   putValue (k, v); getValue k  ==  v
+*)
 
 let modifyInfo f = putInfo (f (getInfo ()))
 let incInfo () = modifyInfo (fn x => x + 1)
@@ -17,22 +22,22 @@ let rec getValueKV k kvs =
 
 let simpleInfoHandler i kvs =
     handler
-    | getInfo () => fn (i, kvs) => resume i (i, kvs)
-    | putInfo  i => fn (_, kvs) => resume () (i, kvs)
-    | getValue k => fn (i, kvs) => resume (getValueKV k kvs) (i, kvs)
-    | putValue kv => fn (i, kvs) => resume () (i, kv::kvs)
+    | getInfo () => fn i kvs => resume i i kvs
+    | putInfo  i => fn _ kvs => resume () i kvs
+    | getValue k => fn i kvs => resume (getValueKV k kvs) i kvs
+    | putValue k v => fn i kvs => resume () i ((k, v)::kvs)
     | return   x => fn _ => x
-    | finally f => f (i, kvs)
+    | finally f => f i kvs
     end
 
 let funInfoHandler eq i lookup =
     handler
-    | getInfo () => fn (i, lookup) => resume i (i, lookup)
-    | putInfo  i => fn (_, lookup) => resume () (i, lookup)
-    | getValue k => fn (i, lookup) => resume (lookup k) (i, lookup)
-    | putValue (k, v) => fn (i, lookup) =>
+    | getInfo () => fn i lookup => resume i i lookup
+    | putInfo  i => fn _ lookup => resume () i lookup
+    | getValue k => fn i lookup => resume (lookup k) i lookup
+    | putValue k v => fn i lookup =>
                          let lookup' x = if eq x k then v else lookup x
-                         in resume () (i, lookup')
-    | return   x => fn (i, lookup) => (x, (i, lookup))
-    | finally f => f (i, lookup)
+                         in resume () i lookup'
+    | return   x => fn i lookup => (x, (i, lookup))
+    | finally f => f i lookup
     end

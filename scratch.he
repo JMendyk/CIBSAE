@@ -83,7 +83,7 @@ let withBusy (key: SpreadsheetCell) tasks =
                printStr (String.repeat (2 * getInfo ()) ' ');
                printStr ("Computing " ++ cellToString key ++ "...\n");
                let ret = handle task () with busyHandler
-               in putValue (key, ret)
+               in putValue key ret
         end;
         decInfo ()
     in
@@ -134,7 +134,7 @@ let withSuspending (key: SpreadsheetCell) tasks =
                (* TODO: Rebuilder *)
                let newValue = handle task () with suspendingHandler
                in put (SC.add key done);
-                  putValue (key, newValue)
+                  putValue key newValue
              | _ => ()
              end;
              decInfo ()
