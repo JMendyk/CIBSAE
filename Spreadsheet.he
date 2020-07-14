@@ -38,13 +38,13 @@ let cellToString x = match x with
                      | (C c) => c
                      end
 
-let printCellList xs =
-    let rec printWithSep xs sep = match xs with
-                              | [] => ()
-                              | [x] => printStr (cellToString x)
-                              | (x::xs) => printStr (cellToString x); printStr ", "; printWithSep xs sep
-                              end
+let cellListToString xs =
+    let rec withSep xs sep = match xs with
+                             | [] => ""
+                             | [x] => cellToString x
+                             | (x::xs) => cellToString x ++ ", " ++ withSep xs sep
+                             end
     in
-    printStr "[";
-    printWithSep xs ",";
-    printStr "]"
+    "[" ++ withSep xs "," ++ "]"
+
+let printCellList xs = printStr (cellListToString xs)

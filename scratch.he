@@ -6,10 +6,14 @@ import Spreadsheet
 import State
 import Store
 
+import utils
+
 open Logger
 open Spreadsheet
 open State
 open Store
+
+open utils
 
 let printInt' x = printStr (stringOfInt x)
 let printIntList xs =
@@ -114,7 +118,7 @@ let compute task =
     | fetch k => getValue k
     end
 
-let withSuspending (key: SpreadsheetCell) tasks =
+let withSuspending key tasks =
     let handle with indentLogHandler in
     let handle with runState SC.empty in
         let rec suspendingHandler =
@@ -141,6 +145,64 @@ let withSuspending (key: SpreadsheetCell) tasks =
         log ("Building " ++ cellToString key ++ " with suspending\n");
         build key
 
+let withRestarting key tasks =
+    let handle with indentLogHandler in
+    (* TODO: Reuse chain from previous build *)
+    let handle `q with runState [key] in
+    (* let handle `q with runState [C "A1", C "A2", C3, B1, B2] in *)
+    let handle `s with runState SC.empty in
+        let rec neq dep x = match CellOrder.compare x dep with
+                              | EQ => False
+                              | _ => True
+                              end
+        and qInsert dep = match get `q () with
+                          | [] => runtimeError "empty work queue\n"
+                          | (curr::rest) => let after = (dep :: filter (neq dep) rest) @ [curr] in
+                                            put `q after
+                          end
+        and restartingHandler =
+            handler
+            (* TODO: Rebuilder *)
+            | fetch k => logln ("Fetching: " ++ cellToString k ++ "\n");
+                         if (SC.mem k (get `s ())) then
+                            resume (getValue k)
+                         else match get `q () with
+                              | [] => runtimeError "fetch from empty work queue\n"
+                              | (curr::rest) =>  qInsert k; loop ()
+                              end
+            | return x => match get `q () with
+                          | [] => runtimeError "return from empty work queue\n"
+                          | (curr::rest) => logln ("Computed " ++ cellToString curr ++ "\n");
+                                            put `s (SC.add curr (get `s ()));
+                                            putValue curr x;
+                                            loop ()
+                          end
+            end
+        and loop () =
+            (* logln ("Queue is: " ++ cellListToString (get `q ()) ++ " "); *)
+            match get `q () with
+            | [] => []
+            | (key::keys) => match (tasks key, SC.mem key (get `s ())) with
+                             | (Some (Task task), False) =>
+                               log ("computing " ++ cellToString key ++ "\n");
+                               let result = handle task () with restartingHandler in
+                               result
+                             | (None, _) =>
+                                            log ("input " ++ cellToString key ++ "\n");
+                                            put `s (SC.add key (get `s ()));
+                                            put `q keys;
+                                            key :: loop ()
+                             | (Some _, True) =>
+                                                log ("computed " ++ cellToString key ++ "\n");
+                                                 put `q keys;
+                                                 key :: loop ()
+                             end
+            end
+        in
+        let result = loop () in
+        log ("Building " ++ cellToString key ++ " with restarting\n");
+        printStr "Final queue:\n";
+        printStr (cellListToString result ++ "\n"); ()
 
 let _ =
     let s = initState in
@@ -148,7 +210,8 @@ let _ =
     let (_, (_, s)) =
         handle
             (* withBusy B2 sprsh1 *)
-            withSuspending B2 sprsh1
+            (* withSuspending B2 sprsh1 *)
+            withRestarting B2 sprsh1
         with funInfoHandler sComp () initState
     in
     printIntList [s B1, s B2, s C3]; printStr "\n";
