@@ -1,0 +1,17 @@
+import String
+
+signature Logger =
+| entry : Unit   => Unit
+| log   : String => Unit
+| logln : String => Unit
+| exit  : Unit   => Unit
+
+let indentLogHandler =
+    handler
+    | entry () => fn n => resume () (n + 1)
+    | log s    => fn n => printStr s; resume () n
+    | logln s  => fn n => printStr (String.repeat (2*n) ' ' ++ s); resume () n
+    | exit ()  => fn n => resume () (n - 1)
+    | return x => fn _ => x
+    | finally f => f 0
+    end

@@ -1,10 +1,12 @@
 import String
 import Set
 
+import Logger
 import Spreadsheet
 import State
 import Store
 
+open Logger
 open Spreadsheet
 open State
 open Store
@@ -69,25 +71,22 @@ let initState = fn key => match key with
 
 
 let withBusy (key: SpreadsheetCell) tasks =
+    let handle with indentLogHandler in
     let rec busyHandler =
         handler
         | fetch k => build k; resume (getValue k)
         end
         and build key =
-        printStr (String.repeat (2 * getInfo ()) ' ');
-        printStr (cellToString key ++ "\n");
-        incInfo ();
+        entry ();
+        logln (cellToString key ++ "\n");
         match tasks key with
         | None => ()
         | Some (Task task) =>
-               printStr (String.repeat (2 * getInfo ()) ' ');
-               printStr ("Computing " ++ cellToString key ++ "...\n");
-               let ret = handle task () with busyHandler
-               in putValue key ret
+               putValue key (handle task () with busyHandler)
         end;
-        decInfo ()
+        exit ()
     in
-    printStr ("Building " ++ cellToString key ++ " with busy\n");
+    logln ("Building " ++ cellToString key ++ " with busy\n");
     build key
 
 (* Chyba brak struktury podobnej do Applicative/statycznych zależności.
@@ -116,31 +115,32 @@ let compute task =
     end
 
 let withSuspending (key: SpreadsheetCell) tasks =
+    let handle with indentLogHandler in
     let handle with runState SC.empty in
         let rec suspendingHandler =
             handler
             | fetch k => build k; resume (getValue k)
             end
             and build key =
-            printStr (String.repeat (2 * getInfo ()) ' ');
-            printStr (cellToString key ++ "\n");
-            incInfo ();
+            entry ();
+            logln (cellToString key ++ " ");
             let done = get () in 
             match (tasks key, SC.mem key done) with
             | (Some (Task task), False) =>
-               printStr (String.repeat (2 * getInfo ()) ' ');
-               printStr ("Computing " ++ cellToString key ++ "...\n");
+               log "computing...\n";
                let value = getValue key in
                (* TODO: Rebuilder *)
                let newValue = handle task () with suspendingHandler
                in put (SC.add key done);
                   putValue key newValue
-             | _ => ()
+             | (None, _) => log "(i)\n"
+             | (Some _, True) => log "already computed\n"
              end;
-             decInfo ()
+             exit ()
         in
-        printStr ("Building " ++ cellToString key ++ " with suspending\n");
+        log ("Building " ++ cellToString key ++ " with suspending\n");
         build key
+
 
 let _ =
     let s = initState in
@@ -149,7 +149,7 @@ let _ =
         handle
             (* withBusy B2 sprsh1 *)
             withSuspending B2 sprsh1
-        with funInfoHandler sComp 0 initState
+        with funInfoHandler sComp () initState
     in
     printIntList [s B1, s B2, s C3]; printStr "\n";
     ()
