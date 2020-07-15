@@ -222,27 +222,27 @@ let withRestarting {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff (Pair i 
         let resultChain = loop () in
         modifyInfo (fn (i, _) => (i, resultChain))
 
+let dumpStoreContents (module T: KeyOrder) keys s =
+    ignore(handle `s in
+        printIntList (List.map (getValue `s) keys); printStr "\n"
+    with funStoreHandler T s)
+
 let _ =
-    let funHandler = funStoreHandler CellOrder in
+    let dump = dumpStoreContents CellOrder [B1, B2, C3] in
     let s = FunStore ((), []) initState in
-    ignore (handle `s in
-        printIntList (List.map (getValue `s) [B1, B2, C3]); printStr "\n"
-    with funHandler s);
+    dump s;
     let (_, s') =
         handle
             (* withBusy CellOrder B2 sprsh1 *)
             withSuspending CellOrder B2 sprsh1
             (* withRestarting CellOrder B2 sprsh1 *)
         with funStoreHandler CellOrder s in
-    ignore (handle `s in
-        printIntList (List.map (getValue `s) [B1, B2, C3]); printStr "\n"
-    with funHandler s');
+    dump s';
     let (_, s'') =
         handle
             (* withBusy CellOrder B2 sprsh1 *)
             withSuspending CellOrder B2 sprsh1
             (* withRestarting CellOrder B2 sprsh1 *)
         with funStoreHandler CellOrder s' in
-    ignore (handle `s in
-        printIntList (List.map (getValue `s) [B1, B2, C3]); printStr "\n"
-    with funHandler s'')
+    dump s''
+
