@@ -1,5 +1,4 @@
-
-let ( $ ) f x = f x
+import Common
 
 let filter p xs =
     let rec filter xs =
@@ -8,6 +7,17 @@ let filter p xs =
         | (x::xs) => if p x then x::(filter xs) else filter xs
         end
     in filter xs
+
+let member (module T: Common.KeyOrder) (a: T.this) (xs: List T.this) =
+    let rec member (xs: List T.this) =
+        match xs with
+        | [] => False
+        | (x::xs) => match T.compare a x with
+                     | EQ => True
+                     |  _ => member xs
+                     end
+        end
+    in member xs
 
 type ToString = sig
      type this: Type

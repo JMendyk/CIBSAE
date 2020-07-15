@@ -1,0 +1,15 @@
+
+type KeyOrder = sig
+  type this: Type
+  val compare: this -> this -> Ord
+  val toString: this -> String
+end
+
+signature BuildEff (K: Type) (V: Type) =
+| fetch : K => V
+
+data TaskType (K: Type) (V: Type) = Task of ({`a: BuildEff K V} -> Unit ->[`a] V)
+let unTask (Task t) = t
+
+type Tasks (K: Type) (V: Type) = (K -> Option (TaskType K V))
+

@@ -1,20 +1,15 @@
+import Common
+import Store
+import Schedulers
+import Spreadsheet
+
 import String
-import Set
 import List
 
-import Logger
-import Spreadsheet
-import State
-import Store
-
-import Utils
-
-open Logger
-open Spreadsheet
-open State
+open Common
 open Store
-
-open Utils
+open Schedulers
+open Spreadsheet
 
 let printInt' x = printStr (stringOfInt x)
 let printIntList xs =
@@ -27,23 +22,6 @@ let printIntList xs =
     printStr "[";
     printWithSep xs ",";
     printStr "]"
-
-type KeyOrder = sig
-  type this: Type
-  val compare: this -> this -> Ord
-  val toString: this -> String
-end
-
-let member (module T: KeyOrder) (a: T.this) (xs: List T.this) =
-    let rec member (xs: List T.this) =
-        match xs with
-        | [] => False
-        | (x::xs) => match T.compare a x with
-                     | EQ => True
-                     |  _ => member xs
-                     end
-        end
-    in member xs
 
 (* Chcielibyśmy mieć coś takiego: *)
 
@@ -59,15 +37,7 @@ let member (module T: KeyOrder) (a: T.this) (xs: List T.this) =
 (*         with scheduler *)
 (*     with rebuilder *)
 
-
-
-signature BuildEff (K: Type) (V: Type) =
-| fetch : K => V
-
-data TaskType (K: Type) (V: Type) = Task of ({`a: BuildEff K V} -> Unit ->[`a] V)
-let unTask (Task t) = t
-
-type Tasks (K: Type) (V: Type) = (K -> Option (TaskType K V))
+let ( $ ) f x = f x
 
 (* Zmodyfikowany przykład z Carte: *)
 
@@ -87,26 +57,6 @@ let initState = fn key => match key with
                           | (C c) => if String.equal c "A1" then 10 else 20
                           | _ => 20
                           end
-
-
-let withBusy {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff i T.this v) (key: T.this) (tasks: Tasks T.this v) =
-    let handle with indentLogHandler in
-    let rec busyHandler =
-        handler
-        | fetch k => build k; resume (getValue k)
-        end
-        and build (key: T.this) =
-        entry ();
-        logln (T.toString key ++ "\n");
-        match tasks key with
-        | None => ()
-        | Some (Task task) =>
-               putValue key (handle task () with busyHandler)
-        end;
-        exit ()
-    in
-    logln ("Building " ++ T.toString key ++ " with busy\n");
-    build key
 
 (* Chyba brak struktury podobnej do Applicative/statycznych zależności.
    Możemy jednak śledzić/track obliczane taski potomne początkowego: *)
@@ -134,93 +84,6 @@ let compute task =
     end
 
 
-let withSuspending {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff i T.this v) (key: T.this) (tasks: Tasks T.this v) =
-    let type ST = Set T in
-    open T in
-    let handle with indentLogHandler in
-    let handle with evalState ST.empty in
-        let rec suspendingHandler =
-            handler
-            | fetch k => build k; resume (getValue k)
-            end
-            and build key =
-            entry ();
-            logln (T.toString key ++ " ");
-            let done = get () in
-            match (tasks key, ST.mem key done) with
-            | (Some (Task task), False) =>
-               log "computing...\n";
-               let value = getValue key in
-               (* TODO: Rebuilder *)
-               let newValue = handle task () with suspendingHandler
-               in put (ST.add key done);
-                  putValue key newValue
-             | (None, _) => log "(i)\n"
-             | (Some _, True) => log "already computed\n"
-             end;
-             exit ()
-        in
-        log ("Building " ++ T.toString key ++ " with suspending\n");
-        build key
-
-let withRestarting {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff (Pair i (List T.this)) T.this v) (key: T.this) (tasks: Tasks T.this v) =
-    let type ST = Set T in
-    let handle with indentLogHandler in
-    let oldChain = snd $ getInfo () in
-    let newChain = oldChain @ (if member T key oldChain then [] else [key]) in
-    let handle `q with evalState newChain in
-    (* let handle `q with runState [C "A1", C "A2", C3, B1, B2] in *)
-    let handle `s with evalState ST.empty in
-        let rec neq dep x = match T.compare x dep with
-                              | EQ => False
-                              | _ => True
-                              end
-        and qInsert dep = match get `q () with
-                          | [] => runtimeError "empty work queue\n"
-                          | (curr::rest) => let after = (dep :: filter (neq dep) rest) @ [curr] in
-                                            put `q after
-                          end
-        and restartingHandler =
-            handler
-            (* TODO: Rebuilder *)
-            | fetch k => (* logln ("Fetching: " ++ T.toString k ++ "\n"); *)
-                         if (ST.mem k (get `s ())) then
-                            resume (getValue k)
-                         else match get `q () with
-                              | [] => runtimeError "fetch from empty work queue\n"
-                              | (curr::rest) => log (T.toString curr ++ " will be restarted\n"); qInsert k; loop ()
-                              end
-            | return x => match get `q () with
-                          | [] => runtimeError "return from empty work queue\n"
-                          | (curr::rest) => logln ("Finished " ++ T.toString curr ++ "\n");
-                                            put `s (ST.add curr (get `s ()));
-                                            putValue curr x;
-                                            loop ()
-                          end
-            end
-        and loop () =
-            match get `q () with
-            | [] => []
-            | (key::keys) => match (tasks key, ST.mem key (get `s ())) with
-                             | (Some (Task task), False) =>
-                               log ("computing " ++ T.toString key ++ "\n");
-                               let result = handle task () with restartingHandler in
-                               result
-                             | (None, _) =>
-                                            log ("input " ++ T.toString key ++ "\n");
-                                            put `s (ST.add key (get `s ()));
-                                            put `q keys;
-                                            key :: loop ()
-                             | (Some _, True) =>
-                                                 log ("computed " ++ T.toString key ++ "\n");
-                                                 put `q keys;
-                                                 key :: loop ()
-                             end
-            end
-        in
-        log ("Building " ++ T.toString key ++ " with restarting\n");
-        let resultChain = loop () in
-        modifyInfo (fn (i, _) => (i, resultChain))
 
 let dumpStoreContents (module T: KeyOrder) keys s =
     ignore(handle `s in
