@@ -61,24 +61,8 @@ let initState = fn key => match key with
 (* Chyba brak struktury podobnej do Applicative/statycznych zależności.
    Możemy jednak śledzić/track obliczane taski potomne początkowego: *)
 
-let track (key: SpreadsheetCell) (tasks: Tasks SpreadsheetCell Int) =
-    let handle with runState [] in
-    let rec hTrack =
-        handler
-        (* Not really working as we would like to since it's tracking all (including transitive/offspring) dependencies*)
-        | fetch k => modifyState (fn s => k::s); ignore (deps k); resume (getValue k)
-        end
-        and deps key =
-        match tasks key with
-        | None => ()
-        | Some (Task task) =>
-               let newValue = handle task () with hTrack in
-               putValue (key, newValue)
-        end
-    in deps key
-
 (* Oblicz zadanie bez modyfikowania stanu (Carte 3.6) *)
-let compute task =
+let compute (Task task) =
     handle task () with
     | fetch k => getValue k
     end
