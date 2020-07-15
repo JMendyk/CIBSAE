@@ -1,5 +1,5 @@
 
-signature Store (I: Type) (K: Type) (V: Type) =
+signature StoreEff (I: Type) (K: Type) (V: Type) =
 | getInfo : Unit => I
 | putInfo : I => Unit
 | getValue : K => V
@@ -30,7 +30,9 @@ let simpleInfoHandler i kvs =
     | finally f => f i kvs
     end
 
-let funInfoHandler eq i lookup =
+data FunStoreType (I: Type) (K: Type) (V: Type) = FunStore of I, (K -> V)
+
+let funStoreHandler eq (FunStore i lookup) =
     handler
     | getInfo () => fn i lookup => resume i i lookup
     | putInfo  i => fn _ lookup => resume () i lookup
@@ -38,6 +40,6 @@ let funInfoHandler eq i lookup =
     | putValue k v => fn i lookup =>
                          let lookup' x = if eq x k then v else lookup x
                          in resume () i lookup'
-    | return   x => fn i lookup => (x, (i, lookup))
+    | return   x => fn i lookup => (x, FunStore i lookup)
     | finally f => f i lookup
     end

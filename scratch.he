@@ -1,5 +1,6 @@
 import String
 import Set
+import List
 
 import Logger
 import Spreadsheet
@@ -205,14 +206,16 @@ let withRestarting key tasks =
         printStr (cellListToString result ++ "\n"); ()
 
 let _ =
-    let s = initState in
-    printIntList [s B1, s B2, s C3]; printStr "\n";
-    let (_, (_, s)) =
+    let s = FunStore () initState in
+    ignore (handle `s in
+        printIntList (List.map (getValue `s) [B1, B2, C3]); printStr "\n"
+    with funStoreHandler sComp s);
+    let (_, s') =
         handle
             (* withBusy B2 sprsh1 *)
             (* withSuspending B2 sprsh1 *)
             withRestarting B2 sprsh1
-        with funInfoHandler sComp () initState
-    in
-    printIntList [s B1, s B2, s C3]; printStr "\n";
-    ()
+        with funStoreHandler sComp s in
+    handle `s in
+        printIntList (List.map (getValue `s) [B1, B2, C3]); printStr "\n"
+    with funStoreHandler sComp s'
