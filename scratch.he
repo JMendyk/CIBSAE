@@ -138,7 +138,7 @@ let withSuspending {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff i T.this
     let type ST = Set T in
     open T in
     let handle with indentLogHandler in
-    let handle with execState ST.empty in
+    let handle with evalState ST.empty in
         let rec suspendingHandler =
             handler
             | fetch k => build k; resume (getValue k)
@@ -168,9 +168,9 @@ let withRestarting {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff (Pair i 
     let handle with indentLogHandler in
     let oldChain = snd $ getInfo () in
     let newChain = oldChain @ (if member T key oldChain then [] else [key]) in
-    let handle `q with runState newChain in
+    let handle `q with evalState newChain in
     (* let handle `q with runState [C "A1", C "A2", C3, B1, B2] in *)
-    let handle `s with execState ST.empty in
+    let handle `s with evalState ST.empty in
         let rec neq dep x = match T.compare x dep with
                               | EQ => False
                               | _ => True

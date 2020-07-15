@@ -13,7 +13,7 @@ let runState init =
     | finally f => f init
     end
 
-let execState init =
+let evalState init =
     handler
     | get () => fn s => resume  s s
     | put  s => fn _ => resume () s
