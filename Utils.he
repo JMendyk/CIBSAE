@@ -1,0 +1,25 @@
+
+let ( $ ) f x = f x
+
+let filter p xs =
+    let rec filter xs =
+        match xs with
+        | [] => []
+        | (x::xs) => if p x then x::(filter xs) else filter xs
+        end
+    in filter xs
+
+type ToString = sig
+     type this: Type
+     val toString: this -> String
+end
+
+let listTToString (module T: ToString) xs =
+    open T in
+    let rec withSep xs sep = match xs with
+                             | [] => ""
+                             | [x] => toString x
+                             | (x::xs) => toString x ++ ", " ++ withSep xs sep
+                             end
+    in
+    "[" ++ withSep xs "," ++ "]"

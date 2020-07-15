@@ -7,14 +7,14 @@ import Spreadsheet
 import State
 import Store
 
-import utils
+import Utils
 
 open Logger
 open Spreadsheet
 open State
 open Store
 
-open utils
+open Utils
 
 let printInt' x = printStr (stringOfInt x)
 let printIntList xs =
@@ -28,9 +28,23 @@ let printIntList xs =
     printWithSep xs ",";
     printStr "]"
 
-let ( $ ) f x = f x
+type KeyOrder = sig
+  type this: Type
+  val compare: this -> this -> Ord
+  val toString: this -> String
+end
 
-type SC = Set CellOrder
+let member (module T: KeyOrder) (a: T.this) (xs: List T.this) =
+    let rec member (xs: List T.this) =
+        match xs with
+        | [] => False
+        | (x::xs) => match T.compare a x with
+                     | EQ => True
+                     |  _ => member xs
+                     end
+        end
+    in member xs
+
 (* Chcielibyśmy mieć coś takiego: *)
 
 (* let _ = *)
@@ -75,15 +89,15 @@ let initState = fn key => match key with
                           end
 
 
-let withBusy (key: SpreadsheetCell) tasks =
+let withBusy {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff i T.this v) (key: T.this) (tasks: Tasks T.this v) =
     let handle with indentLogHandler in
     let rec busyHandler =
         handler
         | fetch k => build k; resume (getValue k)
         end
-        and build key =
+        and build (key: T.this) =
         entry ();
-        logln (cellToString key ++ "\n");
+        logln (T.toString key ++ "\n");
         match tasks key with
         | None => ()
         | Some (Task task) =>
@@ -91,7 +105,7 @@ let withBusy (key: SpreadsheetCell) tasks =
         end;
         exit ()
     in
-    logln ("Building " ++ cellToString key ++ " with busy\n");
+    logln ("Building " ++ T.toString key ++ " with busy\n");
     build key
 
 (* Chyba brak struktury podobnej do Applicative/statycznych zależności.
@@ -119,40 +133,45 @@ let compute task =
     | fetch k => getValue k
     end
 
-let withSuspending key tasks =
+
+let withSuspending {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff i T.this v) (key: T.this) (tasks: Tasks T.this v) =
+    let type ST = Set T in
+    open T in
     let handle with indentLogHandler in
-    let handle with runState SC.empty in
+    let handle with execState ST.empty in
         let rec suspendingHandler =
             handler
             | fetch k => build k; resume (getValue k)
             end
             and build key =
             entry ();
-            logln (cellToString key ++ " ");
-            let done = get () in 
-            match (tasks key, SC.mem key done) with
+            logln (T.toString key ++ " ");
+            let done = get () in
+            match (tasks key, ST.mem key done) with
             | (Some (Task task), False) =>
                log "computing...\n";
                let value = getValue key in
                (* TODO: Rebuilder *)
                let newValue = handle task () with suspendingHandler
-               in put (SC.add key done);
+               in put (ST.add key done);
                   putValue key newValue
              | (None, _) => log "(i)\n"
              | (Some _, True) => log "already computed\n"
              end;
              exit ()
         in
-        log ("Building " ++ cellToString key ++ " with suspending\n");
+        log ("Building " ++ T.toString key ++ " with suspending\n");
         build key
 
-let withRestarting key tasks =
+let withRestarting {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff (Pair i (List T.this)) T.this v) (key: T.this) (tasks: Tasks T.this v) =
+    let type ST = Set T in
     let handle with indentLogHandler in
-    (* TODO: Reuse chain from previous build *)
-    let handle `q with runState [key] in
+    let oldChain = snd $ getInfo () in
+    let newChain = oldChain @ (if member T key oldChain then [] else [key]) in
+    let handle `q with runState newChain in
     (* let handle `q with runState [C "A1", C "A2", C3, B1, B2] in *)
-    let handle `s with runState SC.empty in
-        let rec neq dep x = match CellOrder.compare x dep with
+    let handle `s with execState ST.empty in
+        let rec neq dep x = match T.compare x dep with
                               | EQ => False
                               | _ => True
                               end
@@ -164,58 +183,66 @@ let withRestarting key tasks =
         and restartingHandler =
             handler
             (* TODO: Rebuilder *)
-            | fetch k => logln ("Fetching: " ++ cellToString k ++ "\n");
-                         if (SC.mem k (get `s ())) then
+            | fetch k => (* logln ("Fetching: " ++ T.toString k ++ "\n"); *)
+                         if (ST.mem k (get `s ())) then
                             resume (getValue k)
                          else match get `q () with
                               | [] => runtimeError "fetch from empty work queue\n"
-                              | (curr::rest) =>  qInsert k; loop ()
+                              | (curr::rest) => log (T.toString curr ++ " will be restarted\n"); qInsert k; loop ()
                               end
             | return x => match get `q () with
                           | [] => runtimeError "return from empty work queue\n"
-                          | (curr::rest) => logln ("Computed " ++ cellToString curr ++ "\n");
-                                            put `s (SC.add curr (get `s ()));
+                          | (curr::rest) => logln ("Finished " ++ T.toString curr ++ "\n");
+                                            put `s (ST.add curr (get `s ()));
                                             putValue curr x;
                                             loop ()
                           end
             end
         and loop () =
-            (* logln ("Queue is: " ++ cellListToString (get `q ()) ++ " "); *)
             match get `q () with
             | [] => []
-            | (key::keys) => match (tasks key, SC.mem key (get `s ())) with
+            | (key::keys) => match (tasks key, ST.mem key (get `s ())) with
                              | (Some (Task task), False) =>
-                               log ("computing " ++ cellToString key ++ "\n");
+                               log ("computing " ++ T.toString key ++ "\n");
                                let result = handle task () with restartingHandler in
                                result
                              | (None, _) =>
-                                            log ("input " ++ cellToString key ++ "\n");
-                                            put `s (SC.add key (get `s ()));
+                                            log ("input " ++ T.toString key ++ "\n");
+                                            put `s (ST.add key (get `s ()));
                                             put `q keys;
                                             key :: loop ()
                              | (Some _, True) =>
-                                                log ("computed " ++ cellToString key ++ "\n");
+                                                 log ("computed " ++ T.toString key ++ "\n");
                                                  put `q keys;
                                                  key :: loop ()
                              end
             end
         in
-        let result = loop () in
-        log ("Building " ++ cellToString key ++ " with restarting\n");
-        printStr "Final queue:\n";
-        printStr (cellListToString result ++ "\n"); ()
+        log ("Building " ++ T.toString key ++ " with restarting\n");
+        let resultChain = loop () in
+        modifyInfo (fn (i, _) => (i, resultChain))
 
 let _ =
-    let s = FunStore () initState in
+    let funHandler = funStoreHandler CellOrder in
+    let s = FunStore ((), []) initState in
     ignore (handle `s in
         printIntList (List.map (getValue `s) [B1, B2, C3]); printStr "\n"
-    with funStoreHandler sComp s);
+    with funHandler s);
     let (_, s') =
         handle
-            (* withBusy B2 sprsh1 *)
-            (* withSuspending B2 sprsh1 *)
-            withRestarting B2 sprsh1
-        with funStoreHandler sComp s in
-    handle `s in
+            (* withBusy CellOrder B2 sprsh1 *)
+            withSuspending CellOrder B2 sprsh1
+            (* withRestarting CellOrder B2 sprsh1 *)
+        with funStoreHandler CellOrder s in
+    ignore (handle `s in
         printIntList (List.map (getValue `s) [B1, B2, C3]); printStr "\n"
-    with funStoreHandler sComp s'
+    with funHandler s');
+    let (_, s'') =
+        handle
+            (* withBusy CellOrder B2 sprsh1 *)
+            withSuspending CellOrder B2 sprsh1
+            (* withRestarting CellOrder B2 sprsh1 *)
+        with funStoreHandler CellOrder s' in
+    ignore (handle `s in
+        printIntList (List.map (getValue `s) [B1, B2, C3]); printStr "\n"
+    with funHandler s'')
