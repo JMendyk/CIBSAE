@@ -14,7 +14,7 @@ open Set
 
 
 
-let withBusy {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff i T.this v) (key: T.this) (tasks: Tasks T.this v) =
+let withBusy {i v: Type} (module T: KeyOrder) {`a: StoreEff i T.this v} (tasks: Tasks T.this v) (key: T.this) =
     let handle with indentLogHandler in
     let rec busyHandler =
         handler
@@ -33,7 +33,7 @@ let withBusy {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff i T.this v) (k
     logln ("Building " ++ T.toString key ++ " with busy\n");
     build key
 
-let withSuspending {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff i T.this v) (key: T.this) (tasks: Tasks T.this v) =
+let withSuspending {i v: Type} (module T: KeyOrder) {`a: StoreEff i T.this v} (tasks: Tasks T.this v) (key: T.this) =
     let type ST = Set T in
     open T in
     let handle with indentLogHandler in
@@ -62,7 +62,7 @@ let withSuspending {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff i T.this
         log ("Building " ++ T.toString key ++ " with suspending\n");
         build key
 
-let withRestarting {i v: Type} (module T: KeyOrder) (`a: Store.StoreEff (Pair i (List T.this)) T.this v) (key: T.this) (tasks: Tasks T.this v) =
+let withRestarting {i v: Type} (module T: KeyOrder) {`a: StoreEff (Pair i (List T.this)) T.this v} (tasks: Tasks T.this v) (key: T.this) =
     let type ST = Set T in
     let handle with indentLogHandler in
     let oldChain = snd (getInfo ()) in

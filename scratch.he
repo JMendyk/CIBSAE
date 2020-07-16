@@ -80,16 +80,16 @@ let _ =
     dump s;
     let (_, s') =
         handle
-            (* withBusy CellOrder B2 sprsh1 *)
-            withSuspending CellOrder B2 sprsh1
-            (* withRestarting CellOrder B2 sprsh1 *)
+            (* withBusy CellOrder sprsh1 B2 *)
+            withSuspending CellOrder sprsh1 B2
+            (* withRestarting CellOrder sprsh1 B2 *)
         with funStoreHandler CellOrder s in
     dump s';
     let (_, s'') =
         handle
-            (* withBusy CellOrder B2 sprsh1 *)
-            withSuspending CellOrder B2 sprsh1
-            (* withRestarting CellOrder B2 sprsh1 *)
+            (* withBusy CellOrder sprsh1 B2 *)
+            withSuspending CellOrder sprsh1 B2
+            (* withRestarting CellOrder sprsh1 B2 *)
         with funStoreHandler CellOrder s' in
     dump s''
 
