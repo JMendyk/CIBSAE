@@ -1,11 +1,13 @@
+import State
 import Store
 
+open State
 open Store
 
 type KeyOrder = sig
-  type this: Type
-  val compare: this -> this -> Ord
-  val toString: this -> String
+     type this: Type
+     val compare: this -> this -> Ord
+     val toString: this -> String
 end
 
 signature BuildEff (K: Type) (V: Type) =
@@ -17,5 +19,5 @@ let unTask (Task t) = t
 type Tasks (K: Type) (V: Type) = (K -> Option (TaskType K V))
 
 type Build (I: Type) (K: Type) (V: Type) = {`s: StoreEff I K V} -> Tasks K V -> K ->[`s] Unit
-type Rebuilder (IR: Type) (K: Type) (V: Type) = K -> V -> TaskType K V -> TaskType K V
+type Rebuilder (IR: Type) (K: Type) (V: Type) = {`s: State IR} -> K -> V -> TaskType K V ->[`s] TaskType K V
 type Scheduler (I: Type) (IR: Type) (K: Type) (V: Type) = Rebuilder IR K V -> Build I K V

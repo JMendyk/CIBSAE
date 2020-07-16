@@ -1,0 +1,76 @@
+import Common
+import State
+
+import Spreadsheet
+
+import List
+import Map
+
+open Common
+open State
+
+open Map
+
+(* type Time = Int *)
+(* type MakeInfo (K: KeyOrder) = let type MK = Map K in Pair Time (MK.this K.this) *)
+
+(* {i v: Type} (module T: KeyOrder) {`a: StoreEff i T.this v} (tasks: Tasks T.this v) (key: T.this) *)
+(* type Rebuilder (IR: Type) (K: Type) (V: Type) = {State IR} -> K -> V -> TaskType K V ->[`s] TaskType K V *)
+
+(* let modTimeRebuilder {V: Type} (module T: KeyOrder) (key: T.this) (value: V) (task: TaskType T.this V) =  *)
+(*     let type MK = Map T in *)
+(*     let (now, modTimes) = get () in *)
+(*     let dirty = handle MK.find key modTimes with *)
+(*                 | not_found _ =>  in 0 *)
+
+let dirtyBitRebuilder {K V: Type} {`s: State (K -> Bool)} (key: K) (value: V) (task: TaskType K V) =
+    let isDirty = get () in
+    if isDirty key then task
+    else begin
+         let t (`a: BuildEff K V) () = value
+         in Task t
+    end
+
+(* --------------------------------------------- Traces --------------------------------------------- *)
+
+type Hash (V: Type) = Int
+
+data TraceType (K V A: Type) = Trace of K, (List (Pair K (Hash V))), A
+let key (Trace k _ _) = k
+let depends (Trace _ d _) = d
+let result (Trace _ _ r) = r
+
+(* ---------------------------------------- Verifying Traces ---------------------------------------- *)
+
+type VT (K V: Type) = List (TraceType K V (Hash V))
+
+let recordVT {K V: Type} {`s: State (VT K V)} (key: K) (hash: Hash V) (deps: List (Pair K (Hash V))) =
+    modifyState (fn ts => (Trace key deps hash) :: ts)
+    
+let verifyVT {V: Type} (module T: KeyOrder) {`s: State (VT T.this V)} {`b: BuildEff T.this (Hash V)} (key: T.this) (hash: Hash V) =
+    let fetchedHashMatches (k, h) = h = fetch k in
+    let matchFor (Trace k deps result) =
+        match (T.compare k key, result <> hash) with
+        | (EQ, True) => List.forAll fetchedHashMatches deps
+        | _ => False
+        end
+    in List.exists matchFor (get ())
+
+(* --------------------------------------- Constructive Traces -------------------------------------- *)
+
+type CT (K V: Type) = List (TraceType K V V)
+
+let recordCT {K V: Type} {`s: State (CT K V)} (key: K) (value: V) (deps: List (Pair K (Hash V))) =
+    modifyState (fn ts => (Trace key deps value) :: ts)
+
+let constructCT {V: Type} (module T: KeyOrder) {`s: State (CT T.this V)} {`b: BuildEff T.this (Hash V)} (key: T.this) =
+    let fetchedHashMatches (k, h) = h = fetch k in
+    let matchFor {`r: State (List V)} (Trace k deps result) =
+        match T.compare k key with
+        | EQ => if List.forAll fetchedHashMatches deps then
+                   modifyState `r (fn s => result :: s)
+                else ()
+        |  _ => ()
+        end in
+    let handle `r with execState [] in
+        List.iter (matchFor `r) (get `s ())

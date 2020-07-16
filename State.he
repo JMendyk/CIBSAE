@@ -20,3 +20,11 @@ let evalState init =
     | return x => fn _ => x
     | finally f => f init
     end
+
+let execState init =
+    handler
+    | get () => fn s => resume  s s
+    | put  s => fn _ => resume () s
+    | return _ => fn s => s
+    | finally f => f init
+    end
