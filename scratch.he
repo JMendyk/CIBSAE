@@ -96,6 +96,8 @@ let dumpGivenStoreContents (module T: KeyOrder) keys s =
 (*         with funStoreHandler CellOrder s' in *)
 (*     dump s'' *)
 
+
+
 let _ =
     let allDirtyInfo = (fn _ => True) in
     let allCleanInfo = (fn _ => False) in
@@ -106,5 +108,19 @@ let _ =
         dumpStoreContents [B1, B2, C3];
         putInfo allCleanInfo;
         withSuspending CellOrder dirtyBitRebuilder sprsh1 B2;
+        dumpStoreContents [B1, B2, C3]
+    with funStoreHandler CellOrder store
+
+let _ =
+    let allDirtyInfo = (fn _ => True) in
+    let allCleanInfo = (fn _ => False) in
+    let store = FunStore (allDirtyInfo, []) initState in
+    handle
+        dumpStoreContents [B1, B2, C3];
+        withRestarting CellOrder dirtyBitRebuilder sprsh1 B2;
+        dumpStoreContents [B1, B2, C3];
+        (* printCellList (snd (getInfo ())); *)
+        modifyInfo (fn (_, r) => (allCleanInfo, r));
+        withRestarting CellOrder dirtyBitRebuilder sprsh1 B2;
         dumpStoreContents [B1, B2, C3]
     with funStoreHandler CellOrder store

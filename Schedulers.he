@@ -73,13 +73,13 @@ let withSuspending {I V: Type} (module T: KeyOrder) {`a: StoreEff I T.this V} (r
         log ("Building " ++ T.toString key ++ " with suspending\n");
         build key
 
-let withRestarting {I V: Type} (module T: KeyOrder) {`a: StoreEff (Pair I (List T.this)) T.this V} (tasks: Tasks T.this V) (key: T.this) =
+let withRestarting {IR V: Type} (module T: KeyOrder) {`a: StoreEff (Pair IR (List T.this)) T.this V} (rebuilder: Rebuilder IR T.this V) (tasks: Tasks T.this V) (key: T.this) =
     let type ST = Set T in
     let handle with indentLogHandler in
     let oldChain = snd (getInfo ()) in
     let newChain = oldChain @ (if member T key oldChain then [] else [key]) in
+    let embedHandler = embedState (fst <.> getInfo `a) (modifyInfo `a <.> setFst) in
     let handle `q with evalState newChain in
-    (* let handle `q with runState [C "A1", C "A2", C3, B1, B2] in *)
     let handle `s with evalState ST.empty in
         let rec neq dep x = match T.compare x dep with
                               | EQ => False
@@ -92,8 +92,7 @@ let withRestarting {I V: Type} (module T: KeyOrder) {`a: StoreEff (Pair I (List 
                           end
         and restartingHandler =
             handler
-            (* TODO: Rebuilder *)
-            | fetch k => (* logln ("Fetching: " ++ T.toString k ++ "\n"); *)
+            | fetch k => logln ("Fetching: " ++ T.toString k ++ "\n");
                          if (ST.mem k (get `s ())) then
                             resume (getValue k)
                          else match get `q () with
@@ -103,29 +102,26 @@ let withRestarting {I V: Type} (module T: KeyOrder) {`a: StoreEff (Pair I (List 
             | return x => match get `q () with
                           | [] => runtimeError "return from empty work queue\n"
                           | (curr::rest) => logln ("Finished " ++ T.toString curr ++ "\n");
-                                            put `s (ST.add curr (get `s ()));
+                                            modifyState `s (ST.add curr);
+                                            put `q rest;
                                             putValue curr x;
-                                            loop ()
+                                            curr :: loop ()
                           end
             end
         and loop () =
             match get `q () with
             | [] => []
-            | (key::keys) => match (tasks key, ST.mem key (get `s ())) with
-                             | (Some (Task task), False) =>
-                               log ("computing " ++ T.toString key ++ "\n");
-                               let result = handle task () with restartingHandler in
-                               result
-                             | (None, _) =>
-                                            log ("input " ++ T.toString key ++ "\n");
-                                            put `s (ST.add key (get `s ()));
-                                            put `q keys;
-                                            key :: loop ()
-                             | (Some _, True) =>
-                                                 log ("computed " ++ T.toString key ++ "\n");
-                                                 put `q keys;
-                                                 key :: loop ()
-                             end
+            | (key::keys) =>
+              match tasks key with
+              | Some task => let value = getValue key in
+                               let (Task newTask) = handle rebuilder key value task
+                                                    with embedHandler in
+                               handle newTask () with restartingHandler
+              | None => log ("input " ++ T.toString key ++ "\n");
+                        modifyState `s (ST.add key);
+                        put `q keys;
+                        key :: loop ()
+              end
             end
         in
         log ("Building " ++ T.toString key ++ " with restarting\n");
