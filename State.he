@@ -28,3 +28,9 @@ let execState init =
     | return _ => fn s => s
     | finally f => f init
     end
+
+let embedState {E: Effect} {V: Type} (getter: Unit ->[E] V) (setter: V ->[E] Unit) =
+    handler
+    | get () => resume (getter ())
+    | put  s => setter s; resume ()
+    end

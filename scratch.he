@@ -1,6 +1,7 @@
 import Common
 import Store
 import Schedulers
+import Rebuilders
 import Spreadsheet
 
 import String
@@ -9,6 +10,7 @@ import List
 open Common
 open Store
 open Schedulers
+open Rebuilders
 open Spreadsheet
 
 let printInt' x = printStr (stringOfInt x)
@@ -67,29 +69,42 @@ let compute (Task task) =
     | fetch k => getValue k
     end
 
+let dumpStoreContents {I K: Type} {`s: StoreEff I K Int} (keys: List K) =
+    printIntList (List.map (getValue `s) keys); printStr "\n"
 
-
-let dumpStoreContents (module T: KeyOrder) keys s =
+let dumpGivenStoreContents (module T: KeyOrder) keys s =
     ignore(handle `s in
-        printIntList (List.map (getValue `s) keys); printStr "\n"
+        dumpStoreContents keys
     with funStoreHandler T s)
 
-let _ =
-    let dump = dumpStoreContents CellOrder [B1, B2, C3] in
-    let s = FunStore ((), []) initState in
-    dump s;
-    let (_, s') =
-        handle
-            (* withBusy CellOrder sprsh1 B2 *)
-            withSuspending CellOrder sprsh1 B2
-            (* withRestarting CellOrder sprsh1 B2 *)
-        with funStoreHandler CellOrder s in
-    dump s';
-    let (_, s'') =
-        handle
-            (* withBusy CellOrder sprsh1 B2 *)
-            withSuspending CellOrder sprsh1 B2
-            (* withRestarting CellOrder sprsh1 B2 *)
-        with funStoreHandler CellOrder s' in
-    dump s''
+(* let _ = *)
+(*     let dump = dumpStoreContents CellOrder [B1, B2, C3] in *)
+(*     let s = FunStore ((), []) initState in *)
+(*     dump s; *)
+(*     let (_, s') = *)
+(*         handle *)
+(*             (\* withBusy CellOrder sprsh1 B2 *\) *)
+(*             withSuspending CellOrder dirtyBitRebuilder sprsh1 B2 *)
+(*             (\* withRestarting CellOrder sprsh1 B2 *\) *)
+(*         with funStoreHandler CellOrder s in *)
+(*     dump s'; *)
+(*     let (_, s'') = *)
+(*         handle *)
+(*             (\* withBusy CellOrder sprsh1 B2 *\) *)
+(*             withSuspending CellOrder dirtyBitRebuilder sprsh1 B2 *)
+(*             (\* withRestarting CellOrder sprsh1 B2 *\) *)
+(*         with funStoreHandler CellOrder s' in *)
+(*     dump s'' *)
 
+let _ =
+    let allDirtyInfo = (fn _ => True) in
+    let allCleanInfo = (fn _ => False) in
+    let store = FunStore allDirtyInfo initState in
+    handle
+        dumpStoreContents [B1, B2, C3];
+        withSuspending CellOrder dirtyBitRebuilder sprsh1 B2;
+        dumpStoreContents [B1, B2, C3];
+        putInfo allCleanInfo;
+        withSuspending CellOrder dirtyBitRebuilder sprsh1 B2;
+        dumpStoreContents [B1, B2, C3]
+    with funStoreHandler CellOrder store

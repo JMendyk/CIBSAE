@@ -1,6 +1,7 @@
 import Common
 import State
 import Store
+import Rebuilders
 import Utils
 import Logger
 import Set
@@ -8,6 +9,7 @@ import Set
 open Common
 open State
 open Store
+open Rebuilders
 open Utils
 open Logger
 open Set
@@ -33,7 +35,16 @@ let withBusy {I V: Type} (module T: KeyOrder) {`a: StoreEff I T.this V} (tasks: 
     logln ("Building " ++ T.toString key ++ " with busy\n");
     build key
 
-let withSuspending {I V: Type} (module T: KeyOrder) {`a: StoreEff I T.this V} (tasks: Tasks T.this V) (key: T.this) =
+(* Tłumaczenie efektów stanowych na efekty związane z informacją w Store *)
+let infoAsState {I K V: Type} {`s: StoreEff I K V} = embedState (getInfo `s) (putInfo `s)
+(* alternatywnie: *)
+(* let infoAsState = *)
+(*     handler *)
+(*     | get () => resume (getInfo ()) *)
+(*     | put x => putInfo x; resume () *)
+(*     end *)
+
+let withSuspending {I V: Type} (module T: KeyOrder) {`a: StoreEff I T.this V} (rebuilder: Rebuilder I T.this V) (tasks: Tasks T.this V) (key: T.this) =
     let type ST = Set T in
     open T in
     let handle with indentLogHandler in
@@ -47,11 +58,11 @@ let withSuspending {I V: Type} (module T: KeyOrder) {`a: StoreEff I T.this V} (t
             logln (T.toString key ++ " ");
             let done = get () in
             match (tasks key, ST.mem key done) with
-            | (Some (Task task), False) =>
+            | (Some task, False) =>
                log "computing...\n";
                let value = getValue key in
-               (* TODO: Rebuilder *)
-               let newValue = handle task () with suspendingHandler
+               let (Task newTask) = handle rebuilder key value task with infoAsState in
+               let newValue = handle newTask () with suspendingHandler
                in put (ST.add key done);
                   putValue key newValue
              | (None, _) => log "(i)\n"
