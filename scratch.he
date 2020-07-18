@@ -48,9 +48,6 @@ let initState = fn key => match key with
                           | _ => 20
                           end
 
-(* Chyba brak struktury podobnej do Applicative/statycznych zależności.
-   Możemy jednak śledzić/track obliczane taski potomne początkowego: *)
-
 (* Oblicz zadanie bez modyfikowania stanu (Carte 3.6) *)
 let compute (Task task) =
     handle task () with
@@ -65,36 +62,16 @@ let dumpGivenStoreContents (module T: KeyOrder) keys s =
         dumpStoreContents keys
     with funStoreHandler T s)
 
-(* let _ = *)
-(*     let dump = dumpStoreContents CellOrder [B1, B2, C3] in *)
-(*     let s = FunStore ((), []) initState in *)
-(*     dump s; *)
-(*     let (_, s') = *)
-(*         handle *)
-(*             (\* withBusy CellOrder sprsh1 B2 *\) *)
-(*             withSuspending CellOrder dirtyBitRebuilder sprsh1 B2 *)
-(*             (\* withRestarting CellOrder sprsh1 B2 *\) *)
-(*         with funStoreHandler CellOrder s in *)
-(*     dump s'; *)
-(*     let (_, s'') = *)
-(*         handle *)
-(*             (\* withBusy CellOrder sprsh1 B2 *\) *)
-(*             withSuspending CellOrder dirtyBitRebuilder sprsh1 B2 *)
-(*             (\* withRestarting CellOrder sprsh1 B2 *\) *)
-(*         with funStoreHandler CellOrder s' in *)
-(*     dump s'' *)
+let allDirtyInfo = (fn _ => True)
+let allCleanInfo = (fn _ => False)
+let allCleanButA1 x = match x with
+                      | (C c) => String.equal c "A1" || allCleanInfo (C c)
+                      | B1 => True | B2 => True | C3 => True
+                      | x => allCleanInfo x
+                      end
+let dumpKeys = [C "A1", C "A2", B1, B2, C3]
 
-
-
-let _ =
-    let allDirtyInfo = (fn _ => True) in
-    let allCleanInfo = (fn _ => False) in
-    let allCleanButA1 x = match x with
-                          | (C c) => String.equal c "A1" || allCleanInfo (C c)
-                          | B1 => True | B2 => True | C3 => True
-                          | x => allCleanInfo x
-                          end in
-    let dumpKeys = [C "A1", C "A2", B1, B2, C3] in
+let _ =    
     let store = FunStore allDirtyInfo initState in
     handle
         dumpStoreContents dumpKeys;
@@ -113,14 +90,6 @@ let excel {`a: StoreEff (Pair (SpreadsheetCell -> Bool)
                         Int} = withRestarting CellOrder dirtyBitRebuilder
 
 let _ =
-    let allDirtyInfo = (fn _ => True) in
-    let allCleanInfo = (fn _ => False) in
-    let allCleanButA1 x = match x with
-                          | (C c) => String.equal c "A1" || allCleanInfo (C c)
-                          | B1 => True | B2 => True | C3 => True
-                          | x => allCleanInfo x
-                          end in
-    let dumpKeys = [C "A1", C "A2", B1, B2, C3] in
     let store = FunStore (allDirtyInfo, []) initState in
     handle
         dumpStoreContents dumpKeys;
