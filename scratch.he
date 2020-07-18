@@ -3,6 +3,7 @@ import Store
 import Schedulers
 import Rebuilders
 import Spreadsheet
+import Utils
 
 import String
 import List
@@ -12,18 +13,7 @@ open Store
 open Schedulers
 open Rebuilders
 open Spreadsheet
-
-let printInt' x = printStr (stringOfInt x)
-let printIntList xs =
-    let rec printWithSep xs sep = match xs with
-                              | [] => ()
-                              | [x] => printInt' x
-                              | (x::xs) => printInt' x; printStr ", "; printWithSep xs sep
-                              end
-    in
-    printStr "[";
-    printWithSep xs ",";
-    printStr "]"
+open Utils
 
 (* Chcielibyśmy mieć coś takiego: *)
 
@@ -38,8 +28,6 @@ let printIntList xs =
 (*         handle buildB task *)
 (*         with scheduler *)
 (*     with rebuilder *)
-
-let ( $ ) f x = f x
 
 (* Zmodyfikowany przykład z Carte: *)
 
