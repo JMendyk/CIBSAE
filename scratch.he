@@ -101,26 +101,46 @@ let dumpGivenStoreContents (module T: KeyOrder) keys s =
 let _ =
     let allDirtyInfo = (fn _ => True) in
     let allCleanInfo = (fn _ => False) in
+    let allCleanButA1 x = match x with
+                          | (C c) => String.equal c "A1" || allCleanInfo (C c)
+                          | B1 => True | B2 => True | C3 => True
+                          | x => allCleanInfo x
+                          end in
+    let dumpKeys = [C "A1", C "A2", B1, B2, C3] in
     let store = FunStore allDirtyInfo initState in
     handle
-        dumpStoreContents [B1, B2, C3];
+        dumpStoreContents dumpKeys;
         withSuspending CellOrder dirtyBitRebuilder sprsh1 B2;
-        dumpStoreContents [B1, B2, C3];
-        putInfo allCleanInfo;
+        dumpStoreContents dumpKeys;
+        (* Key A1 was modified, dirty bit updated appropriately *)
+        putValue (C "A1") 20;
+        modifyInfo (fn _ => allCleanButA1);
         withSuspending CellOrder dirtyBitRebuilder sprsh1 B2;
-        dumpStoreContents [B1, B2, C3]
+        dumpStoreContents dumpKeys
     with funStoreHandler CellOrder store
+
+let excel {`a: StoreEff (Pair (SpreadsheetCell -> Bool)
+                              (List SpreadsheetCell))
+                        SpreadsheetCell
+                        Int} = withRestarting CellOrder dirtyBitRebuilder
 
 let _ =
     let allDirtyInfo = (fn _ => True) in
     let allCleanInfo = (fn _ => False) in
+    let allCleanButA1 x = match x with
+                          | (C c) => String.equal c "A1" || allCleanInfo (C c)
+                          | B1 => True | B2 => True | C3 => True
+                          | x => allCleanInfo x
+                          end in
+    let dumpKeys = [C "A1", C "A2", B1, B2, C3] in
     let store = FunStore (allDirtyInfo, []) initState in
     handle
-        dumpStoreContents [B1, B2, C3];
-        withRestarting CellOrder dirtyBitRebuilder sprsh1 B2;
-        dumpStoreContents [B1, B2, C3];
-        (* printCellList (snd (getInfo ())); *)
-        modifyInfo (fn (_, r) => (allCleanInfo, r));
-        withRestarting CellOrder dirtyBitRebuilder sprsh1 B2;
-        dumpStoreContents [B1, B2, C3]
+        dumpStoreContents dumpKeys;
+        excel sprsh1 B2;
+        dumpStoreContents dumpKeys;
+        (* Key A1 was modified, dirty bit updated appropriately *)
+        putValue (C "A1") 20;
+        modifyInfo (fn (_, r) => (allCleanButA1, r));
+        excel sprsh1 B2;
+        dumpStoreContents dumpKeys
     with funStoreHandler CellOrder store
