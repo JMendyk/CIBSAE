@@ -1,0 +1,98 @@
+% Opcje klasy 'iithesis' opisane sa w komentarzach w pliku klasy. Za ich pomoca
+% ustawia sie przede wszystkim jezyk i rodzaj (lic/inz/mgr) pracy, oraz czy na
+% drugiej stronie pracy ma byc skladany wzor oswiadczenia o autorskim wykonaniu.
+\documentclass[shortabstract]{iithesis}
+
+\usepackage[utf8]{inputenc}
+
+%%%%% DANE DO STRONY TYTUŁOWEJ
+% Niezaleznie od jezyka pracy wybranego w opcjach klasy, tytul i streszczenie
+% pracy nalezy podac zarowno w jezyku polskim, jak i angielskim.
+% Pamietaj o madrym (zgodnym z logicznym rozbiorem zdania oraz estetyka) recznym
+% zlamaniu wierszy w temacie pracy, zwlaszcza tego w jezyku pracy. Uzyj do tego
+% polecenia \fmlinebreak.
+\polishtitle    {Kwalifikacja i implementacja\fmlinebreak systemów kompilacji z użyciem\fmlinebreak efektów algebraicznych}
+\englishtitle   {Categorization and implementation of Build Systems using algebraic effects}
+\polishabstract {\ldots}
+\englishabstract{\ldots}
+% w pracach wielu autorow nazwiska mozna oddzielic poleceniem \and
+\author         {Jakub Mendyk}
+% w przypadku kilku promotorow, lub koniecznosci podania ich afiliacji, linie
+% w ponizszym poleceniu mozna zlamac poleceniem \fmlinebreak
+\advisor        {dr Filip Sieczkowski}
+\date          {4 września 2020}                     % Data zlozenia pracy
+% Dane do oswiadczenia o autorskim wykonaniu
+\transcriptnum {301111}                     % Numer indeksu
+\advisorgen    {dr. Filipa Sieczkowskiego} % Nazwisko promotora w dopelniaczu
+%%%%%
+
+%%%%% WLASNE DODATKOWE PAKIETY
+%
+%\usepackage{graphicx,listings,amsmath,amssymb,amsthm,amsfonts,tikz}
+\usepackage{cite}
+%
+%%%%% WŁASNE DEFINICJE I POLECENIA
+%
+%\theoremstyle{definition} \newtheorem{definition}{Definition}[chapter]
+%\theoremstyle{remark} \newtheorem{remark}[definition]{Observation}
+%\theoremstyle{plain} \newtheorem{theorem}[definition]{Theorem}
+%\theoremstyle{plain} \newtheorem{lemma}[definition]{Lemma}
+%\renewcommand \qedsymbol {\ensuremath{\square}}
+% ...
+%%%%%
+
+\begin{document}
+
+%%%%% POCZĄTEK ZASADNICZEGO TEKSTU PRACY
+
+\chapter{Wprowadzenie}
+
+\section{Problemy z efektami ubocznymi}
+
+Programy komputerowe, dzięki możliwości interakcji z zewnętrznymi zasobami -- takimi jak nośniki pamięci, sieci komputerowe czy użytkownicy oprogramowania -- mogą robić istotnie więcej niż tylko zadane wcześniej obliczenia. W ten sposób przebieg programu i jego końcowy wynik staje się jednak zależny od tegoż świata zewnętrznego, a sam program nie tylko serią czystych obliczeń ale także towarzyszących im efektów ubocznych.
+
+Efekty uboczne powodują jednak, że rozumowanie i wnioskowanie o sposobie oraz prawidłowości działania programów staje się znacznie trudniejsze, a w konsekwencji ogranicza ich modularność i prowadzi do częstszych pomyłek ze strony autorów. Chcąc tego uniknąć, dąży się do wydzielania w programie jak największej części, która składa się z czystych obliczeń. Jednak to, czy jakiś moduł oprogramowania wykonuje obliczenia z efektami ubocznymi nie koniecznie jest jasne i często musimy zaufać autorowi, że w istocie tak jest.
+
+\section{Radzenie sobie z efektami ubocznymi}
+
+Jednym z rozwiązań tego problemu, jest zawarcie informacji o posiadaniu efektów ubocznych w systemie typów. Możemy wykorzystać wtedy dedukcji i weryfikacji typów do automatycznej identyfikacji modułów zawierających efekty uboczne. Programista może łatwo wyczytać z sygnatury funkcji, że w czasiej jej działania występują efekty uboczne. Znanym przykładem takiego rozwiązania jest wykorzystanie monad w języku programowania Haskell. Niestety, jednoczesne użytkowanie dwóch niezależnych zasób reprezentowanych przez różne monady nie jest możliwe i wymaga dodatkowych struktur, takich jak transformery monad, które niosą ze sobą dodatkowe problemy. Problem modularności został jedynie przesunięty w inny obszar.
+
+Nowym, konkurencyjnym podejściem do ujarzmienia efektów ubocznych przez wykorzystanie systemu typów są efekty algebraiczne z uchwytami. Powierzchownie, zdają się być podobne do konstrukcji obsługi wyjątków w językach programowania lub wywołań systemowych w systemach operacyjnych. Dzięki rozdziałowi między definicjami operacji związanych z efektami ubocznymi, a ich sematyką oraz interesującemu zastosowaniu kontynuacji, dają łatwość myślenia i wnioskowania o programach ich używających. Ponadto, w przeciwieństwie do monad, można je bezproblemowo składać.
+
+\section{Systemy kompilacji}
+
+Przykładami programów, których głównym zadaniem jest interakcja z zewnętrznymi zasobami są systemy kompilacji, w których użytkownik opisuje proces wytwarzania wyniku jako zbiór wzajemnie-zależnych zadań, wraz z informacją jak zadania są wykonywane w oparciu o wyniki innych podzadań, a system jest odpowiedzialny za poprawne uporządkowanie i wykonanie otrzymanych zadań. W czasie działania, system agreguje wyniki obliczeń (np. na dysku lub w pamięci) i decyduje, która zadania powinny być obliczone ponownie -- np. system Make lub popularne narzędzie biurowe Excel.
+
+W publikacjach pod tytułem ,,Build systems {\`a} la carte'' \cite{mokhov2018build} \cite{mokhov2020build}, autorzy przedstawiają sposób klasyfikacji systemów kompilacji w oparciu o to jak determinują one kolejność w jakiej zadania zostaną obliczone oraz jak wyznaczają, które z zadań wymagają ponownego obliczenia. Uzyskana klasyfikacja prowadzi autorów do skonstruowania platformy umożliwającej konstrukcję systemów kompilacji o oczekiwanych właściwościach. Platforma ta okazuje się być łatwa w implementacji w języku Haskell, a klasy typów Applicative oraz Functor odpowiadać mocy języka opisywnia zależności między zadaniami do obliczenia.
+
+\section{O tej pracy}
+
+Celem tej pracy jest zapoznanie czytelnika, który miał dotychczas kontakt z językiem Haskell oraz podstawami języków funkcyjny, z nowatorskim rozwiązaniem jakim są efekty algebraiczne oraz zademonstrowanie -- idąc śladami Makhov i innych \cite{mokhov2018build} -- implementacji systemów kompilacji z wykorzystaniem efektów algebraicznych i uchwytów w języku programowania Helium. Jak się okazuje, wykorzystanie tych narzędzi daje schludną implementację ale także prowadzi do problemów w implementacji systemów z topologicznym planistą.
+
+
+
+
+
+\chapter{O efektach teoretycznie}
+
+\chapter{O systemach kompilacji (i ich klasyfikacji)}
+
+\chapter{Efekty algebraiczne i uchwyty w praktyce}
+
+\chapter{Systemy kompilacji z użyciem efektów algebraicznych i uchwytów}
+
+\chapter{Podsumowanie i wnioski}
+
+\ldots
+
+%%%%% BIBLIOGRAFIA
+
+\nocite{biernacki2017handle}
+\nocite{biernacki2019abstracting}
+\nocite{biernacki2019binders}
+\nocite{pretnar2015introduction}
+
+\bibliographystyle{abbrv}
+\bibliography{bibliography}
+
+\end{document}
