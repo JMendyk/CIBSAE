@@ -30,6 +30,9 @@
 %
 %\usepackage{graphicx,listings,amsmath,amssymb,amsthm,amsfonts,tikz}
 \usepackage{cite}
+\usepackage{amsmath, amsfonts}
+\usepackage{stmaryrd} % double brackets
+\usepackage{listings}
 %
 %%%%% WŁASNE DEFINICJE I POLECENIA
 %
@@ -73,13 +76,125 @@ Celem tej pracy jest zapoznanie czytelnika, który miał dotychczas kontakt z j�
 
 
 
-\chapter{O efektach teoretycznie}
+\chapter{O efektach algebraicznych teoretycznie}
+
+Wprowadzimy notację służącą opisowi prostych obliczeń, która pomoże i doprowadzi nas do zrozumienia czym są efekty algebraiczne i uchwyty. Następnie przyjrzymy się, jak możemy zapisać popularne przykłady efektów ubocznych używając naszej notacji. Na koniec, czytelnikowi zostaną polecone dobre zasoby, dzięki którym będzie mógł jeszcze bardziej zagłębić się w teorii efektów algebraicznych oraz ścieżce prowadzącej do skonstruowania stojącej za nimi teorii.
+
+\section{Notacja}
+
+\newcommand{\return}[1]{\mathbf{return}\ #1}
+\newcommand{\op}[3]{op_{#1}(#2, #3)}
+\newcommand{\handle}[2]{\mathbf{handle}\ #1\ \mathbf{with}\ #2}
+\newcommand{\hcase}[3]{#1\ #2\ \Rightarrow\ #3}
+\newcommand{\fun}[2]{\lambda #1.\ #2}
+\newcommand{\eval}[1]{\llbracket\, #1\, \rrbracket}
+\newcommand{\cond}[3]{\mathbf{if}\ #1\ \mathbf{then}\ #2\ \mathbf{else}\ #3}
+
+
+
+Będziemy rozważać obliczenia nad wartościami boolowskimi, liczbami całkowitymi wraz z ich równością oraz podstawowymi działaniami arytmetycznymi i funkcjami ich używającymi. Ponadto nasz model składać się będzie także z wyrażeń:
+\begin{itemize}
+\item \(\return{v}\) -- gdzie \(v\) jest wyrażeniem arytmetycznym,
+\item \(\cond{v_1 = v_2}{e_t}{e_f}\) -- wyrażenie warunkowe, gdzie \(v_1 = v_2\) jest pytaniem o równość wartości dwóch wyrażeń arytmetycznych,
+\item abstrakcyjnych operacji oznaczanych \(\{op_i\}_{i \in I}\) -- powodujących wystąpienie efektów ubocznych -- których działanie nie jest nam znane, zaś ich sygnatury to \(op_i: \mathbb{Z} \rightarrow (\mathbb{Z} \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\). Wyrażenie~\(\op{i}{n}{\kappa}\) opisuje operację z argumentami \(n\) oraz dalszą częścią obliczenia \(\kappa\) parametryzowaną wynikiem operacji, które \textit{może (nie musi)} zostać wykonane po jej wystąpieniu,
+\item uchwytów, czyli wyrażeń postaci \(\handle{e}{\{\ \hcase{op_i}{n\ \kappa}{h_i}\ \}_{i \in I}}\) które definiują działanie (dotychczas abstrakcyjnych) efektów ubocznych. 
+
+\end{itemize}
+
+Przykładowymi obliczeniami w naszej notacji są więc:
+\begin{equation*}
+\begin{gathered}
+  \return{0},\ \return{2 + 2},\ \op{1}{2}{\fun{x}{\return{x + 1}}} \\
+  \handle{\op{1}{2}{\fun{x}{\return{x + 1}}}}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}}
+\end{gathered}
+\end{equation*}
+
+Dla czytelności, pisząc w uchwycie zbiór który nie przebiega wszystkich operacji, przyjmujemy że uchwyt nie definiuje działania operacji; równoważnie, zbiór wzbogacamy o element: \(\hcase{op_i}{n\ \kappa}{op_i(n, \kappa)}\).
+
+Obliczanie wartości wyrażenia przebiega następująco:
+\begin{itemize}
+\item \(\eval{\return v} = v\) -- wartością \(\mathbf{return}\) jest wartość wyrażenia arytmetycznego,
+\item \(\eval{(\fun{x}{e})\ y} = \eval{e \left[x / \eval{y}\right]}\) -- aplikacja argumentu do funkcji,
+\item
+  \(\begin{aligned}[t]
+    \eval{\cond{v_1 = v_2}{e_t}{e_f}} = \left\{\begin{matrix}
+    \eval{e_t} & \text{gdy }\eval{v_1} = \eval{v_2} \\ 
+    \eval{e_f} & \text{wpp}
+    \end{matrix}\right.
+  \end{aligned}\)
+%% \item \(\eval{\op{i}{a}{f}} = \op{i}{a}{f}\) -- obliczenie z efektem ubocznym nie może poczynić postępu póki nie ma określonego działania,
+\item \(\eval{\handle{\return v}{H}} = \eval{\return v}\) -- uchwyt nie wpływa na wartość obliczenia, które nie zawiera efektów ubocznych,
+\item \(\eval{\handle{\op{i}{a}{f}}{\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}}} =
+  \eval{\handle{h_i \left[n / \eval{a},\, \kappa / f\right]}{\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}}} \), przy czym \(h_i\) nie ma wystąpień \(op_i\).
+  
+\end{itemize}
+
+Zobaczmy jak zatem wygląda obliczenie ostatniego z powyższych przykładów:
+\begin{align*}
+  \eval{\handle{\op{1}{2}{\fun{x}{\return{x + 1}}}}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}}} &= \\
+  \eval{\handle{(\fun{x}{\return{x+1}}) (2 \cdot 2)}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}}} &= \\
+  \eval{\handle{\return{4+1}}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}}} &= \\
+  \eval{\return{4 + 1}} &= 5
+\end{align*}
+
+
+\section{Efekty i równania}
+
+Do tego momentu, nie przyjmowaliśmy żadnych założeń na temat operacji powodujących efekty uboczne. Uchwyty mogły w związku z tym działać w sposób całkowicie dowolny. Ograniczymy się w tej dowolności i nałożymy warunki na uchwyty wybranych operacji. Przykładowo, ustalmy że dla operacji \(op_r\), uchwyty muszą być takie aby następujący warunek był spełniony:
+\begin{align*}
+  \forall n\ \forall e.\ \eval{\handle{op_r(n, \fun{x}{e})}{H}} = n
+\end{align*}
+
+\pagebreak
+
+Zauważmy, że istnieje tylko jeden naturalny uchwyt spełniający tej warunek, jest nim \(H = \{\ \hcase{op_r}{n\ \kappa}{n} \ \}\). Co więcej, jego działanie łudząco przypomina konstrukcję wyjątków w popularnych językach programowania:
+
+\begin{lstlisting}
+  try {
+    raise 5;
+    // ...
+  } catch (int n) {
+    return n;
+  }
+\end{lstlisting}
+
+Podobieństwo to jest w pełni zamierzone. Okazuje się że nasz mały język z jednym równaniem ma już moc wystarczającą do opisu konstrukcji, która w większości języków nie może zaistnieć z woli programisty, a zamiast tego musi być dostarczona przez twórcę języka.
+
+Rozważmy kolejny przykład. Dla poprawienia czytelności, operacje powodujące efekty będą miały nazwy \(get\) oraz \(put\). Spróbujemy wyrazić działanie tych dwóch operacji by otrzymać modyfikowalną komórkę pamięci. Ustalmy też bardziej naturalny sygnatury operacji -- \(get: U \rightarrow \mathbb{Z}\), \(put: \mathbb{Z} \rightarrow U\). Gdzie \(U\) jest nowym typem -- jednostką -- zamieszkałym przez pojedyńczą wartość \(u\). Zastanówmy się jakie warunki takie operacje powinny spełniać:
+
+\begin{itemize}
+\item \(\forall e.\ \eval{get(u, \fun{\_}{get(u, \fun{x}{e})})} = \eval{get(u, \fun{x}{e}}\)
+
+  kolejne odczyty z komórki bez jej modyfikowania dają takie same wyniki,
+\item \(\forall e.\ \eval{get(u, \fun{n}{put(n, \fun{u}{e})})} = \eval{e}\)
+
+  umieszczenie w komórce wartości która już tam się znajduje nie wpływa na wynik obliczenia,
+\item \(\forall n.\ \forall f.\ \eval{put(n, \fun{u}{get(u, \fun{x}{f\ x})})} = \eval{f\ n}\)
+
+  obliczenie które odczytuje wartość z komórki daje taki sam wyniki, jak gdyby miało wartość komórki podaną wprost jako argument,
+\item \(\forall n_1.\ \forall n_2.\ \forall e.\ \eval{put(n_1, \fun{u}{put(n_2, \fun{u}{e})})} = \eval{put(n_2, \fun{u}{e})}\)
+
+  komórka pamięta jedynie najnowszą włożoną do niej wartość.
+\end{itemize}
+
+Zauważmy, że choć nakładamy warunki na zewnętrzne skutki działania operacji \(get\) oraz \(put\), to w żaden sposób nie ograniczyliśmy swobody autora w implementacji uchwytów dla tych operacji.
+
+%% \begin{align*}
+%%   \forall e.\ \eval{get(u, \fun{\_}{get(u, \fun{x}{e})})} &= \eval{get(u, \fun{x}{e}} \\
+%%   \forall e.\ \eval{get(u, \fun{n}{put(n, \fun{u}{e})})} &= \eval{e} \\
+%%   \forall n.\ \forall f.\ \eval{put(n, \fun{u}{get(u, \fun{x}{f\ x})})} &= \eval{f\ n} \\
+%%   \forall n_1.\ \forall n_2.\ \forall e.\ \eval{put(n_1, \fun{u}{put(n_2, \fun{u}{e})})} &= \eval{put(n_2, \fun{u}{e})}
+%% \end{align*}
+
+%% Pierwsze równanie wymusza, by kolejne odczyty z komórki bez jej modyfikowania dawały takie same wyniki, zaś drugie że umieszczenie w komórce wartości która już tam się znajduje nie wpływa na wynik obliczenia. Trzecie równanie daje gwarancję, że obliczenie które odczytuje wartość z komórki daje taki sam wyniki, jak gdyby miało wartość komórki podaną wprost jako argument. Czwarte równanie wymusza, by komórka pamiętała jedynie najnowszą włożoną do niej wartość.
+
+\cite{bauer2018algebraic}
 
 \chapter{O systemach kompilacji (i ich klasyfikacji)}
 
-\chapter{Efekty algebraiczne i uchwyty w praktyce}
+\chapter{Efekty algebraiczne i uchwyty w~praktyce}
 
-\chapter{Systemy kompilacji z użyciem efektów algebraicznych i uchwytów}
+\chapter{Systemy kompilacji z użyciem efektów algebraicznych i~uchwytów}
 
 \chapter{Podsumowanie i wnioski}
 
