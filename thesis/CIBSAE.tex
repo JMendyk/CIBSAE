@@ -58,9 +58,9 @@ Efekty uboczne powodują jednak, że rozumowanie i wnioskowanie o sposobie oraz 
 
 \section{Radzenie sobie z efektami ubocznymi}
 
-Jednym z rozwiązań tego problemu, jest zawarcie informacji o posiadaniu efektów ubocznych w systemie typów. Możemy skorzystać wtedy z inferencji i weryfikacji typów do automatycznej identyfikacji modułów zawierających efekty uboczne. Programista może łatwo wyczytać z sygnatury funkcji, że w czasiej jej działania występują efekty uboczne. Znanym przykładem takiego rozwiązania jest wykorzystanie monad w języku programowania Haskell. Niestety, jednoczesne użytkowanie dwóch niezależnych zasób reprezentowanych przez różne monady nie jest łatwe i wymaga dodatkowych struktur, takich jak transformery monad, które niosą ze sobą dodatkowe wyzwania. Problem modularności został jedynie przesunięty w inny obszar.
+Jednym z rozwiązań tego problemu, jest zawarcie informacji o posiadaniu efektów ubocznych w systemie typów. Możemy skorzystać wtedy z inferencji i weryfikacji typów do automatycznej identyfikacji modułów zawierających efekty uboczne. Programista może łatwo wyczytać z sygnatury funkcji, że w czasie jej działania występują efekty uboczne. Znanym przykładem takiego rozwiązania jest wykorzystanie monad w języku programowania Haskell. Niestety, jednoczesne użytkowanie dwóch niezależnych zasób reprezentowanych przez różne monady nie jest łatwe i wymaga dodatkowych struktur, takich jak transformery monad, które niosą ze sobą dodatkowe wyzwania. Problem modularności został jedynie przesunięty w inny obszar.
 
-Nowym, konkurencyjnym podejściem do ujarzmienia efektów ubocznych przez wykorzystanie systemu typów są efekty algebraiczne z uchwytami. Powierzchownie, zdają się być podobne do konstrukcji obsługi wyjątków w językach programowania lub wywołań systemowych w systemach operacyjnych. Dzięki rozdziałowi między definicjami operacji związanych z efektami ubocznymi, a ich sematyką oraz interesującemu zastosowaniu kontynuacji, dają łatwość myślenia i wnioskowania o programach ich używających. Ponadto, w przeciwieństwie do monad, można je bezproblemowo składać.
+Nowym, konkurencyjnym podejściem do ujarzmienia efektów ubocznych przez wykorzystanie systemu typów są efekty algebraiczne z uchwytami. Powierzchownie, zdają się być podobne do konstrukcji obsługi wyjątków w językach programowania lub wywołań systemowych w systemach operacyjnych. Dzięki rozdziałowi między definicjami operacji związanych z efektami ubocznymi, a ich semantyką oraz interesującemu zastosowaniu kontynuacji, dają łatwość myślenia i wnioskowania o programach ich używających. Ponadto, w przeciwieństwie do monad, można je bezproblemowo składać.
 
 \section{Systemy kompilacji}
 
@@ -68,7 +68,7 @@ Przykładem programów, których głównym zadaniem jest interakcja z zewnętrzn
 
 %% Finalnie, w czasie działania system agreguje wyniki obliczeń (np. na dysku lub w pamięci) i decyduje, która zadania powinny być obliczone ponownie -- np. system Make lub popularne narzędzie biurowe Excel.
 
-W publikacjach pod tytułem ,,Build systems {\`a} la carte'' \cite{mokhov2018build, mokhov2020build}, autorzy przedstawiają sposób klasyfikacji systemów kompilacji w oparciu o to jak determinują one kolejność w jakiej zadania zostaną obliczone oraz jak wyznaczają, które z zadań wymagają ponownego obliczenia. Uzyskana klasyfikacja prowadzi autorów do skonstruowania platformy umożliwającej definiowanie systemów kompilacji o oczekiwanych właściwościach. Platforma ta okazuje się być łatwa w implementacji w języku Haskell, a klasy typów Applicative oraz Monad odpowiadać mocy języka opisywnia zależności między zadaniami do obliczenia.
+W publikacjach pod tytułem ,,Build systems {\`a} la carte'' \cite{mokhov2018build, mokhov2020build}, autorzy przedstawiają sposób klasyfikacji systemów kompilacji w oparciu o to jak determinują one kolejność w jakiej zadania zostaną obliczone oraz jak wyznaczają, które z zadań wymagają ponownego obliczenia. Uzyskana klasyfikacja prowadzi autorów do skonstruowania platformy umożliwiającej definiowanie systemów kompilacji o oczekiwanych właściwościach. Platforma ta okazuje się być łatwa w implementacji w języku Haskell, a klasy typów Applicative oraz Monad odpowiadać mocy języka opisywania zależności między zadaniami do obliczenia.
 
 \section{O tej pracy}
 
@@ -97,7 +97,7 @@ Będziemy rozważać obliczenia nad wartościami następujących trzech typów:
 \begin{itemize}
 \item boolowskim \(B\) -- z wartościami \(T\) i \(F\) oraz standardowymi spójnikami logicznymi,
 \item liczb całkowitych \(\mathbb{Z}\) -- wraz z ich relacją równości oraz podstawowymi działaniami arytmetycznymi,
-\item typem jednostkowym \(U\) -- zamieszkałym przez pojedyńczą wartość \(u\),
+\item typem jednostkowym \(U\) -- zamieszkałym przez pojedynczą wartość \(u\),
 \item oraz pary tychże typów.
 \end{itemize}
 
@@ -195,7 +195,7 @@ Zauważmy, że choć nakładamy warunki na zewnętrzne skutki działania operacj
 
 \section{Poszukiwanie sukcesu}
 
-Kolejmym rodzajem efektu ubocznego, który rozważymy w tym rozdziale jest niedeterminizm. Chcielibyśmy wyrażać obliczenia, w których pewne parametry mogą przyjmować wiele wartości i chcemy określić dobór wartości spełniający jakiś określony warunek. Przykładowo, mamy trzy zmienne \(x,\, y\) oraz \(z\) i chcemy napisać program sprawdzający czy formuła \(\phi(x, y, z)\) jest spełnialna. W tym celu zdefiniujemy operację \(amb: U \rightarrow \mathit{Bool}\) związanem z efektem niedeterminizmu. Napiszmy obliczenie rozwiązaujące nasz problem:
+Kolejnym rodzajem efektu ubocznego, który rozważymy w tym rozdziale jest niedeterminizm. Chcielibyśmy wyrażać obliczenia, w których pewne parametry mogą przyjmować wiele wartości i chcemy określić dobór wartości spełniający jakiś określony warunek. Przykładowo, mamy trzy zmienne \(x,\, y\) oraz \(z\) i chcemy napisać program sprawdzający czy formuła \(\phi(x, y, z)\) jest spełnialna. W tym celu zdefiniujemy operację \(amb: U \rightarrow \mathit{Bool}\) związaną z efektem niedeterminizmu. Napiszmy obliczenie rozwiązujące nasz problem:
 \begin{equation}\begin{split}
   \handle{
     &\op{amb}{u}{\fun{x}{
@@ -223,7 +223,7 @@ Możemy zauważyć, że gdybyśmy chcieli zamiast sprawdzania spełnialności, w
   }{ \{ \ &\hcase{amb}{u\ \kappa}{ \kappa\ (T) \ \mathbf{and} \ \kappa\ (F) } \ \} }
 \end{split}\end{equation}
 
-Zabierając operacjom powodującym efekty uboczne ich konkretne znaczenia sematyczne, lub nakładając na nie jedynie proste warunki wyrażone równaniami, otrzymaliśmy niezwykle silne narzędzie umożliwiające proste, deklaratywne oraz -- co najważniejsze, w kontraście do popularnych jezyków programowania -- samodzielne konstruowanie zaawansowanych efektów ubocznych.
+Zabierając operacjom powodującym efekty uboczne ich konkretne znaczenia semantyczne, lub nakładając na nie jedynie proste warunki wyrażone równaniami, otrzymaliśmy niezwykle silne narzędzie umożliwiające proste, deklaratywne oraz -- co najważniejsze, w kontraście do popularnych języków programowania -- samodzielne konstruowanie zaawansowanych efektów ubocznych.
 
 \section{Dalsza lektura}
 
