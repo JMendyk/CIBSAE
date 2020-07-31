@@ -1,0 +1,27 @@
+\chapter{Wprowadzenie}
+
+\section{Problemy z efektami ubocznymi}
+
+Programy komputerowe, dzięki możliwości interakcji z zewnętrznymi zasobami takimi jak nośniki pamięci, sieci komputerowe czy użytkownicy oprogramowania mogą robić istotnie więcej niż tylko zadane wcześniej obliczenia. W ten sposób przebieg programu i jego wynik staje się jednak zależny od tegoż świata zewnętrznego, a sam program nie jest tylko serią czystych obliczeń ale także towarzyszących im efektów ubocznych.
+
+Efekty uboczne powodują jednak, że rozumowanie i wnioskowanie o sposobie oraz prawidłowości działania programów staje się znacznie trudniejsze, a w konsekwencji ogranicza ich modularność i prowadzi do częstszych pomyłek ze strony autorów. Chcąc tego uniknąć, dąży się do wydzielania w programie jak największej części, która składa się z czystych obliczeń. Jednak to, czy jakiś moduł oprogramowania wykonuje obliczenia z efektami ubocznymi nie koniecznie jest jasne i często musimy zaufać autorowi, że w istocie tak jest.
+
+\section{Radzenie sobie z efektami ubocznymi}
+
+Jednym z rozwiązań tego problemu, jest zawarcie informacji o posiadaniu efektów ubocznych w systemie typów. Możemy skorzystać wtedy z inferencji i weryfikacji typów do automatycznej identyfikacji modułów zawierających efekty uboczne. Programista może łatwo wyczytać z sygnatury funkcji, że w czasie jej działania występują efekty uboczne. Znanym przykładem takiego rozwiązania jest wykorzystanie monad w języku programowania Haskell. Niestety, jednoczesne użytkowanie dwóch niezależnych zasób reprezentowanych przez różne monady nie jest łatwe i wymaga dodatkowych struktur, takich jak transformery monad, które niosą ze sobą dodatkowe wyzwania. Problem modularności został jedynie przesunięty w inny obszar.
+
+Nowym, konkurencyjnym podejściem do ujarzmienia efektów ubocznych przez wykorzystanie systemu typów są efekty algebraiczne z uchwytami. Powierzchownie, zdają się być podobne do konstrukcji obsługi wyjątków w językach programowania lub wywołań systemowych w systemach operacyjnych. Dzięki rozdziałowi między definicjami operacji związanych z efektami ubocznymi, a ich semantyką oraz interesującemu zastosowaniu kontynuacji, dają łatwość myślenia i wnioskowania o programach ich używających. Ponadto, w przeciwieństwie do monad, można je bezproblemowo składać.
+
+\section{Systemy kompilacji}
+
+Przykładem programów, których głównym zadaniem jest interakcja z zewnętrznymi zasobami są systemy kompilacji, w których użytkownik opisuje proces wytwarzania wyniku jako zbiór wzajemnie-zależnych zadań wraz z informacją jak zadania mają być wykonywane w oparciu o wyniki innych zadań, zaś system jest odpowiedzialny za poprawne uporządkowanie i wykonanie otrzymanych zadań. Ponadto, od systemu kompilacji oczekujemy, że będzie śledził zmiany w danych wejściowych i -- gdy poproszony o aktualizację wyników -- obliczał ponownie jedynie zadania, których wartości ulegną zmianie. Przykładami takich systemów są Make oraz -- co może wydawać się zaskakujące -- programu biurowe służące do edycji arkuszy kalkulacyjnych (np. popularny Excel).
+
+%% Finalnie, w czasie działania system agreguje wyniki obliczeń (np. na dysku lub w pamięci) i decyduje, która zadania powinny być obliczone ponownie -- np. system Make lub popularne narzędzie biurowe Excel.
+
+W publikacjach pod tytułem ,,Build systems {\`a} la carte'' \cite{mokhov2018build, mokhov2020build}, autorzy przedstawiają sposób klasyfikacji systemów kompilacji w oparciu o to jak determinują one kolejność w jakiej zadania zostaną obliczone oraz jak wyznaczają, które z zadań wymagają ponownego obliczenia. Uzyskana klasyfikacja prowadzi autorów do skonstruowania platformy umożliwiającej definiowanie systemów kompilacji o oczekiwanych właściwościach. Platforma ta okazuje się być łatwa w implementacji w języku Haskell, a klasy typów Applicative oraz Monad odpowiadać mocy języka opisywania zależności między zadaniami do obliczenia.
+
+\section{O tej pracy}
+
+Celem tej pracy jest zapoznanie czytelnika, który miał dotychczas kontakt z językiem Haskell oraz podstawami języków funkcyjny, z nowatorskim rozwiązaniem jakim są efekty algebraiczne oraz zademonstrowanie -- idąc śladami Mokhov i innych \cite{mokhov2018build} -- implementacji systemów kompilacji z wykorzystaniem efektów algebraicznych i uchwytów w języku programowania Helium. Jak się okazuje, wykorzystanie tych narzędzi daje schludną implementację ale także prowadzi do problemów w implementacji systemów o pewnym sposobie determinowania zależności między zadaniami.
+
+W rozdziale drugim wprowadzony zostaje prosty model obliczeń wykorzystujący efekty algebraiczne i uchwyty. Zostaje przedstawionych kilka przykładów reprezentacji standardowych efektów ubocznych w opisanym modelu.
