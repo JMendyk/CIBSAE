@@ -1,0 +1,24 @@
+signature NonDet =
+| amb : Unit => Bool
+
+let satHandler =
+  handler
+  | amb () / r => r True || r False
+  end
+
+let tautHandler =
+  handler
+  | amb () / r => r True && r False
+  end
+
+let formula1 x y z = (not x) && (y || z)
+
+let main () =
+    let ret = handle
+                let (x, y, z) = (amb (), amb (), amb ()) in
+                formula1 x y z
+              with satHandler in
+    if ret then printStr "Formula is satisfiable\n"
+           else printStr "Formula is not satisfiable\n"
+
+(* let _ = main () *)

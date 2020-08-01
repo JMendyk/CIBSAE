@@ -1,0 +1,11 @@
+signature State (T: Type) =
+| get : Unit => T
+| put : T => Unit
+
+let evalState init =
+  handler
+  | return x  => fn _ => x
+  | put  s    => fn _ => (resume ()) s
+  | get ()    => fn s => (resume  s) s
+  | finally f => f init
+  end

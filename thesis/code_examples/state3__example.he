@@ -1,0 +1,26 @@
+import state1__basics
+import state2__run_state
+
+open state1__basics
+open state2__run_state
+
+let stateful () =
+  let n = 2 * get () in
+  let m = 10 + get () in
+    put (n + m);
+    m - n
+
+let main () =
+  let init = 2 in
+  let (state, ret) = handle stateful () with runState init in
+  printStr "Started with "; printInt init;
+  printStr "Finished with "; printInt state;
+  printStr "Returned "; printInt ret
+
+(* 
+  Started with 2
+  Finished with 16
+  Returned 8
+*)
+
+(* let _ = main () *)

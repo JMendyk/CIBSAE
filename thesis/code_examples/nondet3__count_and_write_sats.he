@@ -1,0 +1,18 @@
+import nondet
+
+open nondet
+
+let countAndWriteSatsHandler =
+  handler
+  | return x => if x then 1 else 0
+  | amb () / r => r True + r False
+  | finally ret => printStr (stringOfInt ret ++ " satisfying interpretations\n")
+  end
+
+let main () =
+  handle
+    let (x, y, z) = (amb (), amb (), amb ()) in
+    formula1 x y z
+  with countAndWriteSatsHandler
+
+let _ = main ()

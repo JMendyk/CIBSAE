@@ -1,0 +1,48 @@
+signature NonDet =
+| amb : Unit => Bool
+
+signature Fail =
+| fail : {A: Type}, Unit => A
+
+let failHandler =
+  handler
+  | fail () => False
+  end
+
+let ambHandler =
+  handler
+  | amb () / r => r True || r False
+  end
+
+let formula1 x y z = (not x) && (y || z)
+
+let is_sat (f: Bool -> Bool -> Bool -> Bool) =
+  handle
+    handle
+      let (x, y, z) = (amb (), amb (), amb ()) in
+      if f x y z then True else fail ()
+    with failHandler
+  with ambHandler
+
+let is_taut (f: Bool -> Bool -> Bool -> Bool) =
+  handle
+    handle
+      let (x, y, z) = (amb (), amb (), amb ()) in
+      if f x y z then True else fail ()
+    with ambHandler
+  with failHandler
+
+let main () =
+  printStr "Formula is ";
+  if is_sat formula1
+  then printStr "satisfiable and "
+  else printStr "not satisfiable and ";
+  if is_taut formula1
+  then printStr "a tautology\n"
+  else printStr "not a tautology\n"
+
+(*
+  Formula is satisfiable and not a tautology
+*)
+
+let _ = main ()
