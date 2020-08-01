@@ -22,13 +22,26 @@ Badania nad efektami i uchwytami przyczyniły się także do powstania kilku eks
 
 \section{Helium}
 
+\definecolor{bluekeywords}{rgb}{0.13,0.13,1}
+\definecolor{greencomments}{rgb}{0,0.5,0}
+\definecolor{redstrings}{rgb}{0.9,0,0}
+
 \lstdefinestyle{helium}{
   language=Caml,
-  columns=fullflexible,
+  columns=fixed,
+  %% showspaces=false,
+  %% showtabs=false,
+  showstringspaces=false,
+  %% breakatwhitespace=true,
+  escapeinside={(*@}{@*)},
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  basicstyle=\ttfamily\scriptsize,
   mathescape=true,
   literate={->}{$\rightarrow{}$}{1}
            {=>}{$\Rightarrow{}$}{1}
-           {++}{+\kern-1.3ex+\kern0.8ex}{1}
+           %% {++}{+\kern-1.3ex+\kern0.8ex}{1}
            {==}{$={}$}{1},
   morekeywords={signature,handle,handler,resume,return,finally}
 }
@@ -42,10 +55,10 @@ Rozważmy przykład prostego programu napisanego w Helium, w którym definiujemy
 Sygnatura funkcji \textit{is\_negative} wyznaczona przez system typów Helium, to jak łatwo się domyśleć \(\mathit{Int \rightarrow Bool}\). Gdy jednak zapytamy środowisko uruchomieniowe o typ funkcji \textit{question} otrzymamy interesującą sygnaturę \(\mathit{Unit \rightarrow[IO] Unit}\). W Helium, informacje o efektach występujących w trakcie obliczania funkcji są umieszczona w sygnaturach funkcji w kwadratowych nawiasach. W przypadku funkcji \textit{question}, jej obliczenie powoduje wystąpienie efektu ubocznego związanego z mechanizmem wejścia/wyjścia. 
 
 \lstset{style=helium}
-\begin{minipage}{\linewidth}\begin{lstlisting}
+\begin{lstlisting}
 printStr: String ->[IO] Unit
 readInt: Unit ->[IO] Int
-\end{lstlisting}\end{minipage}
+\end{lstlisting}
 
 System inferencji typów wiedząc, że operacje we/wy są zadeklarowne z powyższymi sygnaturami wnioskuje, że skoro wystąpienia tychże operacji w kodzie \textit{question} nie są obsługiwane przez uchwyt, to efekt \textit{IO} wyjdzie poza tą funkcję.
 
@@ -57,7 +70,6 @@ Efekty \textit{IO} oraz \textit{RE} (runtime error) są szczególne, gdyż są d
 
 Zaimplementujemy kilka efektów ubocznych, zaczynając od efektu błędu, wraz z uchwytamy dla nich. zaczniemy od efektu błędu. W Helium, efekt oraz powodujące go operacje definiuje się następująco:
 
-
 \lstinputlisting[style=helium]{code_examples/error1__signature.he}
 
 Stwórzmy funkcję podobną do \textit{question}, z tym że nie będzie ona lubić wartości ujemnych:
@@ -68,30 +80,30 @@ Zdefiniowaliśmy efekt uboczny \textit{Error} wraz z operacją \textit{error}, k
 
 Jeśli pewnego uchwytu zamierzamy używać wiele razy, możemy przypisać mu identyfikator -- uchwyty są wartościami w Helium:
 
-%% \begin{minipage}{\linewidth}\begin{lstlisting}
+%% \begin{lstlisting}
 %% let abortOnError = handler
 %%                    | error () => printStr ``Error occured!\n''
 %%                    end
-%% \end{lstlisting}\end{minipage}
+%% \end{lstlisting}
 
 \lstinputlisting[style=helium, firstline=7, lastline=10]{code_examples/error3__reused_handler.he}
 
 i zmodyfikować funkcję \textit{main} by z niego korzystać:
 
-%% \begin{minipage}{\linewidth}\begin{lstlisting}
+%% \begin{lstlisting}
 %% let main () =
 %%   handle no_negatives_question() with abortOnError
-%% \end{lstlisting}\end{minipage}
+%% \end{lstlisting}
 
 \lstinputlisting[style=helium, firstline=12, lastline=13]{code_examples/error3__reused_handler.he}
 
 Na potrzeby przykładu, możemy rozważyć spokojniejszy uchwyt dla wystąpień \textit{error}, który wypisze ostrzeżenie o wystąpieniu błędu ale będzie kontynuował obliczenie:
 
-%% \begin{minipage}{\linewidth}\begin{lstlisting}
+%% \begin{lstlisting}
 %% let warnOnError = handler
 %%                   | error () => printStr ``Error occured, continuing...\n''; resume ()
 %%                   end
-%% \end{lstlisting}\end{minipage}
+%% \end{lstlisting}
 
 \lstinputlisting[style=helium, firstline=7, lastline=10]{code_examples/error4__warn_not_abort.he}
 
@@ -101,22 +113,22 @@ Jeśli skorzystamy z tego uchwytu w programie, po wyświetleniu ostrzeżenia obl
 
 Powróćmy do problemu, który w rozdziale drugim był inspiracją do rozważania niedeterminizmu -- sprawdzanie czy formuła jest spełnialna oraz czy jest tautologią. Przedstawiliśmy wtedy uchwyty dla obu tych problemów w naszej notacji. Implementacja efektu niedeterminizmu, operacji \textit{amb} oraz uchwytów wraz z wykorzystaniem ich wygląda następująco:
 
-\lstinputlisting[style=helium]{code_examples/nondet.he}
+\lstinputlisting[style=helium, lastline=22]{code_examples/nondet1__simple.he}
 
 Będziemy sprawdzać czy formuła wyrażona za pomocą funkcji \textit{formula1} jest spełnialna. W tym celu w funkcji \textit{main}, wewnątrz uchwytu, niedeterministycznie ustalamy wartości zmiennych \textit{x}, \textit{y}, \textit{z} po czym obliczamy wartość funkcji \textit{formula1}. Wartość obsługiwanego wyrażenia, którą przypisujemy do zmiennej \textit{ret}, jest następnie wykorzystana do wypisania komunikatu. Ponadto -- w celu demonstracji możliwości języka -- w uchwytach zamiast kontynuować obliczenie używając \textit{resume}, przypisujemy kontynuacji nazwę \textit{r}.
 
 W Helium, uchwyty mogą posiadać przypadki nie tylko dla operacji związanych z jakimś efektem ale także dwa specjalne przypadki: \textit{return} oraz \textit{finally}. Pierwszy jest wykonywany, gdy obliczenie pod kontrolą uchwytu kończy się zwracając wynik, przypadek jako argument otrzymuje wynik obliczenia. Zaś \textit{finally} otrzymuje jako argument obliczenie obsługiwane przez uchwyt i jest uruchamiane na początku działania uchwytu. Domyślnie przypadki te są zaimplementowane jako:
 
-\begin{minipage}{\linewidth}\begin{lstlisting}
+\begin{lstlisting}
 handler
 | return x => x
 | finally f => f
 end
-\end{lstlisting}\end{minipage}
+\end{lstlisting}
 
 Możemy je jednak sprytnie wykorzystać. Przykładowo, zamiast tylko sprawdzać czy formuła jest spełnialna, możemy sprawdzić przy ilu wartościowaniach jest prawdziwa:
 
-%% \begin{minipage}{\linewidth}\begin{lstlisting}
+%% \begin{lstlisting}
 %% let countSatsHandler =
 %%   handler
 %%   | amb () / r => r True + r False
@@ -129,13 +141,13 @@ Możemy je jednak sprytnie wykorzystać. Przykładowo, zamiast tylko sprawdzać 
 %%                 formula1 x y z
 %%               with countSatsHandler in
 %%     printStr (stringOfInt ret ++ " satisfying interpretations\n")
-%% \end{lstlisting}\end{minipage}
+%% \end{lstlisting}
 
 \lstinputlisting[style=helium, firstline=5, lastline=16]{code_examples/nondet2__count_sats.he}
 
 Gdy obliczenie się kończy, zamiast zwracać czy formuła jest spełniona zwracamy 1 albo 0, w zależności czy formuła przy aktualnym wartościowaniu jest spełniona. Gdy obsługujemy niedeterministyczny wybór, kontynuujemy obliczenie dla obu możliwych wartości boolowskich po czym dodajemy wyniki. Wykorzystując \textit{finally} możemy włączyć komunikat o liczbie wartościowań do uchwytu:
 
-%% \begin{minipage}{\linewidth}\begin{lstlisting}
+%% \begin{lstlisting}
 %% let countAndWriteSatsHandler =
 %%   handler
 %%   | amb () / r => r True + r False
@@ -148,9 +160,9 @@ Gdy obliczenie się kończy, zamiast zwracać czy formuła jest spełniona zwrac
 %%     let (x, y, z) = (amb (), amb (), amb ()) in
 %%     formula1 x y z
 %%   with countAndWriteSatsHandler
-%% \end{lstlisting}\end{minipage}
+%% \end{lstlisting}
 
-\lstinputlisting[style=helium, firstline=5, lastline=16]{code_examples/nondet3__count_and_write_sats.he}
+\lstinputlisting[style=helium, firstline=5, lastline=17]{code_examples/nondet3__count_and_write_sats.he}
 
 Tutaj wykorzystanie \textit{finally} jest lekkim nadużyciem, jak jednak za chwilę zobaczymy, konstrukcja ta jest bardzo przydatna.
 
@@ -158,12 +170,12 @@ Tutaj wykorzystanie \textit{finally} jest lekkim nadużyciem, jak jednak za chwi
 
 Rozważmy następujący przypadek dla \textit{return} w uchwycie:
 
-\begin{minipage}{\linewidth}\begin{lstlisting}
+\begin{lstlisting}
 handler
 (* ... *)
 | return x => fn s => x
 end
-\end{lstlisting}\end{minipage}
+\end{lstlisting}
 
 Wartość obliczenia, zamiast być jego wynikiem, jest funkcją. Co za tym idzie, w tym uchwycie kontynuacje nie będą funkcjami zwracającymi wartości lecz funkcje. W ten sposób możemy parametryzować dalsze obliczenia nie tylko wartościami zwracanymi przez operacje (zgodnie z ich sygnaturą) ale także wymyślonymi przez nas -- autorów uchwytu. Zauważmy jednak, że parametr ten nie jest widoczny w obsługiwanym obliczeniu, a jedynie w uchwycie. Co więcej, skoro wyniki obsługiwanego obliczenia jest teraz funkcją, a nie wartością to by użytkownik uchwytu nie zauważył niezgodności typów musimy funkcję tą uruchomić z jakimś parametrem -- tutaj właśnie przychodzi naturalny moment na wykorzystanie konstrukcji \textit{finally}.
 
