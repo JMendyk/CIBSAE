@@ -10,7 +10,7 @@ polysemy\footnote{\url{http://hackage.haskell.org/package/polysemy}}), Scali
 atnos-org/eff\footnote{\url{https://github.com/atnos-org/eff}})
 i Idris (Effects \footnote{\url{https://www.idris-lang.org/docs/current/effects_doc/}}).
 
-Związana z językiem OCaml jest inicjatywa ocaml-multicore\footnote{\url{https://github.com/ocaml-multicore/ocaml-multicore/wiki}}, której celem jest stworzenie implementacji OCamla ze wsparciem dla współbierzności oraz współdzielonej pamięci, a cel ten jest realizowane przez wykorzystanie konceptu efektów i uchwytów.
+Związana z językiem OCaml jest inicjatywa ocaml-multicore\footnote{\url{https://github.com/ocaml-multicore/ocaml-multicore/wiki}}, której celem jest stworzenie implementacji OCamla ze wsparciem dla współbieżności oraz współdzielonej pamięci, a cel ten jest realizowane przez wykorzystanie konceptu efektów i uchwytów.
 
 Badania nad efektami i uchwytami przyczyniły się także do powstania kilku eksperymentalnych języków programowania w których efekty i uchwyty są obywatelami pierwszej kategorii. Do języków tych należą:
 \begin{itemize}
@@ -37,7 +37,7 @@ printStr: String ->[IO] Unit
 readInt: Unit ->[IO] Int
 \end{lstlisting}
 
-System inferencji typów wiedząc, że operacje we/wy są zadeklarowne z powyższymi sygnaturami wnioskuje, że skoro wystąpienia tychże operacji w kodzie \textit{question} nie są obsługiwane przez uchwyt, to efekt \textit{IO} wyjdzie poza tą funkcję.
+System inferencji typów wiedząc, że operacje we/wy są zadeklarowane z powyższymi sygnaturami wnioskuje, że skoro wystąpienia tychże operacji w kodzie \textit{question} nie są obsługiwane przez uchwyt, to efekt \textit{IO} wyjdzie poza tą funkcję.
 
 Efekty \textit{IO} oraz \textit{RE} (runtime error) są szczególne, gdyż są dla nich zadeklarowane globalne uchwyty w bibliotece standardowej, jeśli efekt nie zostanie obsłużony i dotrze do poziomu środowiska uruchomieniowego, to ono zajmie się jego obsługą. W przypadku efektów wejścia/wyjścia środowisko skorzysta ze standardowego wejścia/wyjścia, zaś w przypadku wystąpienia efektu \textit{RE}, obliczenie zostanie przerwane ze stosownym komunikatem błędu.
 
@@ -45,7 +45,7 @@ Efekty \textit{IO} oraz \textit{RE} (runtime error) są szczególne, gdyż są d
 
 \subsection{Błąd}
 
-Zaimplementujemy kilka efektów ubocznych, zaczynając od efektu błędu, wraz z uchwytamy dla nich. zaczniemy od efektu błędu. W Helium, efekt oraz powodujące go operacje definiuje się następująco:
+Zaimplementujemy kilka efektów ubocznych, zaczynając od efektu błędu, wraz z uchwytami dla nich. zaczniemy od efektu błędu. W Helium, efekt oraz powodujące go operacje definiuje się następująco:
 
 \lstinputlisting{code_examples/error1__signature.he}
 
@@ -109,7 +109,7 @@ end
 
 Wartość obliczenia, zamiast być jego wynikiem, jest funkcją. Co za tym idzie, w tym uchwycie kontynuacje nie będą funkcjami zwracającymi wartości lecz funkcje. W ten sposób możemy parametryzować dalsze obliczenia nie tylko wartościami zwracanymi przez operacje (zgodnie z ich sygnaturą) ale także wymyślonymi przez nas -- autorów uchwytu. Zauważmy jednak, że parametr ten nie jest widoczny w obsługiwanym obliczeniu, a jedynie w uchwycie. Co więcej, skoro wyniki obsługiwanego obliczenia jest teraz funkcją, a nie wartością to by użytkownik uchwytu nie zauważył niezgodności typów musimy funkcję tą uruchomić z jakimś parametrem -- tutaj właśnie przychodzi naturalny moment na wykorzystanie konstrukcji \textit{finally}.
 
-Definiujemy efekt stanu z operacją jego oczytu oraz modyfikacji:
+Definiujemy efekt stanu z operacją jego odczytu oraz modyfikacji:
 
 \lstinputlisting[lastline=3]{code_examples/state1__basics.he}
 
@@ -117,7 +117,7 @@ Efekt jak i operacje są polimorficzne ze względu na typ wartości stanu. Zdefi
 
 \lstinputlisting[firstline=5, lastline=11]{code_examples/state1__basics.he}
 
-Gdy obliczenie się kończy, zamiast wartość, zwracamy funkcję która ignoruje argument, a zwraca właściwy wynik obliczenia. Ten argument będzie bieżącą wartością stanu. W konsekwencji przypadki dla operacji też muszą być funkcjami. Dla \textit{put} nie musimy odczytywać aktualnej wartości stanu, stąd wartość tą ignorujemy. Obliczenie wznawiamy z wartością jednostkową. Jak jednak wiemy, wynikiem będzie nie zwykład wartość lecz funkcja, której u nas dajemy wartość stanu. Stąd podajemy jej nową wartość stanu, którą parametryzowana była operacja \textit{put}. W przypadku \textit{get} postępujemy podobnie -- jednak tym razem odczytamy argument funkcji i przekażemy go do kontynuacji. Niezmiennie kontynuacja zwraca funkcję, której przekażemy aktualną wartość stanu. Pozostaje rozstrzygnąć co zrobić w przypadku \textit{finally}. Skoro jednak przerobiliśmy obliczenie ze zwracającego wartość do takiego, które zwraca funkcję oczekującą wartości stanu, to możemy podać mu wartość początkową -- określoną przez użytkownika uchwytu.
+Gdy obliczenie się kończy, zamiast wartość, zwracamy funkcję która ignoruje argument, a zwraca właściwy wynik obliczenia. Ten argument będzie bieżącą wartością stanu. W konsekwencji przypadki dla operacji też muszą być funkcjami. Dla \textit{put} nie musimy odczytywać aktualnej wartości stanu, stąd wartość tą ignorujemy. Obliczenie wznawiamy z wartością jednostkową. Jak jednak wiemy, wynikiem będzie nie zwykła wartość lecz funkcja, której u nas dajemy wartość stanu. Stąd podajemy jej nową wartość stanu, którą parametryzowana była operacja \textit{put}. W przypadku \textit{get} postępujemy podobnie -- jednak tym razem odczytamy argument funkcji i przekażemy go do kontynuacji. Niezmiennie kontynuacja zwraca funkcję, której przekażemy aktualną wartość stanu. Pozostaje rozstrzygnąć co zrobić w przypadku \textit{finally}. Skoro jednak przerobiliśmy obliczenie ze zwracającego wartość do takiego, które zwraca funkcję oczekującą wartości stanu, to możemy podać mu wartość początkową -- określoną przez użytkownika uchwytu.
 
 Jeśli chcemy aby obliczenie zwracało nie tylko wartość wynikową ale także końcowy stan, wystarczy że zmodyfikujemy przypadek dla \textit{return}:
 
@@ -153,7 +153,7 @@ Utrzymujemy informację, która funkcja jest aktualnie wykonywana i gdy prosi o 
 
 \subsection{Wiele efektów na raz -- porażka i niedeterminizm}
 
-Na koniec rozdziału, zobaczymy jak łatwo w Helium komponuje się efekty. Definiujemy efekty niedeterminzimu oraz porażki:
+Na koniec rozdziału, zobaczymy jak łatwo w Helium komponuje się efekty. Definiujemy efekty niedeterminizmu oraz porażki:
 
 \lstinputlisting[firstline=1, lastline=5]{code_examples/fail_and_amb.he}
 
@@ -169,10 +169,10 @@ Jeśli formuła przy ustalonym wartościowaniu nie jest spełniona powoduje efek
 
 \lstinputlisting[firstline=27, lastline=33]{code_examples/fail_and_amb.he}
 
-Tutaj uchwyt dla porażki znajduje się na zewnątrz -- wystąpienie porażki oznacza, że istnieje wartościowanie przy którym formuła nie jest prawdziwa, a w konsekwencji nie może być tautoligą. Możemy teraz napisać zgrabną funkcję, która wypisze nam czy \textit{formula1} jest spełnialna oraz czy jest tautologią:
+Tutaj uchwyt dla porażki znajduje się na zewnątrz -- wystąpienie porażki oznacza, że istnieje wartościowanie przy którym formuła nie jest prawdziwa, a w konsekwencji nie może być tautologią. Możemy teraz napisać zgrabną funkcję, która wypisze nam czy \textit{formula1} jest spełnialna oraz czy jest tautologią:
 
 \lstinputlisting[firstline=35, lastline=46]{code_examples/fail_and_amb.he}
 
-Z łatwością napisaliśmy program, który korzysta z wielu efektów uboczonych jednocześnie, mimo że żaden z nich (ani uchwyty) nie wiedzą o istnieniu drugiego. Łączenie efektów jest bardzo proste, a kolejność w jakiej umieszczamy uchwyty umożliwia nam łatwe i czytelne definiowanie zachowania programu w przypadku wystąpienie któregokolwiek z efektów.
+Z łatwością napisaliśmy program, który korzysta z wielu efektów ubocznych jednocześnie, mimo że żaden z nich (ani uchwyty) nie wiedzą o istnieniu drugiego. Łączenie efektów jest bardzo proste, a kolejność w jakiej umieszczamy uchwyty umożliwia nam łatwe i czytelne definiowanie zachowania programu w przypadku wystąpienie któregokolwiek z efektów.
 
-Dzięki językowi Helium, przyjrzeliśmy się z bliska efektom algebraicznym oraz uchwytom, zobaczyliśmy przykłady implementacji uchytów oraz rozwiązań prostych problemów. Jesteśmy gotowi do podjęcia próby zaimplementowania systemów kompilacji z użyciem efektów i uchwytów -- czego dokonamy w następnym rozdziale.
+Dzięki językowi Helium, przyjrzeliśmy się z bliska efektom algebraicznym oraz uchwytom, zobaczyliśmy przykłady implementacji uchwytów oraz rozwiązań prostych problemów. Jesteśmy gotowi do podjęcia próby zaimplementowania systemów kompilacji z użyciem efektów i uchwytów -- czego dokonamy w następnym rozdziale.
