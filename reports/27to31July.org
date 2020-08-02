@@ -1,0 +1,23 @@
+#+Title: Raport tygodniowy 27-31 lipca
+#+Author: Jakub Mendyk
+#+Date: \today
+
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [draft=false, 12pt]
+#+LANGUAGE: pl-PL
+#+LATEX_HEADER: \input{preamble.tex}
+#+OPTIONS: toc:nil
+
+# Local variables:
+# after-save-hook: org-latex-export-to-pdf
+# org-latex-listings: 'listings
+# end:
+
+Napisałem rozdziały ,,1. Wprowadzenie'', ,,2. O efektach algebraicznych teoretycznie'' oraz ,,4. Efekty algebraiczne i uchwyty w praktyce''. Aktualna zawartość rozdziałów wygląda trochę inaczej niż planowałem. Zrezygnowałem m.in. z opisu problemów z efektami ubocznymi oraz opowiadania o monadach w rozdziale drugim -- uznałem, że to co o nich napisałem we wprowadzeniu jest wystarczające. Mam jeszcze kilka przemyśleń co do modyfikacji treści tych rozdziałów:
+- czy wprowadzenie przypadku dla *return* w uchwycie przenieść z rozdziału 4 do 2,
+- czy zrezygnować z konstrukcji *return v* w rozdziale 2 (w związku z poprzednim przemyśleniem),
+- czy w rozdziale 4 opisać przykład uchwytu dla stanu, który agreguje historyczne wartości (jako przykład innego uchwytu który spełnia równania),
+- czy w rozdziale 4 opisać przykład współbieżności kooperatywnej zaimplementowanej używając efektów i uchwytów -- zaleta to rozszerzenie przykładu (wzajemnej) rekursji, wadą jest to że pewnie nie obejdzie się bez używania kolejki która może trochę niepotrzebnie zaciemnić obraz.
+Nie przykładam jednak dużej wagi do tych przemyśleń. Aktualna treść trzech napisanych rozdziałów wydaje mi się zadowalająca. Zakładam, że wrócę do tych przemyśleń, gdy starczy na nie czasu.
+
+W najbliższym tygodniu planuję napisać rozdział ,,3. O systemach kompilacji (i ich klasyfikacji)'', po czym skończyć implementację rebuilderów opartych o ślady konstruktywne oraz weryfikujące i/lub zacząć pisać treść rozdziału ,,5. Systemy kompilacji z użyciem efektów algebraicznych i uchwytów''. W ten sposób mając 2 pełne tygodnie do września (uwzględniając moją nieobecność w dniach 12--17 sierpnia), powinno być -- mam nadzieję -- wystarczająco dużo czasu by dokończyć brakujące elementy, napisać rozdział ,,6. Podsumowanie i wnioski'', uwzględnić wszystkie swoje i Pana wątpliwości i uwagi oraz poprosić kilku znajomych o przeczytanie pracy i wyrażenie swoich opinii.
