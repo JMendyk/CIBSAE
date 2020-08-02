@@ -22,39 +22,16 @@ Badania nad efektami i uchwytami przyczyniły się także do powstania kilku eks
 
 \section{Helium}
 
-\definecolor{bluekeywords}{rgb}{0.13,0.13,1}
-\definecolor{greencomments}{rgb}{0,0.5,0}
-\definecolor{redstrings}{rgb}{0.9,0,0}
-
-\lstdefinestyle{helium}{
-  language=Caml,
-  columns=fixed,
-  %% showspaces=false,
-  %% showtabs=false,
-  showstringspaces=false,
-  %% breakatwhitespace=true,
-  escapeinside={(*@}{@*)},
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  basicstyle=\ttfamily\scriptsize,
-  mathescape=true,
-  literate={->}{$\rightarrow{}$}{1}
-           {=>}{$\Rightarrow{}$}{1}
-           %% {++}{+\kern-1.3ex+\kern0.8ex}{1}
-           {==}{$={}$}{1},
-  morekeywords={signature,handle,handler,resume,return,finally}
-}
+\lstset{style=helium}
 
 Używając właśnie języka Helium, w tym rozdziale zobaczymy jak w praktyce wygląda programowanie z efektami algebraicznymi oraz uchwytami, zaś w następnym spróbujemy zaimplementować wyniki uzyskane w ,,Build systems {\`a} la carte'' \cite{mokhov2018build, mokhov2020build}. Po raz pierwszy Helium pojawia się w \cite{biernacki2019abstracting}, służąc za narzędzie do eksperymentowania i umożliwienia konstrukcji bardziej skomplikowanych przykładów oraz projektów w celu przetestowania efektów i uchwytów w praktyce.
 
 Rozważmy przykład prostego programu napisanego w Helium, w którym definiujemy pomocniczą funkcję \textit{is\_negative} ustalającą czy liczba jest ujemna oraz {\textit question}, która pyta użytkownika o liczbę i informuje czy liczba ta jest ujemna:
 
-\lstinputlisting[style=helium]{code_examples/syntax.he}
+\lstinputlisting{code_examples/syntax.he}
 
 Sygnatura funkcji \textit{is\_negative} wyznaczona przez system typów Helium, to jak łatwo się domyśleć \(\mathit{Int \rightarrow Bool}\). Gdy jednak zapytamy środowisko uruchomieniowe o typ funkcji \textit{question} otrzymamy interesującą sygnaturę \(\mathit{Unit \rightarrow[IO] Unit}\). W Helium, informacje o efektach występujących w trakcie obliczania funkcji są umieszczona w sygnaturach funkcji w kwadratowych nawiasach. W przypadku funkcji \textit{question}, jej obliczenie powoduje wystąpienie efektu ubocznego związanego z mechanizmem wejścia/wyjścia. 
 
-\lstset{style=helium}
 \begin{lstlisting}
 printStr: String ->[IO] Unit
 readInt: Unit ->[IO] Int
@@ -70,42 +47,25 @@ Efekty \textit{IO} oraz \textit{RE} (runtime error) są szczególne, gdyż są d
 
 Zaimplementujemy kilka efektów ubocznych, zaczynając od efektu błędu, wraz z uchwytamy dla nich. zaczniemy od efektu błędu. W Helium, efekt oraz powodujące go operacje definiuje się następująco:
 
-\lstinputlisting[style=helium]{code_examples/error1__signature.he}
+\lstinputlisting{code_examples/error1__signature.he}
 
 Stwórzmy funkcję podobną do \textit{question}, z tym że nie będzie ona lubić wartości ujemnych:
 
-\lstinputlisting[style=helium, firstline=7, lastline=18]{code_examples/error2__inline_abort.he}
+\lstinputlisting[firstline=7, lastline=18]{code_examples/error2__inline_abort.he}
 
 Zdefiniowaliśmy efekt uboczny \textit{Error} wraz z operacją \textit{error}, która go powoduje. Operacja ta jest parametryzowana wartością typu \textit{Unit} oraz jej (możliwy) wynik to także wartość z \textit{Unit}. Definiujemy też funkcję \textit{main} w której wywołujemy \textit{no\_negatives\_question}, jednakże obliczenie wykonujemy w uchwycie w którym definiujemy co ma się wydarzyć, gdy w czasie obliczenia wystąpi efekt błędu spowodowany operacją \textit{error}. W tym przypadku mówimy, że skutkuje ono wypisaniem wiadomości na standardowe wyjście. Nie wznawiamy obliczenia, stąd wystąpienie błędu skutkuje zakończeniem nadzorowanego obliczenia. Jeśli uruchomimy teraz program i podamy ujemną liczbę, zakończy się on komunikatem zdefiniowanym w uchwycie, a tekst ,,Question finished'' nie zostanie wypisany -- zgodnie z oczekiwaniami, obliczenie \textit{no\_negatives\_question} nie zostało kontynuowane po wystąpieniu błędu.
 
 Jeśli pewnego uchwytu zamierzamy używać wiele razy, możemy przypisać mu identyfikator -- uchwyty są wartościami w Helium:
 
-%% \begin{lstlisting}
-%% let abortOnError = handler
-%%                    | error () => printStr ``Error occured!\n''
-%%                    end
-%% \end{lstlisting}
-
-\lstinputlisting[style=helium, firstline=7, lastline=10]{code_examples/error3__reused_handler.he}
+\lstinputlisting[firstline=7, lastline=10]{code_examples/error3__reused_handler.he}
 
 i zmodyfikować funkcję \textit{main} by z niego korzystać:
 
-%% \begin{lstlisting}
-%% let main () =
-%%   handle no_negatives_question() with abortOnError
-%% \end{lstlisting}
-
-\lstinputlisting[style=helium, firstline=12, lastline=13]{code_examples/error3__reused_handler.he}
+\lstinputlisting[firstline=12, lastline=13]{code_examples/error3__reused_handler.he}
 
 Na potrzeby przykładu, możemy rozważyć spokojniejszy uchwyt dla wystąpień \textit{error}, który wypisze ostrzeżenie o wystąpieniu błędu ale będzie kontynuował obliczenie:
 
-%% \begin{lstlisting}
-%% let warnOnError = handler
-%%                   | error () => printStr ``Error occured, continuing...\n''; resume ()
-%%                   end
-%% \end{lstlisting}
-
-\lstinputlisting[style=helium, firstline=7, lastline=10]{code_examples/error4__warn_not_abort.he}
+\lstinputlisting[firstline=7, lastline=10]{code_examples/error4__warn_not_abort.he}
 
 Jeśli skorzystamy z tego uchwytu w programie, po wyświetleniu ostrzeżenia obliczenie \textit{no\_negatives\_question} zostanie wznowione i na ekranie zobaczymy komunikat ,,Question finished''. Specjalna funkcja \textit{resume}, dostępna w uchwycie reprezentuje kontynuację obliczenia, które zostało przerwane wystąpieniem operacji powodującej efekt uboczny.
 
@@ -113,7 +73,7 @@ Jeśli skorzystamy z tego uchwytu w programie, po wyświetleniu ostrzeżenia obl
 
 Powróćmy do problemu, który w rozdziale drugim był inspiracją do rozważania niedeterminizmu -- sprawdzanie czy formuła jest spełnialna oraz czy jest tautologią. Przedstawiliśmy wtedy uchwyty dla obu tych problemów w naszej notacji. Implementacja efektu niedeterminizmu, operacji \textit{amb} oraz uchwytów wraz z wykorzystaniem ich wygląda następująco:
 
-\lstinputlisting[style=helium, lastline=22]{code_examples/nondet1__simple.he}
+\lstinputlisting[lastline=22]{code_examples/nondet1__simple.he}
 
 Będziemy sprawdzać czy formuła wyrażona za pomocą funkcji \textit{formula1} jest spełnialna. W tym celu w funkcji \textit{main}, wewnątrz uchwytu, niedeterministycznie ustalamy wartości zmiennych \textit{x}, \textit{y}, \textit{z} po czym obliczamy wartość funkcji \textit{formula1}. Wartość obsługiwanego wyrażenia, którą przypisujemy do zmiennej \textit{ret}, jest następnie wykorzystana do wypisania komunikatu. Ponadto -- w celu demonstracji możliwości języka -- w uchwytach zamiast kontynuować obliczenie używając \textit{resume}, przypisujemy kontynuacji nazwę \textit{r}.
 
@@ -128,41 +88,11 @@ end
 
 Możemy je jednak sprytnie wykorzystać. Przykładowo, zamiast tylko sprawdzać czy formuła jest spełnialna, możemy sprawdzić przy ilu wartościowaniach jest prawdziwa:
 
-%% \begin{lstlisting}
-%% let countSatsHandler =
-%%   handler
-%%   | amb () / r => r True + r False
-%%   | return x => if x then 1 else 0
-%%   end
-
-%% let main () =
-%%     let ret = handle
-%%                 let (x, y, z) = (amb (), amb (), amb ()) in
-%%                 formula1 x y z
-%%               with countSatsHandler in
-%%     printStr (stringOfInt ret ++ " satisfying interpretations\n")
-%% \end{lstlisting}
-
-\lstinputlisting[style=helium, firstline=5, lastline=16]{code_examples/nondet2__count_sats.he}
+\lstinputlisting[firstline=5, lastline=16]{code_examples/nondet2__count_sats.he}
 
 Gdy obliczenie się kończy, zamiast zwracać czy formuła jest spełniona zwracamy 1 albo 0, w zależności czy formuła przy aktualnym wartościowaniu jest spełniona. Gdy obsługujemy niedeterministyczny wybór, kontynuujemy obliczenie dla obu możliwych wartości boolowskich po czym dodajemy wyniki. Wykorzystując \textit{finally} możemy włączyć komunikat o liczbie wartościowań do uchwytu:
 
-%% \begin{lstlisting}
-%% let countAndWriteSatsHandler =
-%%   handler
-%%   | amb () / r => r True + r False
-%%   | return x => if x then 1 else 0
-%%   | finally res => printStr (stringOfInt ret ++ " satisfying interpretations\n")
-%%   end
-
-%% let main () =
-%%   handle
-%%     let (x, y, z) = (amb (), amb (), amb ()) in
-%%     formula1 x y z
-%%   with countAndWriteSatsHandler
-%% \end{lstlisting}
-
-\lstinputlisting[style=helium, firstline=5, lastline=17]{code_examples/nondet3__count_and_write_sats.he}
+\lstinputlisting[firstline=5, lastline=17]{code_examples/nondet3__count_and_write_sats.he}
 
 Tutaj wykorzystanie \textit{finally} jest lekkim nadużyciem, jak jednak za chwilę zobaczymy, konstrukcja ta jest bardzo przydatna.
 
@@ -181,37 +111,37 @@ Wartość obliczenia, zamiast być jego wynikiem, jest funkcją. Co za tym idzie
 
 Definiujemy efekt stanu z operacją jego oczytu oraz modyfikacji:
 
-\lstinputlisting[style=helium, lastline=3]{code_examples/state1__basics.he}
+\lstinputlisting[lastline=3]{code_examples/state1__basics.he}
 
 Efekt jak i operacje są polimorficzne ze względu na typ wartości stanu. Zdefiniujemy teraz standardowy uchwyt dla efektu stanu. Skorzystamy z faktu, że uchwyty są w Helium wartościami, stąd w szczególności mogą być wynikiem funkcji. Funkcja ta będzie u nas parametryzowana wartością początkową stanu:
 
-\lstinputlisting[style=helium, firstline=5, lastline=11]{code_examples/state1__basics.he}
+\lstinputlisting[firstline=5, lastline=11]{code_examples/state1__basics.he}
 
 Gdy obliczenie się kończy, zamiast wartość, zwracamy funkcję która ignoruje argument, a zwraca właściwy wynik obliczenia. Ten argument będzie bieżącą wartością stanu. W konsekwencji przypadki dla operacji też muszą być funkcjami. Dla \textit{put} nie musimy odczytywać aktualnej wartości stanu, stąd wartość tą ignorujemy. Obliczenie wznawiamy z wartością jednostkową. Jak jednak wiemy, wynikiem będzie nie zwykład wartość lecz funkcja, której u nas dajemy wartość stanu. Stąd podajemy jej nową wartość stanu, którą parametryzowana była operacja \textit{put}. W przypadku \textit{get} postępujemy podobnie -- jednak tym razem odczytamy argument funkcji i przekażemy go do kontynuacji. Niezmiennie kontynuacja zwraca funkcję, której przekażemy aktualną wartość stanu. Pozostaje rozstrzygnąć co zrobić w przypadku \textit{finally}. Skoro jednak przerobiliśmy obliczenie ze zwracającego wartość do takiego, które zwraca funkcję oczekującą wartości stanu, to możemy podać mu wartość początkową -- określoną przez użytkownika uchwytu.
 
 Jeśli chcemy aby obliczenie zwracało nie tylko wartość wynikową ale także końcowy stan, wystarczy że zmodyfikujemy przypadek dla \textit{return}:
 
-\lstinputlisting[style=helium, firstline=5, lastline=11]{code_examples/state2__run_state.he}
+\lstinputlisting[firstline=5, lastline=11]{code_examples/state2__run_state.he}
 
 Dzięki zdefiniowanemu efektowi ubocznemu, operacjom oraz uchwytom możemy teraz łatwo wykonywać obliczenia ze stanem:
 
-\lstinputlisting[style=helium, firstline=7, lastline=24]{code_examples/state3__example.he}
+\lstinputlisting[firstline=7, lastline=24]{code_examples/state3__example.he}
 
 \subsection{Efekt rekursji}
 
 W niektórych językach ML-podobnych (jak na przykład OCaml czy Helium) chcąc by w ciele definicji funkcji był widoczny jej identyfikator, trzeba zadeklarować ją używając słów kluczowych \textit{let rec}:
 
-\lstinputlisting[style=helium, firstline=2, lastline=5]{code_examples/rec1__rec.he}
+\lstinputlisting[firstline=2, lastline=5]{code_examples/rec1__rec.he}
 
 Co ciekawe, dzięki własnym efektom i operacjom możemy tworzyć funkcje rekurencyjne, które nie używają jawnie rekursji:
 
-\lstinputlisting[style=helium, firstline=2, lastline=13]{code_examples/rec2__effect.he}
+\lstinputlisting[firstline=2, lastline=13]{code_examples/rec2__effect.he}
 
 Konstrukcja \textit{\textbf{handle} `a \textbf{in}} służy doprecyzowaniu który efekt ma być obsłużony przez uchwyt -- jest przydatna w przypadku niejednoznaczności gdy używamy wielu instancji tego samego efektu lub dla ułatwienia rozumienia kodu.
 
 Możemy w ten sposób definiować także funkcje wzajemnie rekurencyjne:
 
-\lstinputlisting[style=helium, firstline=5, lastline=23]{code_examples/rec3__mutual.he}
+\lstinputlisting[firstline=5, lastline=23]{code_examples/rec3__mutual.he}
 
 Utrzymujemy informację, która funkcja jest aktualnie wykonywana i gdy prosi o wywołanie rekurencyjne uruchamiamy obliczanie drugiej funkcji po czym wynik przekazujemy do kontynuacji.
 
@@ -225,23 +155,23 @@ Utrzymujemy informację, która funkcja jest aktualnie wykonywana i gdy prosi o 
 
 Na koniec rozdziału, zobaczymy jak łatwo w Helium komponuje się efekty. Definiujemy efekty niedeterminzimu oraz porażki:
 
-\lstinputlisting[style=helium, firstline=1, lastline=5]{code_examples/fail_and_amb.he}
+\lstinputlisting[firstline=1, lastline=5]{code_examples/fail_and_amb.he}
 
 oraz bardzo proste uchwyty dla tych efektów:
 
-\lstinputlisting[style=helium, firstline=7, lastline=15]{code_examples/fail_and_amb.he}
+\lstinputlisting[firstline=7, lastline=15]{code_examples/fail_and_amb.he}
 
 Definiujemy teraz funkcję sprawdzającą czy otrzymana formuła z trzema zmiennymi wolnymi jest spełnialna:
 
-\lstinputlisting[style=helium, firstline=19, lastline=25]{code_examples/fail_and_amb.he}
+\lstinputlisting[firstline=19, lastline=25]{code_examples/fail_and_amb.he}
 
 Jeśli formuła przy ustalonym wartościowaniu nie jest spełniona powoduje efekt porażki. Zwróćmy uwagę w jakiej kolejności są umieszczone uchwyty -- niedeterminizmu na zewnątrz, zaś porażki wewnątrz. W ten sposób gdy wystąpi porażka, jej uchwyt zwróci fałsz, w wyniki czego nastąpi powrót do ostatniego punktu niedeterminizmu w którym jest jeszcze wybór. Dzięki temu wartość \textit{is\_sat f} jest równa fałszowi tylko gdy przy każdym wartościowaniu nastąpi porażka. Zobaczmy teraz funkcję sprawdzającą czy otrzymana formuła jest tautologią:
 
-\lstinputlisting[style=helium, firstline=27, lastline=33]{code_examples/fail_and_amb.he}
+\lstinputlisting[firstline=27, lastline=33]{code_examples/fail_and_amb.he}
 
 Tutaj uchwyt dla porażki znajduje się na zewnątrz -- wystąpienie porażki oznacza, że istnieje wartościowanie przy którym formuła nie jest prawdziwa, a w konsekwencji nie może być tautoligą. Możemy teraz napisać zgrabną funkcję, która wypisze nam czy \textit{formula1} jest spełnialna oraz czy jest tautologią:
 
-\lstinputlisting[style=helium, firstline=35, lastline=46]{code_examples/fail_and_amb.he}
+\lstinputlisting[firstline=35, lastline=46]{code_examples/fail_and_amb.he}
 
 Z łatwością napisaliśmy program, który korzysta z wielu efektów uboczonych jednocześnie, mimo że żaden z nich (ani uchwyty) nie wiedzą o istnieniu drugiego. Łączenie efektów jest bardzo proste, a kolejność w jakiej umieszczamy uchwyty umożliwia nam łatwe i czytelne definiowanie zachowania programu w przypadku wystąpienie któregokolwiek z efektów.
 
