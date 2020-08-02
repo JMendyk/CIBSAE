@@ -10,7 +10,7 @@ polysemy\footnote{\url{http://hackage.haskell.org/package/polysemy}}), Scali
 atnos-org/eff\footnote{\url{https://github.com/atnos-org/eff}})
 i Idris (Effects \footnote{\url{https://www.idris-lang.org/docs/current/effects_doc/}}).
 
-Związana z językiem OCaml jest inicjatywa ocaml-multicore\footnote{\url{https://github.com/ocaml-multicore/ocaml-multicore/wiki}}, której celem jest stworzenie implementacji OCamla ze wsparciem dla współbieżności oraz współdzielonej pamięci, a cel ten jest realizowane przez wykorzystanie konceptu efektów i uchwytów.
+Związana z językiem OCaml jest inicjatywa ocaml-multicore\footnote{\url{https://github.com/ocaml-multicore/ocaml-multicore/wiki}}, której celem jest stworzenie implementacji OCamla ze wsparciem dla współbieżności oraz współdzielonej pamięci, a cel ten jest realizowany przez wykorzystanie konceptu efektów i uchwytów.
 
 Badania nad efektami i uchwytami przyczyniły się także do powstania kilku eksperymentalnych języków programowania w których efekty i uchwyty są obywatelami pierwszej kategorii. Do języków tych należą:
 \begin{itemize}
@@ -24,13 +24,13 @@ Badania nad efektami i uchwytami przyczyniły się także do powstania kilku eks
 
 \lstset{style=helium}
 
-Używając właśnie języka Helium, w tym rozdziale zobaczymy jak w praktyce wygląda programowanie z efektami algebraicznymi oraz uchwytami, zaś w następnym spróbujemy zaimplementować wyniki uzyskane w ,,Build systems {\`a} la carte'' \cite{mokhov2018build, mokhov2020build}. Po raz pierwszy Helium pojawia się w \cite{biernacki2019abstracting}, służąc za narzędzie do eksperymentowania i umożliwienia konstrukcji bardziej skomplikowanych przykładów oraz projektów w celu przetestowania efektów i uchwytów w praktyce.
+Używając właśnie języka Helium, zobaczymy jak w praktyce wygląda programowanie z efektami algebraicznymi oraz uchwytami, zaś w następnym rozdziale spróbujemy zaimplementować wyniki uzyskane w ,,Build systems {\`a} la carte'' \cite{mokhov2018build, mokhov2020build}. Po raz pierwszy Helium pojawia się w \cite{biernacki2019abstracting}, służąc za narzędzie do eksperymentowania i umożliwienia konstrukcji bardziej skomplikowanych przykładów oraz projektów w celu przetestowania efektów i uchwytów w praktyce.
 
-Rozważmy przykład prostego programu napisanego w Helium, w którym definiujemy pomocniczą funkcję \textit{is\_negative} ustalającą czy liczba jest ujemna oraz {\textit question}, która pyta użytkownika o liczbę i informuje czy liczba ta jest ujemna:
+Rozważmy przykład prostego programu napisanego w Helium, w którym definiujemy pomocniczą funkcję \textit{is\_negative} ustalającą czy liczba jest ujemna oraz \textit{question}, która pyta użytkownika o liczbę i informuje czy liczba ta jest ujemna:
 
 \lstinputlisting{code_examples/syntax.he}
 
-Sygnatura funkcji \textit{is\_negative} wyznaczona przez system typów Helium, to jak łatwo się domyśleć \(\mathit{Int \rightarrow Bool}\). Gdy jednak zapytamy środowisko uruchomieniowe o typ funkcji \textit{question} otrzymamy interesującą sygnaturę \(\mathit{Unit \rightarrow[IO] Unit}\). W Helium, informacje o efektach występujących w trakcie obliczania funkcji są umieszczona w sygnaturach funkcji w kwadratowych nawiasach. W przypadku funkcji \textit{question}, jej obliczenie powoduje wystąpienie efektu ubocznego związanego z mechanizmem wejścia/wyjścia. 
+Sygnatura funkcji \textit{is\_negative} wyznaczona przez system typów Helium, to jak łatwo się domyśleć \(\mathit{Int \rightarrow Bool}\). Gdy jednak zapytamy środowisko uruchomieniowe o typ funkcji \textit{question} otrzymamy interesującą sygnaturę \(\mathit{Unit \rightarrow[IO] Unit}\). W Helium, informacje o efektach występujących w trakcie obliczania funkcji są umieszczone w sygnaturach funkcji w kwadratowych nawiasach. W przypadku funkcji \textit{question}, jej obliczenie powoduje wystąpienie efektu ubocznego związanego z mechanizmem wejścia/wyjścia. 
 
 \begin{lstlisting}
 printStr: String ->[IO] Unit
@@ -39,13 +39,13 @@ readInt: Unit ->[IO] Int
 
 System inferencji typów wiedząc, że operacje we/wy są zadeklarowane z powyższymi sygnaturami wnioskuje, że skoro wystąpienia tychże operacji w kodzie \textit{question} nie są obsługiwane przez uchwyt, to efekt \textit{IO} wyjdzie poza tą funkcję.
 
-Efekty \textit{IO} oraz \textit{RE} (runtime error) są szczególne, gdyż są dla nich zadeklarowane globalne uchwyty w bibliotece standardowej, jeśli efekt nie zostanie obsłużony i dotrze do poziomu środowiska uruchomieniowego, to ono zajmie się jego obsługą. W przypadku efektów wejścia/wyjścia środowisko skorzysta ze standardowego wejścia/wyjścia, zaś w przypadku wystąpienia efektu \textit{RE}, obliczenie zostanie przerwane ze stosownym komunikatem błędu.
+Efekty \textit{IO} oraz \textit{RE} (runtime error) są szczególne, gdyż są dla nich zadeklarowane globalne uchwyty w bibliotece standardowej -- jeśli efekt nie zostanie obsłużony i dotrze do poziomu środowiska uruchomieniowego, to ono zajmie się jego obsługą. Dla efektu \textit{IO} środowisko skorzysta ze standardowego wejścia/wyjścia, zaś w przypadku wystąpienia efektu \textit{RE}, obliczenie zostanie przerwane ze stosownym komunikatem błędu.
 
 \section{Przykłady implementacji uchwytów}
 
 \subsection{Błąd}
 
-Zaimplementujemy kilka efektów ubocznych, zaczynając od efektu błędu, wraz z uchwytami dla nich. zaczniemy od efektu błędu. W Helium, efekt oraz powodujące go operacje definiuje się następująco:
+Zaimplementujemy kilka efektów ubocznych, zaczynając od efektu błędu, wraz z uchwytami dla nich. W Helium, efekt oraz powodujące go operacje definiuje się następująco:
 
 \lstinputlisting{code_examples/error1__signature.he}
 
@@ -55,11 +55,11 @@ Stwórzmy funkcję podobną do \textit{question}, z tym że nie będzie ona lubi
 
 Zdefiniowaliśmy efekt uboczny \textit{Error} wraz z operacją \textit{error}, która go powoduje. Operacja ta jest parametryzowana wartością typu \textit{Unit} oraz jej (możliwy) wynik to także wartość z \textit{Unit}. Definiujemy też funkcję \textit{main} w której wywołujemy \textit{no\_negatives\_question}, jednakże obliczenie wykonujemy w uchwycie w którym definiujemy co ma się wydarzyć, gdy w czasie obliczenia wystąpi efekt błędu spowodowany operacją \textit{error}. W tym przypadku mówimy, że skutkuje ono wypisaniem wiadomości na standardowe wyjście. Nie wznawiamy obliczenia, stąd wystąpienie błędu skutkuje zakończeniem nadzorowanego obliczenia. Jeśli uruchomimy teraz program i podamy ujemną liczbę, zakończy się on komunikatem zdefiniowanym w uchwycie, a tekst ,,Question finished'' nie zostanie wypisany -- zgodnie z oczekiwaniami, obliczenie \textit{no\_negatives\_question} nie zostało kontynuowane po wystąpieniu błędu.
 
-Jeśli pewnego uchwytu zamierzamy używać wiele razy, możemy przypisać mu identyfikator -- uchwyty są wartościami w Helium:
+Jeśli pewnego uchwytu zamierzamy używać wiele razy, możemy przypisać mu identyfikator -- w Helium uchwyty są wartościami:
 
 \lstinputlisting[firstline=7, lastline=10]{code_examples/error3__reused_handler.he}
 
-i zmodyfikować funkcję \textit{main} by z niego korzystać:
+zmodyfikujmy funkcję \textit{main} by korzystać ze zdefiniowanego uchwytu:
 
 \lstinputlisting[firstline=12, lastline=13]{code_examples/error3__reused_handler.he}
 
@@ -77,7 +77,7 @@ Powróćmy do problemu, który w rozdziale drugim był inspiracją do rozważani
 
 Będziemy sprawdzać czy formuła wyrażona za pomocą funkcji \textit{formula1} jest spełnialna. W tym celu w funkcji \textit{main}, wewnątrz uchwytu, niedeterministycznie ustalamy wartości zmiennych \textit{x}, \textit{y}, \textit{z} po czym obliczamy wartość funkcji \textit{formula1}. Wartość obsługiwanego wyrażenia, którą przypisujemy do zmiennej \textit{ret}, jest następnie wykorzystana do wypisania komunikatu. Ponadto -- w celu demonstracji możliwości języka -- w uchwytach zamiast kontynuować obliczenie używając \textit{resume}, przypisujemy kontynuacji nazwę \textit{r}.
 
-W Helium, uchwyty mogą posiadać przypadki nie tylko dla operacji związanych z jakimś efektem ale także dwa specjalne przypadki: \textit{return} oraz \textit{finally}. Pierwszy jest wykonywany, gdy obliczenie pod kontrolą uchwytu kończy się zwracając wynik, przypadek jako argument otrzymuje wynik obliczenia. Zaś \textit{finally} otrzymuje jako argument obliczenie obsługiwane przez uchwyt i jest uruchamiane na początku działania uchwytu. Domyślnie przypadki te są zaimplementowane jako:
+W Helium, uchwyty mogą posiadać przypadki nie tylko dla operacji związanych z jakimś efektem ale także dwa specjalne: \textit{return} oraz \textit{finally}. Pierwszy jest wykonywany, gdy obliczenie pod kontrolą uchwytu kończy się zwracając wynik, przypadek \textit{return} jako argument otrzymuje wynik obliczenia. Zaś \textit{finally} otrzymuje jako argument obliczenie obsługiwane przez uchwyt i jest uruchamiane na początku działania uchwytu. Domyślnie przypadki te są zaimplementowane jako:
 
 \begin{lstlisting}
 handler
@@ -107,7 +107,7 @@ handler
 end
 \end{lstlisting}
 
-Wartość obliczenia, zamiast być jego wynikiem, jest funkcją. Co za tym idzie, w tym uchwycie kontynuacje nie będą funkcjami zwracającymi wartości lecz funkcje. W ten sposób możemy parametryzować dalsze obliczenia nie tylko wartościami zwracanymi przez operacje (zgodnie z ich sygnaturą) ale także wymyślonymi przez nas -- autorów uchwytu. Zauważmy jednak, że parametr ten nie jest widoczny w obsługiwanym obliczeniu, a jedynie w uchwycie. Co więcej, skoro wyniki obsługiwanego obliczenia jest teraz funkcją, a nie wartością to by użytkownik uchwytu nie zauważył niezgodności typów musimy funkcję tą uruchomić z jakimś parametrem -- tutaj właśnie przychodzi naturalny moment na wykorzystanie konstrukcji \textit{finally}.
+Wartość obliczenia, zamiast być jego wynikiem, jest funkcją. Co za tym idzie, w tym uchwycie kontynuacje nie będą funkcjami zwracającymi wartości lecz funkcje. W ten sposób możemy parametryzować dalsze obliczenia nie tylko wartościami zwracanymi przez operacje (zgodnie z ich sygnaturą) ale także wymyślonymi przez nas -- autorów uchwytu. Zauważmy jednak, że parametr ten nie jest widoczny w obsługiwanym obliczeniu, a jedynie w uchwycie. Co więcej, skoro wynik obsługiwanego obliczenia jest teraz funkcją, a nie wartością to by użytkownik uchwytu nie zauważył niezgodności typów musimy funkcję tą uruchomić z jakimś parametrem -- tutaj właśnie przychodzi naturalny moment na wykorzystanie konstrukcji \textit{finally}.
 
 Definiujemy efekt stanu z operacją jego odczytu oraz modyfikacji:
 
