@@ -35,6 +35,14 @@ let sprsh1_B1 () = fetch (C "A1") + fetch (C "A2") + fetch C3
 let sprsh1_B2 () = (fetch B1 + fetch B1) + fetch (C "A1")
 let sprsh1_C3 () = 3 * fetch (C "A1") + fetch (C "A2")
 
+(*
+                    A1  A2  B1  B2  C3
+   Stan początkowy: 10  20  20  20  20
+           Końcowy: 10  20  80  170 50
+   A1 -> 20, start: 20  20  80  170 50
+           Końcowy: 20  20  120 260 80
+*)
+
 let sprsh1 (cid: SpreadsheetCell) =
     match cid with
     | B1 => Some $ Task sprsh1_B1
@@ -57,10 +65,31 @@ let compute (Task task) =
 let dumpStoreContents {I K: Type} {`s: StoreEff I K Int} (keys: List K) =
     printIntList (List.map (getValue `s) keys); printStr "\n"
 
-let dumpGivenStoreContents (module T: KeyOrder) keys s =
+let dumpGivenStoreContents {T: Type} (module TM: Comparable T) keys s =
     ignore(handle `s in
         dumpStoreContents keys
-    with funStoreHandler T s)
+    with funStoreHandler TM s)
+
+let dumpKeys = [C "A1", C "A2", B1, B2, C3]
+
+(* ------------------------------------------- Shake Demo ------------------------------------------- *)
+
+let shake {K V: Type} {`s: StoreEff (VT K V) K V} (module KV: KeyValue K V) = withSuspending `s KV vtRebuilder
+
+let shakeDemo () =
+    let store = FunStore [] initState in
+    handle
+        dumpStoreContents dumpKeys;
+        shake Spreadsheet sprsh1 B2;
+        dumpStoreContents dumpKeys;
+        (* Key A1 was modified *)
+        putValue (C "A1") 20;
+        dumpStoreContents dumpKeys;
+        shake Spreadsheet sprsh1 B2;
+        dumpStoreContents dumpKeys
+    with funStoreHandler Spreadsheet.Key store
+
+(* ------------------------------------------- Excel Demo ------------------------------------------- *)
 
 let allDirtyInfo = (fn _ => True)
 let allCleanInfo = (fn _ => False)
@@ -69,27 +98,13 @@ let allCleanButA1 x = match x with
                       | B1 => True | B2 => True | C3 => True
                       | x => allCleanInfo x
                       end
-let dumpKeys = [C "A1", C "A2", B1, B2, C3]
 
-let _ =    
-    let store = FunStore allDirtyInfo initState in
-    handle
-        dumpStoreContents dumpKeys;
-        withSuspending CellOrder dirtyBitRebuilder sprsh1 B2;
-        dumpStoreContents dumpKeys;
-        (* Key A1 was modified, dirty bit updated appropriately *)
-        putValue (C "A1") 20;
-        modifyInfo (fn _ => allCleanButA1);
-        withSuspending CellOrder dirtyBitRebuilder sprsh1 B2;
-        dumpStoreContents dumpKeys
-    with funStoreHandler CellOrder store
-
-let excel {`a: StoreEff (Pair (SpreadsheetCell -> Bool)
+let excel {`s: StoreEff (Pair (SpreadsheetCell -> Bool)
                               (List SpreadsheetCell))
                         SpreadsheetCell
-                        Int} = withRestarting CellOrder dirtyBitRebuilder
+                        Int} = withRestarting Spreadsheet dirtyBitRebuilder
 
-let _ =
+let excelDemo () =
     let store = FunStore (allDirtyInfo, []) initState in
     handle
         dumpStoreContents dumpKeys;
@@ -97,7 +112,9 @@ let _ =
         dumpStoreContents dumpKeys;
         (* Key A1 was modified, dirty bit updated appropriately *)
         putValue (C "A1") 20;
-        modifyInfo (fn (_, r) => (allCleanButA1, r));
+        modifyInfo (modifyFst (fn _ => allCleanButA1));
         excel sprsh1 B2;
         dumpStoreContents dumpKeys
     with funStoreHandler CellOrder store
+
+let _ = shakeDemo ()

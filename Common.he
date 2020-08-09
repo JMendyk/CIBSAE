@@ -4,20 +4,39 @@ import Store
 open State
 open Store
 
-type KeyOrder = sig
-     type this: Type
-     val compare: this -> this -> Ord
-     val toString: this -> String
+type Hash (V: Type) = Int
+
+type Comparable (T: Type) = sig
+     type this = T
+     val compare: T -> T ->[] Ord
+end
+
+type Hashable (T: Type) = sig
+     val hash: T ->[] Hash T
+end
+
+type Showable (T: Type) = sig
+     val toString: T ->[] String
+end
+
+type Entity (T: Type) = sig
+     include (Comparable T)
+     include (Hashable T)
+     include (Showable T)
+end
+
+type KeyValue (K V: Type) = sig
+     val Key: Entity K
+     val Value: Entity V
 end
 
 signature BuildEff (K: Type) (V: Type) =
 | fetch : K => V
 
-data TaskType (K: Type) (V: Type) = Task of ({`a: BuildEff K V} -> Unit ->[`a] V)
-let unTask (Task t) = t
+data TaskType (K: Type) (V: Type) (E: Effect) = Task of ({`a: BuildEff K V} -> Unit ->[E, `a] V)
 
-type Tasks (K: Type) (V: Type) = (K -> Option (TaskType K V))
+type Tasks (K: Type) (V: Type) = (K -> Option (TaskType K V (effect [])))
 
 type Build (I: Type) (K: Type) (V: Type) = {`s: StoreEff I K V} -> Tasks K V -> K ->[`s] Unit
-type Rebuilder (IR: Type) (K: Type) (V: Type) = {`s: State IR} -> K -> V -> TaskType K V ->[`s] TaskType K V
-type Scheduler (I: Type) (IR: Type) (K: Type) (V: Type) = Rebuilder IR K V -> Build I K V
+type Rebuilder (IR: Type) (K: Type) (V: Type) = {`s: State IR} -> KeyValue K V -> K -> V -> TaskType K V (effect []) -> TaskType K V (effect [`s])
+type Scheduler (I: Type) (IR: Type) (K: Type) (V: Type) = {`a: StoreEff I K V} -> KeyValue K V -> Rebuilder IR K V -> Build I K V

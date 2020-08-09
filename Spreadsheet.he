@@ -1,5 +1,6 @@
 
 import String
+import Int
 import Utils
 
 open Utils
@@ -23,7 +24,22 @@ type CellOrder = struct
                       | C3 => "C3"
                       | (C c) => c
                       end
+     let hash c = match c with
+                  | B1 => stringHash "B1"
+                  | B2 => stringHash "B2"
+                  | C3 => stringHash "C3"
+                  | (C c) => stringHash c
+                  end
+end
 
+type Spreadsheet = struct
+     let type Key = CellOrder
+     let type Value = struct
+         let this = Int
+         let compare = Int.compare
+         let toString = Int.toString
+         let hash x = x
+     end
 end
 
 let printCellList = printStr <.> listTToString CellOrder

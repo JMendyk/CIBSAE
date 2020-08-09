@@ -1,5 +1,8 @@
 import Common
 
+import String
+import Char
+
 let ( $ ) f x = f x
 let (<.>) f g x = f (g x)
 
@@ -16,24 +19,20 @@ let filter p xs =
         end
     in filter xs
 
-let member (module T: Common.KeyOrder) (a: T.this) (xs: List T.this) =
-    let rec member (xs: List T.this) =
+let member {T: Type} (module TM: Common.Comparable T) (a: T) (xs: List T) =
+    open TM in
+    let rec member (xs: List T) =
         match xs with
         | [] => False
-        | (x::xs) => match T.compare a x with
+        | (x::xs) => match compare a x with
                      | EQ => True
                      |  _ => member xs
                      end
         end
     in member xs
 
-type ToString = sig
-     type this: Type
-     val toString: this -> String
-end
-
-let listTToString (module T: ToString) xs =
-    open T in
+let listTToString {T: Type} (module TM: Common.Showable T) (xs: List T) =
+    open TM in
     let rec withSep xs sep = match xs with
                              | [] => ""
                              | [x] => toString x
@@ -47,3 +46,17 @@ let printIntList = printStr <.> listTToString
         let type this = Int
         let toString = stringOfInt
     end
+
+
+(* Very, very bad string hashing function *)
+let stringHash s =
+    let mod = extern "helium_modInt" : Int -> Int -> Int
+    let (a, b) = (113, 251)
+    let rec aux n xs = match xs with
+                   | [] => n
+                   | x::xs => aux (mod (n * a) b) xs
+                   end
+    let strToList s =
+        let rec strToList' n s = (Char.code (String.get n s)) :: strToList' (n+1) s
+        in strToList' 0 s
+    in aux 0 (strToList s)

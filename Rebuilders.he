@@ -1,15 +1,18 @@
 import Common
 import State
-
-import Spreadsheet
+import Track
+import Utils
+import Writer
 
 import List
-import Map
 
 open Common
 open State
+open Track
 
-open Map
+
+
+(* -------------------------------------------- Mod Time -------------------------------------------- *)
 
 (* type Time = Int *)
 (* type MakeInfo (K: KeyOrder) = let type MK = Map K in Pair Time (MK.this K.this) *)
@@ -23,54 +26,91 @@ open Map
 (*     let dirty = handle MK.find key modTimes with *)
 (*                 | not_found _ =>  in 0 *)
 
-let dirtyBitRebuilder {K V: Type} {`s: State (K -> Bool)} (key: K) (value: V) (task: TaskType K V) =
-    let isDirty = get () in
-    if isDirty key then task
-    else begin
-         let t (`a: BuildEff K V) () = value
-         in Task t
-    end
+(* -------------------------------------------- Dirty Bit ------------------------------------------- *)
+
+let dirtyBitRebuilder {K V: Type} {`s: State (K -> Bool)} (module KV: KeyValue K V) (key: K) (value: V) (task: TaskType K V (effect [])) =
+    let newTask (`b: BuildEff K V) () =
+        let isDirty = get `s () in
+        if isDirty key then run task
+                       else value
+    in Task newTask
 
 (* --------------------------------------------- Traces --------------------------------------------- *)
-
-type Hash (V: Type) = Int
 
 data TraceType (K V A: Type) = Trace of K, (List (Pair K (Hash V))), A
 let key (Trace k _ _) = k
 let depends (Trace _ d _) = d
 let result (Trace _ _ r) = r
 
+let hashedFetch hash =
+    handler
+    | fetch k => resume (hash (fetch k))
+    end
+
 (* ---------------------------------------- Verifying Traces ---------------------------------------- *)
 
 type VT (K V: Type) = List (TraceType K V (Hash V))
+type Deps (K V: Type) = List (Pair K (Hash V))
 
-let recordVT {K V: Type} {`s: State (VT K V)} (key: K) (hash: Hash V) (deps: List (Pair K (Hash V))) =
+let recordVT {K V: Type} {`s: State (VT K V)} (key: K) (hash: Hash V) (deps: Deps K V) =
     modifyState (fn ts => (Trace key deps hash) :: ts)
     
-let verifyVT {V: Type} (module T: KeyOrder) {`s: State (VT T.this V)} {`b: BuildEff T.this (Hash V)} (key: T.this) (hash: Hash V) =
+let verifyVT {K V: Type} {`s: State (VT K V)} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (hash: Hash V) =
     let fetchedHashMatches (k, h) = h = fetch k in
     let matchFor (Trace k deps result) =
-        match (T.compare k key, result <> hash) with
+        match (KV.Key.compare k key, result <> hash) with
         | (EQ, True) => List.forAll fetchedHashMatches deps
         | _ => False
         end
     in List.exists matchFor (get ())
 
+let vtRebuilder {K V: Type} {`s: State (VT K V)} (module KV: KeyValue K V) (key: K) (value: V) (task: TaskType K V (effect [])) =
+    let hash = KV.Value.hash in
+    let newTask (`b: BuildEff K V) () =
+        let upToDate = handle verifyVT KV key (hash value) with hashedFetch hash in
+        if upToDate then run task
+        else begin
+             let (newValue, deps) = track task in
+                 recordVT key (hash newValue) (List.map (fn (k, v) => (k, hash v)) deps);
+                 newValue
+        end
+    in Task newTask
+
+(* I'll leave it for now, since when manually checking vtRebuilder's type
+   there's an extra effect in returned Task, but it doesn't seem to matter
+   in usage cases. At least for now... *)
+
+(* let (vtRebuilder: {K V: Type} -> {`s: State (VT K V)} -> KeyValue K V ->[] K ->[] V ->[] TaskType K V (effect []) ->[] TaskType K V (effect [`s])) = vtRebuilder666 *)
+
 (* --------------------------------------- Constructive Traces -------------------------------------- *)
 
 type CT (K V: Type) = List (TraceType K V V)
 
-let recordCT {K V: Type} {`s: State (CT K V)} (key: K) (value: V) (deps: List (Pair K (Hash V))) =
+let recordCT {K V: Type} {`s: State (CT K V)} (key: K) (value: V) (deps: Deps K V) =
     modifyState (fn ts => (Trace key deps value) :: ts)
 
-let constructCT {V: Type} (module T: KeyOrder) {`s: State (CT T.this V)} {`b: BuildEff T.this (Hash V)} (key: T.this) =
+let constructCT {K V: Type} {`s: State (CT K V)} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) =
     let fetchedHashMatches (k, h) = h = fetch k in
-    let matchFor {`r: State (List V)} (Trace k deps result) =
-        match T.compare k key with
+    let matchFor {`r: Writer V} (Trace k deps result) =
+        match KV.Key.compare k key with
         | EQ => if List.forAll fetchedHashMatches deps then
-                   modifyState `r (fn s => result :: s)
+                   Writer.tell result
                 else ()
         |  _ => ()
         end in
-    let handle `r with execState [] in
+    let handle `r with Writer.listHandler in
         List.iter (matchFor `r) (get `s ())
+
+let ctRebuilder {K V: Type} {`s: State (CT K V)} (module KV: KeyValue K V) (key: K) (value: V) (task: TaskType K V (effect [])) =
+    let hash = KV.Value.hash in
+    let newTask (`b: BuildEff K V) () =
+        let cachedValues = handle constructCT KV key with hashedFetch hash in
+        if Utils.member KV.Value value cachedValues
+        then value
+        else match cachedValues with
+             | (cachedValue::_) => cachedValue
+             | [] => let (newValue, deps) = track task in
+                     recordCT `s key newValue (List.map (fn (k, v) => (k, hash v)) deps);
+                     newValue
+             end
+    in Task newTask

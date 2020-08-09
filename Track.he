@@ -1,0 +1,22 @@
+import Common
+import Store
+import PatchedWriter
+
+open Common
+open Store
+
+(* Module PatchedWriter is extension of Writer module
+   with runListHandler function added to replicate Haskell's runWriterT behaviour. *)
+type Writer = PatchedWriter
+
+let run {K V: Type} {E: Effect} {`b: BuildEff K V} (Task task: TaskType K V E) = task `b ()
+
+let track {I K V: Type} {`b: BuildEff K V} (task: TaskType K V (effect [])) =
+    let handle with Writer.runListHandler in
+    let hTrack =
+        handler
+        | fetch k => let v = fetch `b k in
+                         Writer.tell (k, v);
+                         resume v
+        end in
+    handle `tb in run `tb task with hTrack

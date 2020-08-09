@@ -2,6 +2,7 @@ import Common
 import State
 import Store
 import Rebuilders
+import Track
 import Utils
 import Logger
 import Set
@@ -10,21 +11,23 @@ open Common
 open State
 open Store
 open Rebuilders
+open Track
 open Utils
 open Logger
 open Set
 
 
 
-let withBusy {I V: Type} (module T: KeyOrder) {`a: StoreEff I T.this V} (tasks: Tasks T.this V) (key: T.this) =
+let withBusy {I K V: Type} (module KV: KeyValue K V) {`a: StoreEff I K V} (tasks: Tasks K V) (key: K) =
+    open KV in
     let handle with indentLogHandler in
     let rec busyHandler =
         handler
         | fetch k => build k; resume (getValue k)
         end
-        and build (key: T.this) =
+        and build (key: K) =
         entry ();
-        logln (T.toString key ++ "\n");
+        logln (Key.toString key ++ "\n");
         match tasks key with
         | None => ()
         | Some (Task task) =>
@@ -32,69 +35,74 @@ let withBusy {I V: Type} (module T: KeyOrder) {`a: StoreEff I T.this V} (tasks: 
         end;
         exit ()
     in
-    logln ("Building " ++ T.toString key ++ " with busy\n");
+    logln ("Building " ++ Key.toString key ++ " with busy\n");
     build key
 
-let withSuspending {I V: Type} (module T: KeyOrder) {`a: StoreEff I T.this V} (rebuilder: Rebuilder I T.this V) (tasks: Tasks T.this V) (key: T.this) =
-    let type ST = Set T in
-    let embedHandler = embedState (getInfo `a) (putInfo `a)
-    let handle with indentLogHandler in
-    let handle with evalState ST.empty in
+let withSuspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K V) (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
+    open KV in
+    let type ST = Set Key in
+    let handle `logger with indentLogHandler in
+    let handle `set with evalState ST.empty in
+    let handle `stir with embedState (getInfo `ste) (putInfo `ste) in
         let rec suspendingHandler =
-            handler
-            | fetch k => build k; resume (getValue k)
-            end
+                handler
+                | fetch k => build k; resume (getValue k)
+                end
             and build key =
             entry ();
-            logln (T.toString key ++ " ");
-            match (tasks key, ST.mem key (get ())) with
+            logln (Key.toString key ++ " ");
+            match (tasks key, ST.mem key (get `set ())) with
             | (Some task, False) =>
                log "computing...\n";
                let value = getValue key in
-               let (Task newTask) = handle rebuilder key value task with embedHandler in
-               let newValue = handle newTask () with suspendingHandler
-               in modifyState (ST.add key);
-                  putValue key newValue
+               let handle `shh with suspendingHandler in
+               let newTask = rebuilder `stir KV key value task in
+               let newValue = run newTask in
+               modifyState `set (ST.add key);
+               putValue key newValue
              | (None, _) => log "(i)\n"
              | (Some _, True) => log "already computed\n"
              end;
              exit ()
         in
-        log ("Building " ++ T.toString key ++ " with suspending\n");
+        log ("Building " ++ Key.toString key ++ " with suspending\n");
         build key
 
-let withRestarting {IR V: Type} (module T: KeyOrder) {`a: StoreEff (Pair IR (List T.this)) T.this V} (rebuilder: Rebuilder IR T.this V) (tasks: Tasks T.this V) (key: T.this) =
-    let type ST = Set T in
+let embedHandler1 {IR K V: Type} (`ste: StoreEff (Pair IR (List K)) K V) = embedState (fst <.> getInfo `ste) (modifyInfo `ste <.> setFst)
+
+let withRestarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR (List K)) K V} (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
+    open KV in
+    let neq dep x = match Key.compare x dep with
+                    | EQ => False
+                    | _ => True
+                    end in
+    let type ST = Set Key in
     let handle with indentLogHandler in
     let oldChain = snd (getInfo ()) in
-    let newChain = oldChain @ (if member T key oldChain then [] else [key]) in
-    let embedHandler = embedState (fst <.> getInfo `a) (modifyInfo `a <.> setFst) in
+    let newChain = oldChain @ (if member Key key oldChain then [] else [key]) in
     let handle `q with evalState newChain in
     let handle `s with evalState ST.empty in
-        let rec neq dep x = match T.compare x dep with
-                              | EQ => False
-                              | _ => True
+    let handle `stir with embedState (fst <.> getInfo `ste) (modifyInfo `ste <.> setFst) in
+        let rec qInsert dep = match get `q () with
+                              | [] => runtimeError "empty work queue\n"
+                              | (curr::rest) => let after = (dep :: filter (neq dep) rest) @ [curr] in
+                                                    put `q after
                               end
-        and qInsert dep = match get `q () with
-                          | [] => runtimeError "empty work queue\n"
-                          | (curr::rest) => let after = (dep :: filter (neq dep) rest) @ [curr] in
-                                            put `q after
-                          end
         and restartingHandler =
             handler
-            | fetch k => logln ("Fetching: " ++ T.toString k ++ "\n");
+            | fetch k => logln ("Fetching: " ++ Key.toString k ++ "\n");
                          if (ST.mem k (get `s ())) then
-                            resume (getValue k)
+                            resume (getValue `ste k)
                          else match get `q () with
                               | [] => runtimeError "fetch from empty work queue\n"
-                              | (curr::rest) => log (T.toString curr ++ " will be restarted\n"); qInsert k; loop ()
+                              | (curr::rest) => log (Key.toString curr ++ " will be restarted\n"); qInsert k; loop ()
                               end
             | return x => match get `q () with
                           | [] => runtimeError "return from empty work queue\n"
-                          | (curr::rest) => logln ("Finished " ++ T.toString curr ++ "\n");
+                          | (curr::rest) => logln ("Finished " ++ Key.toString curr ++ "\n");
                                             modifyState `s (ST.add curr);
                                             put `q rest;
-                                            putValue curr x;
+                                            putValue `ste curr x;
                                             curr :: loop ()
                           end
             end
@@ -104,16 +112,15 @@ let withRestarting {IR V: Type} (module T: KeyOrder) {`a: StoreEff (Pair IR (Lis
             | (key::keys) =>
               match tasks key with
               | Some task => let value = getValue key in
-                               let (Task newTask) = handle rebuilder key value task
-                                                    with embedHandler in
-                               handle newTask () with restartingHandler
-              | None => log ("input " ++ T.toString key ++ "\n");
+                             let newTask = rebuilder `stir KV key value task in
+                               handle run newTask with restartingHandler
+              | None => log ("input " ++ Key.toString key ++ "\n");
                         modifyState `s (ST.add key);
                         put `q keys;
                         key :: loop ()
               end
             end
         in
-        log ("Building " ++ T.toString key ++ " with restarting\n");
+        log ("Building " ++ Key.toString key ++ " with restarting\n");
         let resultChain = loop () in
-        modifyInfo (fn (i, _) => (i, resultChain))
+        modifyInfo (modifySnd (fn _ => resultChain))

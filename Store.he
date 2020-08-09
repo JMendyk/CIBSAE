@@ -32,18 +32,19 @@ let simpleInfoHandler i kvs =
 
 data FunStoreType (I: Type) (K: Type) (V: Type) = FunStore of I, (K -> V)
 
-type Compare = sig
-     type this: Type
-     val compare: this -> this -> Ord
+type Comparable (T: Type) = sig
+     type this = T
+     val compare: T -> T -> Ord
 end
 
-let funStoreHandler (module T: Compare) (FunStore i lookup) =
+let funStoreHandler {I K V: Type} (module Key: Comparable K) (store: FunStoreType I K V) =
+    let (FunStore i lookup) = store in
     handler
     | getInfo () => fn i lookup => resume i i lookup
     | putInfo  i => fn _ lookup => resume () i lookup
     | getValue k => fn i lookup => resume (lookup k) i lookup
     | putValue k v => fn i lookup =>
-                         let lookup' x = match T.compare x k with
+                         let lookup' x = match Key.compare x k with
                                          | EQ => v
                                          | _ => lookup x
                                          end

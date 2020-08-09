@@ -1,0 +1,13 @@
+import Writer
+import List
+
+include Writer
+
+
+
+let runListHandler =
+  handler
+  | return v => fn xs => (v, List.rev xs)
+  | tell x    => fn xs => resume () (x :: xs)
+  | finally f => f []
+  end
