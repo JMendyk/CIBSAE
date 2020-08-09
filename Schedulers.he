@@ -20,7 +20,7 @@ open Set
 
 let withBusy {I K V: Type} (module KV: KeyValue K V) {`a: StoreEff I K V} (tasks: Tasks K V) (key: K) =
     open KV in
-    let handle with indentLogHandler in
+    let handle with indentLogger in
     let rec busyHandler =
         handler
         | fetch k => build k; resume (getValue k)
@@ -41,7 +41,7 @@ let withBusy {I K V: Type} (module KV: KeyValue K V) {`a: StoreEff I K V} (tasks
 let withSuspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K V) (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
     open KV in
     let type ST = Set Key in
-    let handle `logger with indentLogHandler in
+    let handle with indentLogger in
     let handle `set with evalState ST.empty in
     let handle `stir with embedState (getInfo `ste) (putInfo `ste) in
         let rec suspendingHandler =
@@ -77,7 +77,7 @@ let withRestarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pai
                     | _ => True
                     end in
     let type ST = Set Key in
-    let handle with indentLogHandler in
+    let handle with indentLogger in
     let oldChain = snd (getInfo ()) in
     let newChain = oldChain @ (if member Key key oldChain then [] else [key]) in
     let handle `q with evalState newChain in

@@ -74,7 +74,7 @@ let dumpKeys = [C "A1", C "A2", B1, B2, C3]
 
 (* ------------------------------------------- Shake Demo ------------------------------------------- *)
 
-let shake {K V: Type} {`s: StoreEff (VT K V) K V} (module KV: KeyValue K V) = withSuspending `s KV vtRebuilder
+let shake {K V: Type} {`s: StoreEff (VT K V) K V} (module KV: KeyValue K V) = withSuspending KV vtRebuilder
 
 let shakeDemo () =
     let store = FunStore [] initState in

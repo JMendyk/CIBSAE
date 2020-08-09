@@ -6,7 +6,7 @@ signature Logger =
 | logln : String => Unit
 | exit  : Unit   => Unit
 
-let indentLogHandler =
+let indentLogger =
     handler
     | entry () => fn n => resume () (n + 1)
     | log s    => fn n => printStr s; resume () n
@@ -14,4 +14,12 @@ let indentLogHandler =
     | exit ()  => fn n => resume () (n - 1)
     | return x => fn _ => x
     | finally f => f 0
+    end
+
+let voidLogger =
+    handler
+    | entry _ => resume ()
+    | log   _ => resume ()
+    | logln _ => resume ()
+    | exit  _ => resume ()
     end
