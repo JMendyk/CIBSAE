@@ -1,18 +1,16 @@
 import Common
 import Store
-import Schedulers
-import Rebuilders
 import Spreadsheet
 import Utils
+import Systems
 
 import String
 import List
 
 open Common
 open Store
-open Schedulers
-open Rebuilders
 open Spreadsheet
+open Systems
 open Utils
 
 (* Chcielibyśmy mieć coś takiego: *)
@@ -72,23 +70,6 @@ let dumpGivenStoreContents {T: Type} (module TM: Comparable T) keys s =
 
 let dumpKeys = [C "A1", C "A2", B1, B2, C3]
 
-(* ------------------------------------------- Shake Demo ------------------------------------------- *)
-
-let shake {K V: Type} {`s: StoreEff (VT K V) K V} (module KV: KeyValue K V) = withSuspending KV vtRebuilder
-
-let shakeDemo () =
-    let store = FunStore [] initState in
-    handle
-        dumpStoreContents dumpKeys;
-        shake Spreadsheet sprsh1 B2;
-        dumpStoreContents dumpKeys;
-        (* Key A1 was modified *)
-        putValue (C "A1") 20;
-        dumpStoreContents dumpKeys;
-        shake Spreadsheet sprsh1 B2;
-        dumpStoreContents dumpKeys
-    with funStoreHandler Spreadsheet.Key store
-
 (* ------------------------------------------- Excel Demo ------------------------------------------- *)
 
 let allDirtyInfo = (fn _ => True)
@@ -98,11 +79,6 @@ let allCleanButA1 x = match x with
                       | B1 => True | B2 => True | C3 => True
                       | x => allCleanInfo x
                       end
-
-let excel {`s: StoreEff (Pair (SpreadsheetCell -> Bool)
-                              (List SpreadsheetCell))
-                        SpreadsheetCell
-                        Int} = withRestarting Spreadsheet dirtyBitRebuilder
 
 let excelDemo () =
     let store = FunStore (allDirtyInfo, []) initState in
@@ -117,4 +93,34 @@ let excelDemo () =
         dumpStoreContents dumpKeys
     with funStoreHandler CellOrder store
 
-let _ = shakeDemo ()
+(* ------------------------------------------- Shake Demo ------------------------------------------- *)
+
+let shakeDemo () =
+    let store = FunStore [] initState in
+    handle
+        dumpStoreContents dumpKeys;
+        shake Spreadsheet sprsh1 B2;
+        dumpStoreContents dumpKeys;
+        (* Key A1 was modified *)
+        putValue (C "A1") 20;
+        dumpStoreContents dumpKeys;
+        shake Spreadsheet sprsh1 B2;
+        dumpStoreContents dumpKeys
+    with funStoreHandler Spreadsheet.Key store
+
+(* ---------------------------------------- Cloud Shake Demo ---------------------------------------- *)
+
+let cloudShakeDemo () =
+    let store = FunStore [] initState in
+    handle
+        dumpStoreContents dumpKeys;
+        cloudShake Spreadsheet sprsh1 B2;
+        dumpStoreContents dumpKeys;
+        (* Key A1 was modified *)
+        putValue (C "A1") 20;
+        dumpStoreContents dumpKeys;
+        cloudShake Spreadsheet sprsh1 B2;
+        dumpStoreContents dumpKeys
+    with funStoreHandler Spreadsheet.Key store
+
+let _ = cloudShakeDemo ()

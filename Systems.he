@@ -1,0 +1,20 @@
+import Common
+import Store
+import Spreadsheet
+import Schedulers
+import Rebuilders
+
+open Common
+open Store
+open Spreadsheet
+open Schedulers
+open Rebuilders
+
+let excel {`s: StoreEff (Pair (SpreadsheetCell -> Bool)
+                              (List SpreadsheetCell))
+                        SpreadsheetCell
+                        Int} = withRestarting Spreadsheet dirtyBitRebuilder
+
+let shake {K V: Type} {`s: StoreEff (VT K V) K V} (module KV: KeyValue K V) = withSuspending KV vtRebuilder
+
+let cloudShake {K V: Type} {`s: StoreEff (CT K V) K V} (module KV: KeyValue K V) = withSuspending KV ctRebuilder
