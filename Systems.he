@@ -10,13 +10,14 @@ open Spreadsheet
 open Schedulers
 open Rebuilders
 
-let excel {`s: StoreEff (Pair (SpreadsheetCell -> Bool)
-                              (List SpreadsheetCell))
-                        SpreadsheetCell
-                        Int} = withRestarting Spreadsheet dirtyBitRebuilder
+let excel {K V: Type} {`s: StoreEff (Pair (K -> Bool) (List K)) K V} (module KV: KeyValue K V) =
+    restarting KV dirtyBitRebuilder
 
-let shake {K V: Type} {`s: StoreEff (VT K V) K V} (module KV: KeyValue K V) = withSuspending KV vtRebuilder
+let shake {K V: Type} {`s: StoreEff (VT K V) K V} (module KV: KeyValue K V) =
+    suspending KV vtRebuilder
 
-let cloudShake {K V: Type} {`s: StoreEff (CT K V) K V} (module KV: KeyValue K V) = withSuspending KV ctRebuilder
+let cloudShake {K V: Type} {`s: StoreEff (CT K V) K V} (module KV: KeyValue K V) =
+    suspending KV ctRebuilder
 
-let nix {K V: Type} {`s: StoreEff (DCT K V) K V} (module KV: KeyValue K V) = withSuspending KV dctRebuilder
+let nix {K V: Type} {`s: StoreEff (DCT K V) K V} (module KV: KeyValue K V) =
+    suspending KV dctRebuilder

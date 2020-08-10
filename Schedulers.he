@@ -15,7 +15,7 @@ open Logger
 
 
 
-let withBusy {I K V: Type} (module KV: KeyValue K V) {`a: StoreEff I K V} (tasks: Tasks K V) (key: K) =
+let busy {I K V: Type} (module KV: KeyValue K V) {`a: StoreEff I K V} (tasks: Tasks K V) (key: K) =
     open KV in
     let handle with indentLogger in
     let rec busyHandler =
@@ -35,7 +35,7 @@ let withBusy {I K V: Type} (module KV: KeyValue K V) {`a: StoreEff I K V} (tasks
     logln ("Building " ++ Key.toString key ++ " with busy\n");
     build key
 
-let withSuspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K V) (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
+let suspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K V) (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
     open KV in
     let type ST = Set Key in
     let handle with indentLogger in
@@ -65,7 +65,7 @@ let withSuspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K
         log ("Building " ++ Key.toString key ++ " with suspending\n");
         build key
 
-let withRestarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR (List K)) K V} (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
+let restarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR (List K)) K V} (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
     open KV in
     let neq dep x = match Key.compare x dep with
                     | EQ => False

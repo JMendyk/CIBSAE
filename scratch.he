@@ -84,12 +84,12 @@ let excelDemo () =
     let store = FunStore (allDirtyInfo, []) initState in
     handle
         dumpStoreContents dumpKeys;
-        excel sprsh1 B2;
+        excel Spreadsheet sprsh1 B2;
         dumpStoreContents dumpKeys;
         (* Key A1 was modified, dirty bit updated appropriately *)
         putValue (C "A1") 20;
         modifyInfo (modifyFst (fn _ => allCleanButA1));
-        excel sprsh1 B2;
+        excel Spreadsheet sprsh1 B2;
         dumpStoreContents dumpKeys
     with funStoreHandler CellOrder store
 
