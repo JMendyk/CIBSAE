@@ -1,7 +1,6 @@
 import Common
 import State
 import Store
-import Rebuilders
 import Track
 import Utils
 import Logger
@@ -10,11 +9,9 @@ import Set
 open Common
 open State
 open Store
-open Rebuilders
 open Track
 open Utils
 open Logger
-open Set
 
 
 
@@ -55,7 +52,7 @@ let withSuspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K
             | (Some task, False) =>
                log "computing...\n";
                let value = getValue key in
-               let handle `shh with suspendingHandler in
+               let handle with suspendingHandler in
                let newTask = rebuilder `stir KV key value task in
                let newValue = run newTask in
                modifyState `set (ST.add key);
@@ -67,8 +64,6 @@ let withSuspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K
         in
         log ("Building " ++ Key.toString key ++ " with suspending\n");
         build key
-
-let embedHandler1 {IR K V: Type} (`ste: StoreEff (Pair IR (List K)) K V) = embedState (fst <.> getInfo `ste) (modifyInfo `ste <.> setFst)
 
 let withRestarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR (List K)) K V} (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
     open KV in
@@ -113,7 +108,7 @@ let withRestarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pai
               match tasks key with
               | Some task => let value = getValue key in
                              let newTask = rebuilder `stir KV key value task in
-                               handle run newTask with restartingHandler
+                                 handle run newTask with restartingHandler
               | None => log ("input " ++ Key.toString key ++ "\n");
                         modifyState `s (ST.add key);
                         put `q keys;
