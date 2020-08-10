@@ -123,4 +123,19 @@ let cloudShakeDemo () =
         dumpStoreContents dumpKeys
     with funStoreHandler Spreadsheet.Key store
 
-let _ = cloudShakeDemo ()
+(* -------------------------------------------- Nix Demo -------------------------------------------- *)
+
+let nixDemo () =
+    let store = FunStore [] initState in
+    handle
+        dumpStoreContents dumpKeys;
+        nix Spreadsheet sprsh1 B2;
+        dumpStoreContents dumpKeys;
+        (* Key A1 was modified *)
+        putValue (C "A1") 20;
+        dumpStoreContents dumpKeys;
+        nix Spreadsheet sprsh1 B2;
+        dumpStoreContents dumpKeys
+    with funStoreHandler Spreadsheet.Key store
+
+let _ = nixDemo ()

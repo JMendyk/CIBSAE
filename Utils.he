@@ -1,6 +1,7 @@
 import Common
 
 import String
+import List
 import Char
 
 let ( $ ) f x = f x
@@ -11,13 +12,34 @@ let setSnd y (x, _) = (x, y)
 let modifyFst f (x, y) = (f x, y)
 let modifySnd f (x, y) = (x, f y)
 
-let filter p xs =
+let filter p =
     let rec filter xs =
         match xs with
         | [] => []
         | (x::xs) => if p x then x::(filter xs) else filter xs
         end
-    in filter xs
+    in filter
+
+(* Adapted from https:\/\/github.com\/ocaml\/ocaml\/blob\/trunk\/stdlib\/list.ml  *)
+
+let concatMap f =
+    let rec aux f acc l =
+        match l with
+        | [] => List.rev acc
+        | x :: l => let xs = f x in
+                        aux f (List.revAppend xs acc) l
+        end
+    in aux f []
+
+let zip =
+    let rec zip xs ys =
+        match (xs, ys) with
+        | ([], []) => []
+        | ([], _) => []
+        | (_, []) => []
+        | (x :: xs, y :: ys) => (x, y) :: zip xs ys
+        end
+    in zip
 
 let member {T: Type} (module TM: Common.Comparable T) (a: T) (xs: List T) =
     open TM in

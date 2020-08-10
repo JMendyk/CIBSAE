@@ -18,3 +18,5 @@ let excel {`s: StoreEff (Pair (SpreadsheetCell -> Bool)
 let shake {K V: Type} {`s: StoreEff (VT K V) K V} (module KV: KeyValue K V) = withSuspending KV vtRebuilder
 
 let cloudShake {K V: Type} {`s: StoreEff (CT K V) K V} (module KV: KeyValue K V) = withSuspending KV ctRebuilder
+
+let nix {K V: Type} {`s: StoreEff (DCT K V) K V} (module KV: KeyValue K V) = withSuspending KV dctRebuilder

@@ -89,7 +89,7 @@ type CT (K V: Type) = List (TraceType K V V)
 let recordCT {K V: Type} {`s: State (CT K V)} (key: K) (value: V) (deps: Deps K V) =
     modifyState (fn ts => (Trace key deps value) :: ts)
 
-let constructCT {K V: Type} {`s: State (CT K V)} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) =
+let constructCT {K V: Type} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (ts: CT K V) =
     let fetchedHashMatches (k, h) = h = fetch k in
     let matchFor {`r: Writer V} (Trace k deps result) =
         match KV.Key.compare k key with
@@ -99,18 +99,60 @@ let constructCT {K V: Type} {`s: State (CT K V)} {`b: BuildEff K (Hash V)} (modu
         |  _ => ()
         end in
     let handle `r with Writer.listHandler in
-        List.iter (matchFor `r) (get `s ())
+        List.iter (matchFor `r) ts
 
 let ctRebuilder {K V: Type} {`s: State (CT K V)} (module KV: KeyValue K V) (key: K) (value: V) (task: TaskType K V (effect [])) =
     let hash = KV.Value.hash in
     let newTask (`b: BuildEff K V) () =
-        let cachedValues = handle constructCT KV key with hashedFetch hash in
+        let cachedValues = handle constructCT KV key (get `s ()) with hashedFetch hash in
         if Utils.member KV.Value value cachedValues
         then value
         else match cachedValues with
              | (cachedValue::_) => cachedValue
              | [] => let (newValue, deps) = track task in
                      recordCT `s key newValue (List.map (fn (k, v) => (k, hash v)) deps);
+                     newValue
+             end
+    in Task newTask
+
+(* ------------------------------------ Deep Constructive Traces ------------------------------------ *)
+
+type DCT (K V: Type) = List (TraceType K V V)
+
+let deepDependencies {K V: Type} (module KV: KeyValue K V) (ts: DCT K V) (valueHash: Hash V) (key: K) =
+    open KV in
+    let f (Trace k deps v) = match (Key.compare k key, Value.hash v = valueHash) with
+                             | (EQ, True) => Writer.tell (List.map fst deps)
+                             | _ => ()
+                             end in
+    let depsList = handle `w in List.iter (f `w) ts with Writer.listHandler in
+    match depsList with
+    | []        => [key]
+    | (deps::_) => deps (* Authors assume that there is only one record for a (k, v) pair *)
+    end
+
+let recordDCT {K V: Type} {`s: State (DCT K V)} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (value: V) (deps: List K) =
+    let hash = KV.Value.hash in
+    let deepDeps = Utils.concatMap (deepDependencies KV (get `s ()) (hash value)) deps in
+    let hs = List.map (fetch `b) deepDeps in
+    let depends = Utils.zip deepDeps hs in
+        modifyState (fn ts => (Trace key depends value) :: ts)
+
+let constructDCT {K V: Type} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (ts: DCT K V) = constructCT KV key ts
+
+(* let _ = recordDCT; () *)
+
+let dctRebuilder {K V: Type} {`s: State (DCT K V)} (module KV: KeyValue K V) (key: K) (value: V) (task: TaskType K V (effect [])) =
+    let hash = KV.Value.hash in
+    let newTask (`b: BuildEff K V) () =
+        let cachedValues = handle constructDCT KV key (get `s ()) with hashedFetch hash in
+        if Utils.member KV.Value value cachedValues
+        then value
+        else match cachedValues with
+             | (cachedValue::_) => cachedValue
+             | [] => let (newValue, deps) = track task in
+                     let handle `b with hashedFetch hash in
+                     recordDCT `s `b KV key newValue (List.map fst deps);
                      newValue
              end
     in Task newTask
