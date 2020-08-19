@@ -33,8 +33,8 @@ Nasz model składać się będzie z wyrażeń:
 \begin{itemize}
 \item \(\return{v}\) -- gdzie \(v\) jest wyrażeniem boolowskim lub arytmetycznym,
 \item \(\cond{v_1 = v_2}{e_t}{e_f}\) -- wyrażenie warunkowe, gdzie \(v_1 = v_2\) jest pytaniem o równość wartości dwóch wyrażeń arytmetycznych,
-\item abstrakcyjnych operacji oznaczanych \(\{op_i\}_{i \in I}\) -- powodujących wystąpienie efektów ubocznych -- których działanie nie jest nam znane, zaś ich sygnatury to \(op_i: A \rightarrow (B \rightarrow C) \rightarrow D\), gdzie \(A\), \(B\), \(C\) oraz \(D\) to pewne typy w naszym modelu. Wyrażenie~\(\opi{i}{n}{\kappa}\) opisuje operację z argumentami \(n\) oraz dalszą częścią obliczenia \(\kappa\) parametryzowaną wynikiem operacji, które \textit{może (nie musi)} zostać wykonane po jej wystąpieniu,
-\item uchwytów, czyli wyrażeń postaci \(\handle{e}{\{\ \hcase{op_i}{n\ \kappa}{h_i}\ \}_{i \in I}}\), gdzie \(e\) to inne wyrażenie; uchwyt definiuje działanie (dotychczas abstrakcyjnych) efektów ubocznych. 
+\item abstrakcyjnych operacji oznaczanych \(\{op_i\}_{i \in I}\) -- powodujących wystąpienie efektów ubocznych -- których działanie nie jest nam znane, zaś ich sygnatury to \(op_i: A \rightarrow (B \rightarrow C) \rightarrow D\), gdzie \(A\), \(B\), \(C\) oraz \(D\) to pewne typy w naszym modelu. Wyrażenie~\(\opi{i}{n}{\kappa}\) opisuje operację z argumentem \(n\) oraz dalszą częścią obliczenia \(\kappa\) parametryzowaną wynikiem operacji, które \textit{może (nie musi)} zostać wykonane po wykonaniu operacji,
+\item uchwytów, czyli wyrażeń postaci \(\handle{e}{\{\ \hcase{op_i}{n\ \kappa}{h_i}\ \}_{i \in I}}\), gdzie \(e\) to inne wyrażenie; uchwyt definiuje działanie (dotychczas abstrakcyjnych) operacji. 
 \end{itemize}
 
 Przykładowymi obliczeniami w naszej notacji są więc:
@@ -95,7 +95,7 @@ Zauważmy, że istnieje tylko jeden naturalny uchwyt spełniający tej warunek, 
 
 Podobieństwo to jest w pełni zamierzone. Okazuje się że nasz język z jedną operacją oraz równaniem ma już moc wystarczającą do opisu konstrukcji, która w większości popularnych języków nie może zaistnieć z woli programisty, a zamiast tego musi być dostarczona przez twórcę języka.
 
-Rozważmy kolejny przykład. Dla poprawienia czytelności, zrezygnujemy z oznaczeń \(op_i\) na operacje powodujące efekty, zamiast tego nadamy im znaczące nazwy: \(get\) oraz \(put\). Spróbujemy wyrazić działanie tych dwóch operacji by otrzymać modyfikowalną komórkę pamięci. Ustalmy też bardziej naturalne sygnatury operacji -- \(get: U \rightarrow (\mathbb{Z} \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\), \(put: \mathbb{Z} \rightarrow (U \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\). Ustalamy równania:
+Rozważmy kolejny przykład. Dla poprawienia czytelności, zrezygnujemy z oznaczeń \(op_i\) na operacje powodujące efekty, zamiast tego nadamy im znaczące nazwy: \(get\) oraz \(put\). Operacje te mają sygnatury \(get: U \rightarrow (\mathbb{Z} \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\), \(put: \mathbb{Z} \rightarrow (U \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\). Spróbujemy wyrazić działanie tych dwóch operacji by otrzymać modyfikowalną komórkę pamięci. Ustalamy równania:
 
 \begin{itemize}
 \item \(\forall e.\ \eval{get(u, \fun{\_}{get(u, \fun{x}{e})})} = \eval{get(u, \fun{x}{e})}\)
@@ -103,7 +103,7 @@ Rozważmy kolejny przykład. Dla poprawienia czytelności, zrezygnujemy z oznacz
   kolejne odczyty z komórki bez jej modyfikowania dają takie same wyniki,
 \item \(\forall e.\ \eval{get(u, \fun{n}{put(n, \fun{u}{e})})} = \eval{e}\)
 
-  umieszczenie w komórce wartości która już tam się znajduje nie wpływa na wynik obliczenia,
+  umieszczenie w komórce wartości, która już tam się znajduje, nie wpływa na wynik obliczenia,
 \item \(\forall n.\ \forall f.\ \eval{put(n, \fun{u}{get(u, \fun{x}{f\ x})})} = \eval{f\ n}\)
 
   obliczenie które odczytuje wartość z komórki daje taki sam wyniki, jak gdyby miało wartość komórki podaną wprost jako argument,
@@ -117,6 +117,8 @@ Zauważmy, że choć nakładamy warunki na zewnętrzne skutki działania operacj
 % Chyba jednak nie. Chociaż można dodać przykład, który agreguje historyczne wartości komórki i zwraca je w parze z wynikiem obliczenia.
 
 \section{Poszukiwanie sukcesu}
+
+%% sygnatura amb powinna mieć B zamiast Bool
 
 Kolejnym rodzajem efektu ubocznego, który rozważymy w tym rozdziale jest niedeterminizm. Chcielibyśmy wyrażać obliczenia, w których pewne parametry mogą przyjmować wiele wartości, a ich dobór ma zostać dokonany tak by spełnić pewien określony warunek. Przykładowo, mamy trzy zmienne \(x,\, y\) oraz \(z\) i chcemy napisać program sprawdzający czy formuła \(\phi(x, y, z)\) jest spełnialna. W tym celu zdefiniujemy operację \(amb: U \rightarrow (Bool \rightarrow Bool) \rightarrow \mathit{Bool}\) związaną z efektem niedeterminizmu. Napiszmy obliczenie rozwiązujące nasz problem:
 \begin{equation}\begin{split}
@@ -150,7 +152,7 @@ Przedstawiona konstrukcja efektów, operacji i uchwytów tworzy dualny mechanizm
 
 \section{Dalsza lektura}
 
-Rozdział ten miał na celu w lekki sposób wprowadzić idee, definicje i konstrukcje związane z efektami algebraicznymi i uchwytami które będą fundamentem do zrozumienia ich wykorzystania w praktycznych przykładach oraz implementacji systemów kompilacji w dalszych rzodziałach. Czytelnicy zainteresowani głębszym poznaniem historii oraz rodowodu efektów algebraicznych i uchwytów mogą zapoznać się z następującymi materiałami:
+Rozdział ten miał na celu w lekki sposób wprowadzić idee, definicje i konstrukcje związane z efektami algebraicznymi i uchwytami, które będą fundamentem do zrozumienia ich wykorzystania w praktycznych przykładach oraz implementacji systemów kompilacji w dalszych rzodziałach. Czytelnicy zainteresowani głębszym poznaniem historii oraz rodowodu efektów algebraicznych i uchwytów mogą zapoznać się z następującymi materiałami:
 
 \begin{itemize}
 \item ,,An Introduction to Algebraic Effects and Handlers'' autorstwa Matija Pretnara \cite{pretnar2015introduction},

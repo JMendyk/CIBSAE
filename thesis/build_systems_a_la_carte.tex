@@ -1,7 +1,9 @@
 
+\newcommand{\inl}[1]{\lstinline[style=haskell-inl]{#1}}
+
 \chapter{O systemach kompilacji (i ich klasyfikacji)}
 
-Systemy kompilacji, choć są wykorzystywane w praktycznie wszystkich projektach programistycznych, są przez ich użytkowników na ogół zaniedbywane, traktowane jak zło konieczne, a czasem nawet wywołują lęk oraz złość. Mimo tak dużej popularności i większym~--~niż mogłoby się wydawać~--~stopniowi skomplikowania, nie cieszą się zainteresowaniem ze strony badaczy. Przyglądnęli się im jednak bliżej Andrey Mokhov, Neil Mitchell oraz Simon Peyton Jones w artykułach ,,Build systems {\`a} la carte''\cite{mokhov2018build} oraz ,,Build systems {\`a} la carte: Theory and practice''\cite{mokhov2020build}. W tym rozdziale prześledzimy ich kroki i omówimy wyniki które otrzymali autorzy aby w dalszej części tej pracy samodzielnie zaimplementować przedstawione systemy kompilacji w języku z efektami algebraicznymi oraz uchwytami.
+Systemy kompilacji, choć są wykorzystywane w praktycznie wszystkich projektach programistycznych, są przez ich użytkowników na ogół zaniedbywane, traktowane jak zło konieczne, a czasem nawet wywołują lęk oraz złość. Mimo tak dużej popularności i większym~--~niż mogłoby się wydawać~--~stopniowi skomplikowania, nie cieszyły się specjalnym zainteresowaniem ze strony badaczy. Przyglądnęli się im jednak bliżej Andrey Mokhov, Neil Mitchell oraz Simon Peyton Jones w artykułach ,,Build systems {\`a} la carte''\cite{mokhov2018build} oraz ,,Build systems {\`a} la carte: Theory and practice''\cite{mokhov2020build}. W tym rozdziale prześledzimy ich kroki i omówimy wyniki które otrzymali autorzy aby w dalszej części tej pracy samodzielnie zaimplementować przedstawione systemy kompilacji w języku z efektami algebraicznymi oraz uchwytami.
 
 \section{Przykłady systemów kompilacji}
 
@@ -24,7 +26,7 @@ Make jest bardzo popularnym systemem kompilacji. Konfiguruje się go przez tworz
       gcc util.o main.o -o main.exe
 \end{lstlisting}
 
-Konfiguracja ta definiuje sposób budowania trzech zadań: \textit{util.o}, \textit{main.o} oraz \textit{main.exe}. W linii zawierającej definicję zadania zawarta jest informacja o innych, od których definiowane zależy~--~np. dowiadujemy się że \textit{util.o} zależy od zadań (tutaj: plików) \textit{util.h} oraz \textit{util.c}, a zadanie jest realizowane przez wykonanie polecenia \textit{gcc~\nobreakdash-c~util.c}. Jeśli zadanie nie ma zdefiniowanego sposobu zbudowania, na przykład \textit{util.h}, mówimy że jest wejściem lub zadaniem wejściowym w tej konfiguracji.
+Konfiguracja ta definiuje sposób budowania trzech zadań: \textit{util.o}, \textit{main.o} oraz \textit{main.exe}. W linii zawierającej definicję zadania zawarta jest informacja o innych zadaniach, od których definiowane zależy~--~np. dowiadujemy się że \textit{util.o} zależy od zadań (tutaj: plików) \textit{util.h} oraz \textit{util.c}, a zadanie jest realizowane przez wykonanie polecenia \textit{gcc~\nobreakdash-c~util.c}. Jeśli zadanie nie ma zdefiniowanego sposobu zbudowania, na przykład \textit{util.h}, mówimy że jest wejściem lub zadaniem wejściowym w tej konfiguracji.
 
 Wszystkie informacje o zależnościach między zadaniami są wyrażone w tym jednym pliku \textit{makefile}. Użytkownik chcąc zbudować zadanie \textit{main.exe} uruchamia program używając polecenia \textit{make~main.exe}. Po uruchomieniu, system określi które zadania mają zostać zbudowane by zrealizować otrzymane żądanie. Z racji tego, że procedura budowania zadań przebiega tak samo, niezależnie od wyników podzadań, będziemy o takim systemie mówić, że ma statyczne zależności. Dla takich systemów, naturalnym porządkiem w którym zadania powinny być budowane jest porządek topologiczny. W ten sposób każde zadanie będzie wykonane ,,na świeżych'' zależnościach. W przeciwnym razie mogłaby istnieć potrzeba zbudowania zadania jeszcze raz, gdyż jedno z zadań od których zależy zmieniło swoją wartość wynikową.
 
@@ -40,7 +42,7 @@ Należy też zauważyć, że dla pewnych konfiguracji może nie istnieć porząd
 
 \subsection{Excel}
 
-Może się to wydawać zaskakujące ale o arkuszach kalkulacyjnych (np. programie Excel) możemy myśleć jak o systemach kompilacji. Komórki których wartości są podane wprost uznajemy za zadania wejściowe, zaś formuły dla pozostałych komórek są definicjami sposobu budowania wartości dla nich. Przy takiej interpretacji, arkusze kalkulacyjne staja się bardzo przyjemnym oraz przydatnym przykładem systemu kompilacji.
+Może się to wydawać zaskakujące ale o arkuszach kalkulacyjnych (np. programie Excel) możemy myśleć jak o systemach kompilacji. Komórki których wartości są podane wprost uznajemy za zadania wejściowe, zaś formuły dla pozostałych komórek są definicjami sposobu budowania wartości dla nich. Przy takiej interpretacji, arkusze kalkulacyjne stają się bardzo przyjemnym oraz przydatnym przykładem systemu kompilacji.
 
 Rozważmy teraz przykład arkusza kalkulacyjnego przedstawiony przez autorów oryginalnego artykułu, by łatwiej myśleć o tym rodzaju systemu:
 
@@ -49,9 +51,9 @@ Rozważmy teraz przykład arkusza kalkulacyjnego przedstawiony przez autorów or
   A2: 20 & &
 \end{tabular}
 
-Funkcja INDIRECT dynamicznie określa, z której komórki zostanie pobrana wartość. Gdy C1 = 1, wartością komórki B1 będzie wartość A1, zaś gdy C1 = 2, wartość zostanie pobrana z A2. Jak widzimy, komórki których wartości są wykorzystywane do obliczenia B1 zależą od wartości C1. W tej sytuacji mówimy o dynamicznych zależnościach między komórkami (a ogólniej, w kontekście systemów kompilacji -- zadaniami). Tutaj mamy tylko jeden stopień pośredniości, bo zależności B1 są determinowane przez wejście C1. Ogólniej, stopień pośredniości może być dowolnie duży. W takiej sytuacji, mechanizm z sortowaniem topologicznym wykorzystywany w Make'u nie będzie właściwy, gdyż nie możemy a priori -- bez spoglądnięcia na stany innych komórek -- ustalić właściwego porządku budowania zadań.
+Funkcja INDIRECT dynamicznie określa, z której komórki zostanie pobrana wartość, a operator \(\&\) jest składaniem napisów. Gdy C1 = 1, wartością komórki B1 będzie wartość A1, zaś gdy C1 = 2, wartość zostanie pobrana z A2. Jak widzimy, komórki których wartości są wykorzystywane do obliczenia B1 zależą od wartości C1. W tej sytuacji mówimy o dynamicznych zależnościach między komórkami (a ogólniej, w kontekście systemów kompilacji -- zadaniami). Tutaj mamy tylko jeden stopień pośredniości, bo zależności B1 są determinowane przez wejście C1. Ogólniej, stopień pośredniości może być dowolnie duży. W takiej sytuacji, mechanizm z sortowaniem topologicznym wykorzystywany w Make'u nie będzie właściwy, gdyż nie możemy a priori -- bez spoglądnięcia na stany innych komórek -- ustalić właściwego porządku budowania zadań.
 
-Mechanizm porządkowania komórek w procesie ich obliczania jest w Excelu trochę bardziej skomplikowany. Mechanizm utrzymuje komórki w ciągu. W procesie budowania, Excel oblicza wartości komórek zgodnie ze skonstruowanym ciągiem. W sytuacji gdy komórka A potrzebuje wyniku innej, jeszcze nie obliczonej komórki N, Excel przerywa obliczanie A i przesuwa N przed A w ciągu oraz wznawia obliczanie wartości zaczynając od N. Po zakończeniu budowania, otrzymany ciąg komórek ma taką własność, że ponowne budowanie przy niezmienionych wejściach odbędzie się bez restartów. Ciąg pełni funkcję aproksymacji właściwego porządku obliczania komórek. Chcąc określić które komórki muszą być obliczone ponownie, Excel dla każdej komórki utrzymuje informację czy jest ona brudna. Komórki stają się brudne, gdy:
+Porządkowanie komórek w procesie ich obliczania jest w Excelu trochę bardziej skomplikowane. Mechanizm utrzymuje komórki w ciągu. W procesie budowania, Excel oblicza wartości komórek zgodnie ze skonstruowanym ciągiem. W sytuacji gdy komórka A potrzebuje wyniku innej, jeszcze nie obliczonej komórki N, Excel dokonuje restartu -- przerywa obliczanie A i przesuwa N przed A w ciągu oraz wznawia obliczanie wartości zaczynając od N. Po zakończeniu budowania, otrzymany ciąg komórek ma taką własność, że ponowne budowanie przy niezmienionych wejściach odbędzie się bez restartów. Ciąg pełni funkcję aproksymacji właściwego porządku obliczania komórek. Chcąc określić które komórki muszą być obliczone ponownie, Excel dla każdej komórki utrzymuje informację czy jest ona brudna. Komórki stają się brudne, gdy:
 \begin{itemize}
 \item są wejściem i ich wartość zostanie zmieniona,
 \item ich formuła zostanie zmieniona,
@@ -64,7 +66,7 @@ Mechanizm porządkowania komórek w procesie ich obliczania jest w Excelu troch�
 
 Shake jest systemem kompilacji w którym zadania definiuje się pisząc programy w języku specjalnego przeznaczenia osadzonym w Haskellu. Można w nim tworzyć konfiguracje z dynamicznymi zależnościami. Jednak w przeciwieństwie do Excela, Shake ma własność minimalności.
 
-Zamiast konstruować ciąg zadań jak robi to Excel, Shake generuje w trakcie budowania graf zależności. Ponadto, w przypadku wystąpienia zadania zależnego od innego dotychczas nieobliczonego, wstrzymuje wykonanie aktualnego i rozpoczyna budowanie wymaganego zadania. Gdy to się uda wraca do wstrzymanego zadania znając już potrzebny wynik by wznowić budowanie.
+Zamiast konstruować ciąg zadań jak robi to Excel, Shake generuje w trakcie budowania graf zależności. Ponadto, w przypadku wystąpienia zadania zależnego od innego dotychczas nieobliczonego, wstrzymuje wykonanie aktualnego i rozpoczyna budowanie wymaganego zadania. Gdy to się uda, wraca do wstrzymanego zadania znając już potrzebny wynik by wznowić budowanie.
 
 Inną własnością, którą posiada Shake jest możliwość wykonywania wczesnego odcięcia -- w sytuacji gdy jakieś zadanie zostało obliczone ponownie ale jego wynik się nie zmienia, nie ma potrzeby ponownego obliczania zadań które od niego zależą. Make i Excel nie posiadają takiej optymalizacji.
 
@@ -72,7 +74,7 @@ Inną własnością, którą posiada Shake jest możliwość wykonywania wczesne
 
 Ostatnim przykładem systemu kompilacji jest Bazel, który powstał w odpowiedzi na zapotrzebowanie ze strony dużych zespołów pracujących nad oprogramowaniem znacznej wielkości. W takich projektach, wiele osób może niezależnie budować te same fragmenty oprogramowania co prowadzi do marnowania zasobów obliczeniowych oraz czasu programistów.
 
-Bazel jest chmurowym systemem budowania -- gdy użytkownik chce zbudować oprogramowanie, system komunikuje się z serwerem i sprawdza które z zadań mają niezmienione wejścia oraz czy zostały już przez kogoś zbudowane. Bazel skopiuje wyniki takich zadań do komputera użytkownika oszczędzając mu czas. Jako, że pojedynczy programista na ogół wykonuje zmiany zamknięte w pojedynczych modułach, wyniki wielu zadań pozostają niezmienne i jedynie niewielka część z zadań będzie musiała być ponownie zbudowana.
+Bazel jest chmurowym systemem budowania -- gdy użytkownik chce zbudować oprogramowanie, system komunikuje się z serwerem i sprawdza które z zadań mają niezmienione wejścia oraz czy zostały już przez kogoś zbudowane. Bazel skopiuje wyniki takich zadań do komputera użytkownika oszczędzając mu czas. Jako, że pojedynczy programista na ogół wykonuje zmiany zamknięte w zaledwie kilku modułach, wyniki wielu zadań pozostają niezmienne i jedynie niewielka część z zadań będzie musiała być ponownie zbudowana.
 
 Bazel śledzi zmiany sprawdzając wartości funkcji skrótu plików źródłowych. Gdy skrót pliku na komputerze użytkownika oraz serwerze systemu nie są zgodne, zadanie jest uznawane ze nieaktualne i budowane od nowa. Następnie wynik oraz nowe wartości funkcji skrótu są zapisywane na serwerze, funkcjonującym dla użytkowników jako ,,pamięć podręczna'' wyników budowania zadań.
 
@@ -88,7 +90,7 @@ Po przedstawieniu aktualnego stanu rzeczy, autorzy proponują nomenklaturę i ab
 
 \subsection{Nomenklatura}
 
-Obiektem na którym operuje system kompilacji jest zasób (Store), który zbiorowi kluczy przypisuje wartości. W przypadku Excela jest to arkusz złożony z komórek, zaś w Make'u system plików. Celem systemu jest zmodyfikowanie stanu zasobu w takich sposób, by wartości związana ze wskazanym przez użytkownika kluczem stała się aktualna. System ma pamięć w formie utrzymywanych trwałych informacji na potrzeby kolejnych uruchomień. Użytkownik dostarcza opis zadań w formie instrukcji jak mają być skonstruowane w oparciu o wyniki innych zadań.
+Obiektem na którym operuje system kompilacji jest zasób (Store), który kluczom przypisuje wartości. W przypadku Excela jest to arkusz złożony z komórek, zaś w Make'u system plików. Celem systemu jest zmodyfikowanie stanu zasobu w takich sposób, by wartości związana ze wskazanym przez użytkownika kluczem stała się aktualna. System ma pamięć w formie utrzymywanych trwałych informacji na potrzeby kolejnych uruchomień. Użytkownik dostarcza opis zadań w formie instrukcji jak mają być skonstruowane w oparciu o wyniki innych zadań.
 
 System kompilacji otrzymuje definicje zadań, zasób na którym działa oraz klucz, który ma zostać zaktualizowany, wraz z jego zależnościami. Po zakończeniu działania, wartość w Store związana ze wskazanym kluczem ma być aktualna.
 
@@ -142,7 +144,7 @@ Typ systemu kompilacji wynika wprost z jego definicji -- otrzymuje zadania, zas�
 type Build c i k v = Tasks c k v -> k -> Store i k v -> Store i k v
 \end{lstlisting}
 
-Rozważmy implementację bardzo prostego systemu budowania wyrażonego korzystając z przedstawionej abstrakcji:
+Rozważmy implementację bardzo prostego systemu budowania wyrażonego z użyciem przedstawionej abstrakcji:
 
 \begin{lstlisting}
 busy :: Eq k => Build Applicative () k v
@@ -156,7 +158,7 @@ busy tasks key store = execState (fetch key) store
                         return v
 \end{lstlisting}
 
-System \textit{busy} uruchamia obliczenie zadania w kontekście modyfikowalnego stanu, służy on spamiętywaniu wartości obliczonych zadań. Gdy zadanie ma być obliczone, jeśli jest wejściowym to odczytana zostaje jego wartość ze Store'a, w przeciwnym razie zostaje wykonana jego definicja. System ten, podobnie jak kolejne które zobaczymy później, składa się głównie z funkcji \textit{fetch} która determinuje jego sposób działania. System \textit{busy} nie jest oczywiście minimalny ale chociaż działa poprawnie i jest punktem początkowym do konstrukcji właściwych systemów.
+System \textit{busy} uruchamia obliczenie zadania w kontekście modyfikowalnego stanu, służy on spamiętywaniu wartości obliczonych zadań. Gdy zadanie ma być obliczone, jeśli jest wejściowym to odczytana zostaje jego wartość ze Store'a, w przeciwnym razie zostaje wykonana jego definicja. System ten, podobnie jak kolejne które zobaczymy później, składa się głównie z funkcji \textit{fetch} która determinuje jego sposób działania. System \textit{busy} nie jest oczywiście minimalny chociaż działa poprawnie i jest punktem początkowym do konstrukcji właściwych systemów.
 
 System taki możemy łatwo uruchomić na przykładowym zasobie. Będzie on słownikiem realizowanym przez funkcję -- w ten sposób możemy łatwo ustalić wartość domyślną dla wszystkich wejściowych pól:
 
@@ -175,18 +177,20 @@ System działa i daje poprawne wyniki. Widzimy też, że przydaje nam się skwan
   newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
 \end{lstlisting}
 
+W tym przypadku \inl{c = Applicative} oraz \inl{f = State (Store () k v) v}, w ten sposób funkcja \inl{fetch} może jako efekt uboczny wykonywać operacje na modyfikowalnym stanie opakowującym Store.
+
 \subsection{Polimorficzność zadania}
 
-Opakowanie wartości wynikowej umożliwia wykonywanie obliczeń z efektami ubocznymi, zaś kwantyfikator ogólny daje autorowi systemu kompilacji pełną swobodę doboru struktury, która będzie właściwa do jego potrzeb. W przypadku systemu \textit{busy} jest to modyfikowalny stan, w którym przechowywany jest zasób.
+Opakowanie wartości wynikowej umożliwia wykonywanie obliczeń z efektami ubocznymi, zaś kwantyfikator ogólny daje autorowi systemu kompilacji pełną swobodę doboru struktury, która będzie właściwa do jego potrzeb. W przypadku systemu \inl{busy} jest to modyfikowalny stan, w którym przechowywany jest zasób.
 
-Gdyby \textit{f} było w pełni dowolne, nie dałoby się nic pożytecznego z nim zrobić, stąd musi być ograniczone przez pewne \textit{c}. Co zaskakujące, to ograniczenie definiuje jak skomplikowane zależności mogą być między zadaniami. Rozważmy trzy popularne klasy typów w Haskellu:
+Gdyby \inl{f} było w pełni dowolne, nie dałoby się nic pożytecznego z nim zrobić, stąd musi być ograniczone przez pewne \inl{c}. Co zaskakujące, to ograniczenie definiuje jak skomplikowane zależności mogą być między zadaniami. Rozważmy trzy popularne klasy typów w Haskellu:
 \begin{itemize}
-\item \textit{Functor} -- umożliwia nakładanie funkcji na wartość, którą opakowuje. Myśląc graficznie -- pracując z funktorem, tworzymy ciąg obliczeń modyfikujących wartość.
-\item \textit{Applicative} -- umożliwia scalanie wielu wartości przez nakładanie na nie funkcji. Tutaj obliczenia prezentują się jako skierowany graf acykliczny.
-\item \textit{Monad} -- w tym przypadku otrzymujemy dowolny graf, który jest ponadto dynamiczny. W procesie obliczeń możemy wyłuskiwać wartości i podejmować w oparciu o nie decyzje.
+\item \inl{Functor} -- umożliwia nakładanie funkcji na wartość, którą opakowuje. Myśląc graficznie -- pracując z funktorem, tworzymy ciąg obliczeń modyfikujących wartość.
+\item \inl{Applicative} -- umożliwia scalanie wielu wartości przez nakładanie na nie funkcji. Tutaj obliczenia prezentują się jako skierowany graf acykliczny.
+\item \inl{Monad} -- w tym przypadku otrzymujemy dowolny graf, który jest ponadto dynamiczny (ze względu na wartości wynikowe). W procesie obliczeń możemy wyłuskiwać wartości i podejmować w oparciu o nie decyzje.
 \end{itemize}
 
-Autorzy dokonują więc niezwykle ciekawego odkrycia: zadania, w który typ \textit{f} jest funktorem aplikatywnym, mogą mieć jedynie statyczne zależności zaś dynamiczne są możliwe gdy \textit{f} jest monadą!
+Autorzy dokonują więc niezwykle ciekawego odkrycia: zadania, w który typ \inl{f} jest funktorem aplikatywnym, mogą mieć jedynie statyczne zależności zaś dynamiczne są możliwe gdy \inl{f} jest monadą!
 
 Tak więc oto, przykład z INDIRECT w Excelu możemy w Haskellu, korzystając z naszej abstrakcji, przedstawić następująco:
 
@@ -198,9 +202,9 @@ sprsh3 "B1" = Just $ Task $ \fetch -> do
 sprsh3 _ = Nothing
 \end{lstlisting}
 
-Jednocześnie widzimy, że nie moglibyśmy wyrazić go z użyciem funktora aplikatywnego, gdyż nie mielibyśmy jak wyłuskać wartości komórki z wywołania \lstinline{fetch "C1"}.
+Jednocześnie widzimy, że nie moglibyśmy wyrazić go z użyciem funktora aplikatywnego, gdyż nie mielibyśmy jak wyłuskać wartości komórki z wywołania \inl{fetch "C1"}.
 
-Autorzy czynią kolejną obserwację, że nie tylko w teorii istnieje możliwość skonstruowania grafu zależności w zadaniach o statycznych zależnościach ale także w praktyce -- realizuje to w Haskellu zaskakująco prosta funkcja \lstinline{dependencies}:
+Autorzy czynią kolejną obserwację, że nie tylko w teorii istnieje możliwość skonstruowania grafu zależności w zadaniach o statycznych zależnościach ale także w praktyce -- realizuje to w Haskellu zaskakująco prosta funkcja \inl{dependencies}:
 
 \begin{lstlisting}
 dependencies :: Task Applicative k v -> [k]
@@ -209,9 +213,9 @@ dependencies task = getConst $ run task (\k -> Const [k]) where
   run (Task task) fetch = task fetch
 \end{lstlisting}
 
-Obliczenie wykonujemy korzystając z funktora \lstinline{Const}, który jest funktorem aplikatywnym gdy pracuje na monoidach -- w tym przypadku listach. Jak widzimy, nigdzie nie jest wspomniany Store, co idzie w zgodzie z intuicją, że w przypadku zależności statycznych nie jest on nam potrzebny.
+Obliczenie wykonujemy korzystając z funktora \inl{Const}, który jest funktorem aplikatywnym gdy pracuje na monoidach -- w tym przypadku listach. Jak widzimy, nigdzie nie jest wspomniany Store, co idzie w zgodzie z intuicją, że w przypadku zależności statycznych nie jest on nam potrzebny.
 
-Jednocześnie, nie moglibyśmy w takich sposób poznać zależności zadań z monadą czyli dynamicznymi zależnościami, gdyż typ \lstinline{Const} nie jest monadą. Najlepszym przybliżeniem funkcji \lstinline{dependencies} jest \lstinline{track}, która śledzi wywołania funkcji pozyskującej wartość zadania z wykorzystaniem transformera monad \lstinline{WriteT}:
+Jednocześnie, nie moglibyśmy w takich sposób poznać zależności zadań z monadą czyli dynamicznymi zależnościami, gdyż typ \inl{Const} nie jest monadą. Najlepszym przybliżeniem funkcji \inl{dependencies} jest \inl{track}, która śledzi wywołania funkcji pozyskującej wartość zadania z wykorzystaniem transformera monad \inl{WriteT}:
 
 \begin{lstlisting}
 track :: Monad m => Task Monad k v -> (k -> m v) -> m (v, [(k, v)])
@@ -221,7 +225,7 @@ track task fetch = runWriterT $ run task trackingFetch
     trackingFetch k = do v <- lift (fetch k); tell [(k, v)]; return v
 \end{lstlisting}
 
-W tym przypadku, musimy już niestety pracować z zasobem. Przykładowo, możemy przetestować funkcję \lstinline{track} korzystając z monady \lstinline{IO}, a wartości wprowadzając za pomocą klawiatury:
+W tym przypadku, musimy już niestety pracować z zasobem. Przykładowo, możemy przetestować funkcję \inl{track} korzystając z monady \inl{IO}, a wartości wprowadzając za pomocą klawiatury:
 
 \begin{lstlisting}
 > fetchIO k = do putStr (k ++ ": "); read <$> getLine
@@ -241,15 +245,16 @@ A2: 20
 Autorzy proponują konstrukcję, w której system kompilacji jest definiowany przez dwa mechanizmy:
 \begin{itemize}
 \item planistę (scheduler) -- który decyduje w jakiej kolejności zadania powinny być budowane oraz
-\item rekompilatora (rebuilder) -- który określa czy dane zadanie powinno być ponownie zbudowane czy można odczytać jego wartość wynikową ze Store'a.
+\item rekompilatora (rebuilder) -- który określa czy dane zadanie powinno być ponownie zbudowane czy raczej wystarczy odczytać jego wartość wynikową ze Store'a.
 \end{itemize}
 
 Nie robiąc tego wprost, rozważaliśmy już różne przykłady schedulerów i rebuilderów. Autorzy wyszczególniają trzy rodzaje planistów:
 
 \begin{itemize}
 \item topologicznego (topological) -- który wykorzystuje fakt, że zadania mają statyczne zależności,
-\item restartującego (restarting) -- który w przypadku napotkania w czasie obliczania zadanie na inne niezaktualizowane zadanie przerywa obliczanie bieżącego i kiedyś zacznie je od nowa,
-\item wstrzymującego (suspending) -- który zamiast zaczynać od nowa wstrzymuje jedynie obliczanie zadania do czasu uzyskania żądanej wartości.
+%% \item restartującego (restarting) -- który w przypadku napotkania w czasie obliczania zadanie na inne niezaktualizowane zadanie przerywa obliczanie bieżącego i kiedyś zacznie je od nowa,
+\item restartującego (restarting) -- który gdy w czasie obliczania zadania napotka na inne niezaktualizowane zadanie przerywa obliczanie bieżącego i kiedyś zacznie je od nowa,
+\item wstrzymującego (suspending) -- który zamiast zaczynać od nowa, wstrzymuje jedynie obliczanie zadania do czasu uzyskania żądanej wartości.
 \end{itemize}
 
 Autorzy abstrakcyjnie przedstawiają planistów i rekompilatorów jako typy:
@@ -259,17 +264,19 @@ type Scheduler c i ir k v = Rebuilder c ir k v -> Build c i k v
 type Rebuilder c ir k v = k -> v -> Task c k v -> Task (MonadState ir) k v
 \end{lstlisting}
 
-Tak więc, system kompilacji powstaje przez scalenie jakiegoś schedulera z jakimś rebuilderem. Rebuilder otrzymując klucz zadania oraz jego aktualną wartość i sposób obliczania, tworzy nowe zadanie które w oparciu o wnioski rekompilatora albo zbuduje zadanie i zagreguje dane dla rebuildera na potrzeby kolejnych uruchomień albo zwrócić wartość ze Store'a jeśli jest ona aktualna.
+%% albo -- przecinki
 
-W przypadku rekompilatorów, różnorodność jest trochę większa, wyszczególniamy rebuilder:
+Tak więc, system kompilacji powstaje przez scalenie jakiegoś schedulera z jakimś rebuilderem. Rebuilder otrzymując klucz zadania oraz jego aktualną wartość i sposób obliczania tworzy nowe zadanie, które w oparciu o wnioski rekompilatora albo zbuduje zadanie i zagreguje dane dla rebuildera na potrzeby kolejnych uruchomień, albo zwróci wartość ze Store'a jeśli jest ona aktualna.
+
+W przypadku rekompilatorów, różnorodność jest trochę większa, wyszczególniamy rebuildery oparte o:
 \begin{itemize}
-\item Z brudnym bitem -- czy to w formie dosłownego bitu dla każdej komórki jak to ma miejsce w Excelu, czy nietrywialnie przez weryfikowanie dat modyfikacji jak w Make'u -- mechanizm jest oparty na oznaczaniu wszystkich zadań wejściowych których wartości się zmieniły od ostatniego uruchomienia systemu.
-\item Okruszki weryfikujące -- które w procesie budowania rejestrują wartości funkcji skrótu uzyskanych wyników zadań i pamiętają, że na przykład zadanie A gdy miało wartość o skrócie 1 było zależne od zadanie B gdy to miało wartość o skrócie 2. W sytuacji gdy skróty są zgodne uznaje się, że ponowne obliczenie nie jest potrzebne.
-\item Okruszki konstruktywne -- podobne do poprzedników, jednak funkcja skrótu jest funkcją identycznościową. Innymi słowy spamiętujemy całe wartości wynikowe zadań.
-\item Głębokie okruszki konstruktywne -- zamiast dla każdego zadania rejestrować wartości zadań od których zależy, rejestruje się wartości zadań wejściowych które są w przechodnim domknięciu bycia zależnym. Wadą tego mechanizmu jest brak wsparcia dla niedeterministycznych zadań, które rozważają autorzy oraz brak możliwości wykonania wczesnego odcięcia, gdyż nie spoglądamy na wartości od których zadanie zależy bezpośrednio.
+\item brudny bit -- czy to w formie dosłownego bitu dla każdej komórki jak to ma miejsce w Excelu, czy nietrywialnie przez weryfikowanie dat modyfikacji jak w Make'u -- mechanizm jest oparty na oznaczaniu wszystkich zadań wejściowych których wartości się zmieniły od ostatniego uruchomienia systemu.
+\item okruszki weryfikujące -- które w procesie budowania rejestrują wartości funkcji skrótu uzyskanych wyników zadań i pamiętają, że na przykład zadanie A gdy miało wartość o skrócie 1 było zależne od zadanie B gdy to miało wartość o skrócie 2. W sytuacji gdy skróty są zgodne uznaje się, że ponowne obliczenie nie jest potrzebne.
+\item okruszki konstruktywne -- podobne do poprzedników, jednak funkcja skrótu jest funkcją identycznościową. Innymi słowy -- spamiętujemy całe wartości wynikowe zadań.
+\item głębokie okruszki konstruktywne -- zamiast dla każdego zadania rejestrować wartości zadań od których zależy, rejestruje się wartości zadań wejściowych które są w przechodnim domknięciu zbioru zadań od których dane zadanie zależy. Wadą tego mechanizmu jest brak wsparcia dla niedeterministycznych zadań, które rozważają autorzy w dalszej części swojej publikacji oraz brak możliwości wykonania wczesnego odcięcia, gdyż nie spoglądamy na wartości od których zadanie zależy bezpośrednio.
 \end{itemize}
 
-Sposób skategoryzowania systemów kompilacji przedstawiony przez autorów prowadzi do podziału przestrzeni tych systemów na 12 komórek, z czego 8 jest zamieszkałych przez istniejące rozwiązania:
+Sposób skategoryzowania systemów kompilacji przedstawiony przez autorów prowadzi do podziału przestrzeni systemów na 12 komórek, z czego 8 jest zamieszkałych przez istniejące rozwiązania:
 
 \begin{tabular}{r | c c c}
 \hline
@@ -285,6 +292,4 @@ Głębokie okruszki konstruktywne & Buck         & -            & Nix \\
 
 \section{Implementowanie systemów}
 
-Mając już ustaloną klasyfikację oraz definicje abstrakcyjnych konstrukcji i typów w Haskellu, można zaimplementować planistów i rekompilatorów. Wtedy utworzenie implementacji znanych systemów kompilacji (a nawet tych, które dotychczas były tylko pustymi polami w tabeli) jest zwykłym zaaplikowanie rebuildera do schedulera. Wszystkie implementacje przedstawione przez autorów ,,Build systems {\`a} la carte'' są dostępne w tekstach artykułów \cite{mokhov2018build, mokhov2020build} oraz w repozytorium \url{https://github.com/snowleopard/build} w serwisie GitHub.
-
-W rozdziale 5 zobaczymy, jak taka implementacja przebiega w języku z efektami algebraicznymi i uchwytami.
+Mając już ustaloną klasyfikację oraz definicje abstrakcyjnych konstrukcji i typów w Haskellu, można zaimplementować planistów i rekompilatorów. Wtedy utworzenie implementacji znanych systemów kompilacji (a nawet tych, które dotychczas były tylko pustymi polami w tabeli) jest zwykłym zaaplikowanie rebuildera do schedulera. Wszystkie implementacje przedstawione przez autorów ,,Build systems {\`a} la carte'' są dostępne w tekstach artykułów \cite{mokhov2018build, mokhov2020build} oraz w repozytorium\footnote{\url{https://github.com/snowleopard/build}} w serwisie GitHub. W rozdziale 5 zobaczymy, jak implementacja takich systemów wygląda w języku z efektami algebraicznymi i uchwytami.
