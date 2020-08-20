@@ -30,13 +30,13 @@ type KeyValue (K V: Type) = sig
      val Value: Entity V
 end
 
-signature BuildEff (K: Type) (V: Type) =
+signature BuildEff (K V: Type) =
 | fetch : K => V
 
-data TaskType (K: Type) (V: Type) (E: Effect) = Task of ({`a: BuildEff K V} -> Unit ->[E, `a] V)
+data TaskType (K V: Type) (E: Effect) = Task of ({`a: BuildEff K V} -> Unit ->[E, `a] V)
 
 type Tasks (K: Type) (V: Type) = (K -> Option (TaskType K V (effect [])))
 
-type Build (I: Type) (K: Type) (V: Type) = {`s: StoreEff I K V} -> Tasks K V -> K ->[`s] Unit
-type Rebuilder (IR: Type) (K: Type) (V: Type) = {`s: State IR} -> KeyValue K V -> K -> V -> TaskType K V (effect []) -> TaskType K V (effect [`s])
-type Scheduler (I: Type) (IR: Type) (K: Type) (V: Type) = {`a: StoreEff I K V} -> KeyValue K V -> Rebuilder IR K V -> Build I K V
+type Build (I K V: Type) = {`s: StoreEff I K V} -> Tasks K V -> K ->[`s] Unit
+type Rebuilder (IR K V: Type) = {`s: State IR} -> KeyValue K V -> K -> V -> TaskType K V (effect []) -> TaskType K V (effect [`s])
+type Scheduler (I IR K V: Type) = {`a: StoreEff I K V} -> KeyValue K V -> Rebuilder IR K V -> Build I K V

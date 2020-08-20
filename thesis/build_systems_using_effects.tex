@@ -1,0 +1,108 @@
+
+\newcommand{\haskinl}[1]{\lstinline[style=haskell-inl]{#1}}
+\newcommand{\helinl}[1]{\lstinline[style=Haleff-inl]{#1}}
+
+\chapter{Systemy kompilacji z użyciem efektów algebraicznych i~uchwytów}
+
+W tym rozdziale powtórzymy implementację systemów kompilacji przedstawioną w \BSaLC\cite{mokhov2018build}, jednak dokonamy jej w Helium używając efektów i uchwytów. Na początku wymyślimy własne odpowiedniki abstrakcyjnych struktur z Haskella związanych z systemami, następnie zaimplementujemy wszystkich rekompilatorów oraz wszystkich prócz jednego planistów. Na koniec przyglądniemy się co problematycznej jest w pominiętym planiście, że jego implementacja została pominięta.
+
+\section{Pomysł, typy i idea}
+
+Przypomnijmy sobie Haskellowe reprezentacje składowych implementacji oraz wprowadźmy ich Heliumowe odpowiedniki.
+
+\subsection{Zasób (Store)}
+
+\begin{lstlisting}[style=haskell-style]
+data Store i k v
+initialise :: i -> (k -> v) -> Store i k v
+getInfo :: Store i k v -> i
+putInfo :: i -> Store i k v -> Store i k v
+getValue :: k -> Store i k v -> v
+putValue :: Eq k => k -> v -> Store i k v -> Store i k v
+\end{lstlisting}
+
+Autorzy \BSaLC\cite{mokhov2018build} reprezentowali Store jako typ z operacjami odczytu i zapisu trwałem informacji dla systemu oraz wartości wynikowych. Każdorazowo jednak, wartość Store była przechowywana w Haskellowym typie modyfikowalnego stanu \haskinl{Store}. Możemy więc uprościć implementację przez scalenie zasobu z modyfikowalnym stanem przez uczynienie \haskinl{Store} efektem, a działania na nim operacjami powodującymi ten efekt,
+
+\lstinputlisting[language=Haleff, firstline=2, lastline=6]{../Store.he}
+
+Podobnie jak \haskinl{Store} w oryginalnej implementacji, \helinl{StoreEff} jest polimorficzny ze względu na typy informacji, kluczy oraz wartości wynikowych kompilacji. Równania dla niego są analogiczne jak dla zwykłego modyfikowanego stanu z dokładnością do ustalenia klucza w operacjach na wartościach wynikowych. Definiujemy ponadto uchwyt \helinl{funStoreHandler} dla obliczeń używających zasobu reprezentowanego przez funkcję -- jak w przykładach w \BSaLC.
+
+\lstinputlisting[language=Haleff, firstline=40, lastline=54]{../Store.he}
+
+Implementacja jest zbliżona do przykładu modyfikowalnego stanu z rozdziału 4. Dla porządku wartość początkowa trwałej informacji oraz słownika wartości jest opakowana w typ \helinl{FunStoreType I K V}.
+
+Jako że Helium, podobnie jak inne języki używające ML-owego systemu modułów nie posiadają klas typów znanych z Haskella, definiujemy kilka sygnatur odpowiadających klasom typów użytym w oryginalnej implementacji:
+
+\begin{minipage}[t]{.45\textwidth}
+
+  \lstinputlisting[language=Haleff, firstline=9, lastline=20]{../Common.he}
+
+\end{minipage}\hfill
+\begin{minipage}[t]{.45\textwidth}
+
+  \lstinputlisting[language=Haleff, firstline=22, lastline=31]{../Common.he}
+
+\end{minipage}
+
+Moduł o sygnaturze \helinl{Comparable K} jest więc używany w \helinl{funStoreHandler} do porównywania kluczy identyfikujących zadania.
+
+\subsection{Modyfikowalny stan}
+
+Implementację modyfikowalnego stanu zobaczyliśmy w przykładach w rozdziale 4 i wykorzystamy ją konstruując systemy kompilacji. Nazwy uchwytom dla stanu, w zależności od zwracanych wartości, nadajemy zgodnie z ich Haskellowymi odpowiednikami -- \haskinl{runState}, \haskinl{evalState}, \haskinl{execState}. Definiujemy także prostą funkcję \helinl{modifyState} przekształcającą stan używając podanej funkcji oraz nieco bardziej skomplikowaną funkcję \helinl{embedState}.
+
+\lstinputlisting[language=Haleff, linerange={6-6,32-36}, float=h, title={Definicje \helinl{modifyState} oraz \helinl{embedState}}]{../State.he}
+
+Funkcja \helinl{embedState} tworzy uchwyt dla efektu modyfikowalnego stanu, w którym modifykacje -- zamiast być wykonywane przez uchwyt -- są przekazywanego podanym funkcjom \helinl{getter} oraz \helinl{setter}, które w czasie swojego działania mogą powodować jakiś efekt uboczny. Z takiego zanurzenia modyfikowalnego stanu w innym efekcie będziemy korzystać podczas implementacji planistów, którzy trwałą informację z zasobu będą przekazywać do rekompilatorów jako właśnie modyfikowalny stan.
+
+\begin{lstlisting}[language=Haleff, float=h, caption={Wykorzystanie \helinl{embedState}}]
+handle `store in
+    (* ... *)
+    handle `state in
+        (* ... *)
+    with embedState (getInfo `store) (putInfo `store)
+    (* ... *)
+with (* ... *)
+\end{lstlisting}
+
+\subsection{Zadanie i efekt budowania}
+
+W oryginalnej implementacji, zadanie było funkcją przyjmującą procedurę budowania wskazanego zadania, a wynik był zwracany w jakimś typie \haskinl{f} ograniczonym przez klasę typów \haskinl{c}.
+
+\begin{lstlisting}[style=haskell-style]
+newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
+type Tasks c k v = k -> Maybe (Task c k v)
+\end{lstlisting}
+
+Możemy jednak zauważyć, że zbudowanie zadania jest oczywistym efektem ubocznym działania systemu kompilacji, stąd w naszej implementacji zamiast przekazywać funkcję, która była przez autorów zazwyczaj nazywana \haskinl{fetch}, zdefiniujemy efekt \helinl{BuildEff}, który będzie występował w czasie kompilacji zadań. Efekt ten będzie miał związaną jedną operację \helinl{fetch}.
+
+\lstinputlisting[language=Haleff, linerange={33-38}]{../Common.he}
+
+Zadanie będzie funkcją wymagającą informacji o instancji efektu budowania i będzie polimorficzna ze względu na typ kluczy i wartości oraz ewentualnych efektów ubocznych nie będących efektem budowania (przyda się to przy implementacji rebuilderów). Zwróćmy uwagę, że definicja typu zadania nie zawiera informacji o klasie typów \haskinl{c} której element \haskinl{f} ,,opakowuje'' wynik w oryginalnej implementacji -- do tej różnicy powrócimy w dalszej części rozdziału.
+
+\subsection{Kompilacja, planista, rekompilator}
+
+Pozostaje zdefiniować trzy ostatnie typy związane ze wspomnianymi w podtytule obiektami. Kompilacja tak jak w oryginalnej implementacji wymagać będzie wskazania zbioru zadań oraz klucza który ma być zbudowany. Ponadto, w  naszej implementacji kompilacja powoduje efekt uboczny zmiany zasobu.
+
+\begin{lstlisting}
+type Build c i k v = Tasks c k v -> k -> Store i k v -> Store i k v
+type Scheduler c i ir k v = Rebuilder c ir k v -> Build c i k v
+type Rebuilder c ir k v = k -> v -> Task c k v -> Task (MonadState ir) k v
+\end{lstlisting}
+
+Nasi planiści także będą mieli sygnatury zbliżone do swoich Haskellowych odpowiedników, wzbogacone oczywiście o efekt uboczny zasobu, a także moduł definiujący podstawowe działania na kluczach i wartościach opisane wcześniej.
+
+\lstinputlisting[language=Haleff, linerange={40-42}]{../Common.he}
+
+Rebuilder także przypomina swój odpowiednik z oryginalnej implementacji. Jednakże, zamiast zwracać zadanie ze zmienionym \textit{constraint'em}, zadanie jest wzbogacone o dodatkowy efekt stanu mogący występować w czasie kompilacji zadania, a związany z przerobieniem go przez rekompilator.
+
+\section{Przykład: system busy}
+
+Skoro ustaliliśmy jak Haskellowa abstrakcja systemów kompilacji przenosi się na naszą w Helium, możemy spróbować zaimplementować prosty system budowania \haskinl{busy} przedstawiony przez autorów.
+
+\lstinputlisting[language=Haleff, linerange={18-29}, float=h, title={System kompilacji \haskinl{busy}}]{../Schedulers.he}
+
+Rdzeniem tej implementacji, podobnie jak oryginalnej w Haskellu, jest definicja uchwytu (tak: funkcji) dla \helinl{fetch}. Jego ciało to przetłumaczenie oryginalnej implementacji z tą różnicą, że zamiast kontynuować obliczenie niejawnie -- przez zwracanie wyniku -- jest ono kontynuowane jawnie przez wywołanie \helinl{resume} w ciele uchwytu.
+
+\section{Istniejące podejścia do implementacji w innych językach}
+
+Choć opisane wyżej wyniki są pierwszą -- według wiedzy autora -- próbą implementacji systemów kompilacji inspirowanych \BSaLC\cite{mokhov2018build} używając języka z efektami oraz uchwytami, w \BSaLCTP\cite{mokhov2020build} autorzy wspominają o dwóch znanych im próbach implementacji w innych językach: Rust\cite{translation_rust} oraz Kotlin\cite{translation_kotlin}. Jak jednak zauważają autorzy, w obu przypadkach ograniczenia użytych języków doprowadziły do utracenia precyzji i schludności rozwiązań w prównaniu z oryginalną implementacją w Haskellu.

@@ -15,25 +15,18 @@ open Logger
 
 
 
-let busy {I K V: Type} (module KV: KeyValue K V) {`a: StoreEff I K V} (tasks: Tasks K V) (key: K) =
-    open KV in
-    let handle with indentLogger in
-    let rec busyHandler =
+let busy {I K V: Type} {`a: StoreEff I K V} (tasks: Tasks K V) (key: K) =
+    let rec busyH =
         handler
-        | fetch k => build k; resume (getValue k)
-        end
-        and build (key: K) =
-        entry ();
-        logln (Key.toString key ++ "\n");
-        match tasks key with
-        | None => ()
-        | Some (Task task) =>
-               putValue key (handle task () with busyHandler)
-        end;
-        exit ()
-    in
-    logln ("Building " ++ Key.toString key ++ " with busy\n");
-    build key
+        | fetch k => match tasks k with
+                     | None => resume (getValue k)
+                     | Some task => let handle with busyH in
+                                    let v = run task in
+                                        putValue k v;
+                                        resume v
+                     end
+        end in
+        handle fetch key with busyH
 
 let suspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K V) (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
     open KV in
