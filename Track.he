@@ -11,6 +11,12 @@ type Writer = PatchedWriter
 
 let run {K V: Type} {E: Effect} {`b: BuildEff K V} (Task task: TaskType K V E) = task `b ()
 
+let compute task =
+    let handle with
+               | fetch k => resume (getValue k)
+               end in
+        run task
+
 let track {I K V: Type} {`b: BuildEff K V} (task: TaskType K V (effect [])) =
     let handle with Writer.runListHandler in
     let hTrack =
