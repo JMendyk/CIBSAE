@@ -18,6 +18,10 @@ type CellOrder = struct
                          | (C _, C3) => GT
                          | (C l, C r) => String.compare l r
                          end
+     let equals c1 c2 = match compare c1 c2 with
+                        | EQ => True
+                        | _ => False
+                        end
      let toString x = match x with
                       | B1 => "B1"
                       | B2 => "B2"
@@ -37,6 +41,7 @@ type Spreadsheet = struct
      let type Value = struct
          let this = Int
          let compare = Int.compare
+         let equals = (=)
          let toString = Int.toString
          let hash x = x
      end

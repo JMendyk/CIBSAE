@@ -9,8 +9,15 @@ let (<.>) f g x = f (g x)
 
 let setFst x (_, y) = (x, y)
 let setSnd y (x, _) = (x, y)
+let mapFst f (x, y) = (f x, y)
+let mapSnd f (x, y) = (x, f y)
 let modifyFst f (x, y) = (f x, y)
 let modifySnd f (x, y) = (x, f y)
+
+let uncons xs = match xs with
+                | [] => runtimeError "empty list"
+                | x::xs => (x, xs)
+                end
 
 let filter p =
     let rec filter xs =
@@ -46,10 +53,7 @@ let member {T: Type} (module TM: Common.Comparable T) (a: T) (xs: List T) =
     let rec member (xs: List T) =
         match xs with
         | [] => False
-        | (x::xs) => match compare a x with
-                     | EQ => True
-                     |  _ => member xs
-                     end
+        | (x::xs) => equals a x || member xs
         end
     in member xs
 

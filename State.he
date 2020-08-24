@@ -3,6 +3,8 @@ signature State (T: Type) =
 | get : Unit => T
 | put : T => Unit
 
+let gets f = f (get ())
+let modify f = put (f (get ()))
 let modifyState f = put (f (get ()))
 
 let runState init =

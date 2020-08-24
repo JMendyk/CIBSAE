@@ -1,34 +1,12 @@
 import State
 import Store
+import Signatures
 
 open State
 open Store
+open Signatures
 
-type Hash (V: Type) = Int
-
-type Comparable (T: Type) = sig
-     type this = T
-     val compare: T -> T ->[] Ord
-end
-
-type Hashable (T: Type) = sig
-     val hash: T ->[] Hash T
-end
-
-type Showable (T: Type) = sig
-     val toString: T ->[] String
-end
-
-type Entity (T: Type) = sig
-     include (Comparable T)
-     include (Hashable T)
-     include (Showable T)
-end
-
-type KeyValue (K V: Type) = sig
-     val Key: Entity K
-     val Value: Entity V
-end
+include Signatures
 
 signature BuildEff (K V: Type) =
 | fetch : K => V
