@@ -13,33 +13,17 @@ open Spreadsheet
 open Systems
 open Utils
 
-(* Chcielibyśmy mieć coś takiego: *)
+(* let sprsh1_B1 () = 2 * fetch (C "A1") *)
+(* let sprsh1_B2 () = *)
+(*     let valA1 = if fetch (C "A3") >= 1 then fetch (C "A1") else 0 in *)
+(*     let valA2 = if fetch (C "A3") >= 2 then fetch (C "A2") else 0 in *)
+(*     let valA3 = if fetch (C "A3") >= 3 then fetch (C "A3") else 0 in *)
+(*         valA1 + valA2 + valA3 *)
+(* let sprsh1_C3 () = fetch B1 + fetch B2 *)
 
-(* let _ = *)
-(*     handle buildA task *)
-(*     with schedulerAndRebuilder *)
-
-(* albo na przykład: *)
-
-(* let _ = *)
-(*     handle *)
-(*         handle buildB task *)
-(*         with scheduler *)
-(*     with rebuilder *)
-
-(* Zmodyfikowany przykład z Carte: *)
-
-let sprsh1_B1 () = fetch (C "A1") + fetch (C "A2") + fetch C3
-let sprsh1_B2 () = (fetch B1 + fetch B1) + fetch (C "A1")
-let sprsh1_C3 () = 3 * fetch (C "A1") + fetch (C "A2")
-
-(*
-                    A1  A2  B1  B2  C3
-   Stan początkowy: 10  20  20  20  20
-           Końcowy: 10  20  80  170 50
-   A1 -> 20, start: 20  20  80  170 50
-           Końcowy: 20  20  120 260 80
-*)
+let sprsh1_B1 () = fetch (C "A1") + fetch (C "A2")
+let sprsh1_B2 () = fetch (C "A2") + fetch (C "A3")
+let sprsh1_C3 () = fetch B1 + fetch B2
 
 let sprsh1 (cid: SpreadsheetCell) =
     match cid with
@@ -49,10 +33,13 @@ let sprsh1 (cid: SpreadsheetCell) =
     | _ => None
     end
 
-let initState = fn key => match key with
-                          | (C c) => if String.equal c "A1" then 10 else 20
-                          | _ => 20
-                          end
+let sprsh1_initState key = open String in
+    match key with
+    | (C c) => if equal c "A1" then 10 else
+               if equal c "A2" then 20 else
+               if equal c "A3" then 30 else 0
+    | _ => 0
+    end
 
 (* Oblicz zadanie bez modyfikowania stanu (Carte 3.6) *)
 let compute (Task task) =
@@ -68,7 +55,7 @@ let dumpGivenStoreContents {T: Type} (module TM: Comparable T) keys s =
         dumpStoreContents keys
     with funStoreHandler TM s)
 
-let dumpKeys = [C "A1", C "A2", B1, B2, C3]
+let dumpKeys = [C "A1", C "A2", C "A3", B1, B2, C3]
 
 (* ------------------------------------------- Excel Demo ------------------------------------------- *)
 
@@ -76,66 +63,71 @@ let allDirtyInfo = (fn _ => True)
 let allCleanInfo = (fn _ => False)
 let allCleanButA1 x = match x with
                       | (C c) => String.equal c "A1" || allCleanInfo (C c)
-                      | B1 => True | B2 => True | C3 => True
+                      | B1 => True | C3 => True
+                      | x => allCleanInfo x
+                      end
+let allCleanButA3 x = match x with
+                      | (C c) => String.equal c "A3" || allCleanInfo (C c)
+                      | B2 => True | C3 => True
                       | x => allCleanInfo x
                       end
 
 let excelDemo () =
-    let store = FunStore (allDirtyInfo, []) initState in
+    let store = FunStore (allDirtyInfo, []) sprsh1_initState in
     handle
         dumpStoreContents dumpKeys;
-        excel Spreadsheet sprsh1 B2;
+        excel Spreadsheet sprsh1 C3;
         dumpStoreContents dumpKeys;
         (* Key A1 was modified, dirty bit updated appropriately *)
         putValue (C "A1") 20;
         modifyInfo (mapFst (fn _ => allCleanButA1));
-        excel Spreadsheet sprsh1 B2;
+        excel Spreadsheet sprsh1 C3;
         dumpStoreContents dumpKeys
     with funStoreHandler CellOrder store
 
 (* ------------------------------------------- Shake Demo ------------------------------------------- *)
 
 let shakeDemo () =
-    let store = FunStore [] initState in
+    let store = FunStore [] sprsh1_initState in
     handle
         dumpStoreContents dumpKeys;
-        shake Spreadsheet sprsh1 B2;
+        shake Spreadsheet sprsh1 C3;
         dumpStoreContents dumpKeys;
         (* Key A1 was modified *)
         putValue (C "A1") 20;
         dumpStoreContents dumpKeys;
-        shake Spreadsheet sprsh1 B2;
+        shake Spreadsheet sprsh1 C3;
         dumpStoreContents dumpKeys
     with funStoreHandler Spreadsheet.Key store
 
 (* ---------------------------------------- Cloud Shake Demo ---------------------------------------- *)
 
 let cloudShakeDemo () =
-    let store = FunStore [] initState in
+    let store = FunStore [] sprsh1_initState in
     handle
         dumpStoreContents dumpKeys;
-        cloudShake Spreadsheet sprsh1 B2;
+        cloudShake Spreadsheet sprsh1 C3;
         dumpStoreContents dumpKeys;
         (* Key A1 was modified *)
         putValue (C "A1") 20;
         dumpStoreContents dumpKeys;
-        cloudShake Spreadsheet sprsh1 B2;
+        cloudShake Spreadsheet sprsh1 C3;
         dumpStoreContents dumpKeys
     with funStoreHandler Spreadsheet.Key store
 
 (* -------------------------------------------- Nix Demo -------------------------------------------- *)
 
 let nixDemo () =
-    let store = FunStore [] initState in
+    let store = FunStore [] sprsh1_initState in
     handle
         dumpStoreContents dumpKeys;
-        nix Spreadsheet sprsh1 B2;
+        nix Spreadsheet sprsh1 C3;
         dumpStoreContents dumpKeys;
         (* Key A1 was modified *)
         putValue (C "A1") 20;
         dumpStoreContents dumpKeys;
-        nix Spreadsheet sprsh1 B2;
+        nix Spreadsheet sprsh1 C3;
         dumpStoreContents dumpKeys
     with funStoreHandler Spreadsheet.Key store
 
-let _ = nixDemo ()
+let _ = cloudShakeDemo ()
