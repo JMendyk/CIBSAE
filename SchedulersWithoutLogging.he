@@ -1,0 +1,102 @@
+import Common
+import State
+import Store
+import Track
+import Utils
+import Set
+
+open Common
+open State
+open Store
+open Track
+open Utils
+
+
+
+let busy {I K V: Type} {`a: StoreEff I K V} (tasks: Tasks K V) (key: K) =
+    let rec busyH =
+        handler
+        | fetch k => match tasks k with
+                     | None => resume (getValue k)
+                     | Some task => let handle with busyH in
+                                    let v = run task in
+                                        putValue k v;
+                                        resume v
+                     end
+        end
+    in
+    handle fetch key with busyH
+
+let suspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K V) (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
+    open KV in
+    (* Tasks that are up to date in this build session *)
+    let type ST = Set Key in
+    let handle `done with evalState ST.empty in
+    (* Embedded state handler for task modified by rebuilder *)
+    let handle with embedState (getInfo `ste) (putInfo `ste) in
+    let rec suspendingHandler =
+            handler
+            | fetch k => build k; resume (getValue k)
+            end
+        and build key =
+            match (tasks key, gets `done (ST.mem key)) with
+            (* Not built yet, rebuilder takes over *)
+            | (Some task, False) =>
+              let value = getValue key in
+              let handle with suspendingHandler in
+              let newTask = rebuilder KV key value task in
+              let newValue = run newTask in
+                  modify `done (ST.add key);
+                  putValue key newValue
+            | _ => ()
+            end
+    in
+    build key
+
+let restarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR (List K)) K V} (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
+    open KV in
+    (* Setup and handling of calculation chain *)
+    let chainInsert dep chain =
+        let uniqPrepend x xs = x :: filter (not <.> Key.equals x) xs in
+            let (curr, rest) = uncons chain in
+                uniqPrepend dep rest @ [curr] in
+    let newChain =
+        let chain = snd (getInfo ()) in
+            chain @ (if member Key key chain then [] else [key]) in
+    let handle `chain with evalState newChain in
+    (* Tasks that are up to date in this build session *)
+    let type ST = Set Key in
+    let handle `done with evalState ST.empty in
+    (* Embedded state for tasks modified by rebuilder *)
+    let handle with embedState (fst <.> getInfo `ste) (modifyInfo `ste <.> setFst) in
+    let rec restartingHandler =
+            handler
+            | fetch k => if gets `done (ST.mem k) then
+                            resume (getValue k)
+                         else (let (curr, rest) = gets `chain uncons in
+                                   modify `chain (chainInsert k);
+                                   loop ())
+            | return x => let (curr, rest) = gets `chain uncons in
+                              modify `done (ST.add curr);
+                              put `chain rest;
+                              putValue curr x;
+                              curr :: loop ()
+            end
+        and loop () =
+            match get `chain () with
+            | [] => []
+            | (key::keys) =>
+              match tasks key with
+              (* Input task *)
+              | None => modify `done (ST.add key);
+                        put `chain keys;
+                        key :: loop ()
+              (* Not built yet, rebuilder takes over *)
+              | Some task => let value = getValue key in
+                             let newTask = rebuilder KV key value task in
+                                 handle run newTask with restartingHandler
+              end
+            end
+    in
+    let resultChain = loop () in
+        modifyInfo (mapSnd (fn _ => resultChain))
