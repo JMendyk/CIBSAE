@@ -11,8 +11,6 @@ let setFst x (_, y) = (x, y)
 let setSnd y (x, _) = (x, y)
 let mapFst f (x, y) = (f x, y)
 let mapSnd f (x, y) = (x, f y)
-let modifyFst f (x, y) = (f x, y)
-let modifySnd f (x, y) = (x, f y)
 
 let uncons xs = match xs with
                 | [] => runtimeError "empty list"
