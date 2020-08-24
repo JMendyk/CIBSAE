@@ -58,7 +58,7 @@ let recordVT {K V: Type} {`s: State (VT K V)} (key: K) (hash: Hash V) (deps: Dep
 let verifyVT {K V: Type} {`s: State (VT K V)} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (hash: Hash V) =
     let fetchedHashMatches (k, h) = h = fetch k in
     let matchFor (Trace k deps result) =
-        match (KV.Key.compare k key, result <> hash) with
+        match (KV.Key.compare k key, result = hash) with
         | (EQ, True) => List.forAll fetchedHashMatches deps
         | _ => False
         end
