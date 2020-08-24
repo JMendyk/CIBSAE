@@ -2,7 +2,8 @@
 \newcommand{\haskinl}[1]{\lstinline[style=haskell-inl]{#1}}
 \newcommand{\helinl}[1]{\lstinline[style=Haleff-inl]{#1}}
 
-\chapter{Systemy kompilacji z użyciem efektów algebraicznych i~uchwytów}
+\chapter{Systemy kompilacji z użyciem efektów algebraicznych i uchwytów}
+\chaptermark{Systemy z użyciem efektów i uchwytów}
 
 W tym rozdziale powtórzymy implementację systemów kompilacji przedstawioną w \BSaLC\cite{mokhov2018build}, jednak dokonamy jej w Helium używając efektów i uchwytów. Na początku wymyślimy własne odpowiedniki abstrakcyjnych struktur z Haskella związanych z systemami, następnie zaimplementujemy wszystkich rekompilatorów oraz wszystkich prócz jednego planistów. Na koniec przyglądniemy się co problematycznej jest w pominiętym planiście, że jego implementacja została pominięta.
 
@@ -21,36 +22,34 @@ getValue :: k -> Store i k v -> v
 putValue :: Eq k => k -> v -> Store i k v -> Store i k v
 \end{lstlisting}
 
-Autorzy \BSaLC\cite{mokhov2018build} reprezentowali Store jako typ z operacjami odczytu i zapisu trwałem informacji dla systemu oraz wartości wynikowych. Każdorazowo jednak, wartość Store była przechowywana w Haskellowym typie modyfikowalnego stanu \haskinl{Store}. Możemy więc uprościć implementację przez scalenie zasobu z modyfikowalnym stanem przez uczynienie \haskinl{Store} efektem, a działania na nim operacjami powodującymi ten efekt,
+Autorzy \BSaLC\cite{mokhov2018build} reprezentowali Store jako typ z operacjami odczytu i zapisu trwałem informacji dla systemu oraz wartości wynikowych. Każdorazowo jednak, wartość Store była przechowywana w Haskellowym typie modyfikowalnego stanu \haskinl{Store}. Możemy więc uprościć implementację przez scalenie zasobu z modyfikowalnym stanem przez uczynienie \haskinl{Store} efektem, a działania na nim operacjami powodującymi ten efekt.
 
-\lstinputlisting[language=Haleff, firstline=2, lastline=6]{../Store.he}
+\lstinputlisting[language=Haleff, firstline=5, lastline=9]{../Store.he}
 
 Podobnie jak \haskinl{Store} w oryginalnej implementacji, \helinl{StoreEff} jest polimorficzny ze względu na typy informacji, kluczy oraz wartości wynikowych kompilacji. Równania dla niego są analogiczne jak dla zwykłego modyfikowanego stanu z dokładnością do ustalenia klucza w operacjach na wartościach wynikowych. Definiujemy ponadto uchwyt \helinl{funStoreHandler} dla obliczeń używających zasobu reprezentowanego przez funkcję -- jak w przykładach w \BSaLC.
 
-\lstinputlisting[language=Haleff, firstline=40, lastline=54]{../Store.he}
+\lstinputlisting[language=Haleff, firstline=38, lastline=52]{../Store.he}
 
 Implementacja jest zbliżona do przykładu modyfikowalnego stanu z rozdziału 4. Dla porządku wartość początkowa trwałej informacji oraz słownika wartości jest opakowana w typ \helinl{FunStoreType I K V}.
 
-Jako że Helium, podobnie jak inne języki używające ML-owego systemu modułów nie posiadają klas typów znanych z Haskella, definiujemy kilka sygnatur odpowiadających klasom typów użytym w oryginalnej implementacji:
+Jako że Helium, podobnie jak inne języki używające ML-owego systemu modułów nie posiadają klas typów znanych z Haskella, definiujemy kilka sygnatur odpowiadających klasom typów użytym w oryginalnej implementacji. Moduł o sygnaturze \helinl{Comparable K} jest więc używany w \helinl{funStoreHandler} do porównywania kluczy identyfikujących zadania.
 
 \begin{minipage}[t]{.45\textwidth}
 
-  \lstinputlisting[language=Haleff, firstline=9, lastline=20]{../Common.he}
+  \lstinputlisting[language=Haleff, firstline=4, lastline=16]{../Signatures.he}
 
 \end{minipage}\hfill
 \begin{minipage}[t]{.45\textwidth}
 
-  \lstinputlisting[language=Haleff, firstline=22, lastline=31]{../Common.he}
+  \lstinputlisting[language=Haleff, firstline=18, lastline=27]{../Signatures.he}
 
 \end{minipage}
 
-Moduł o sygnaturze \helinl{Comparable K} jest więc używany w \helinl{funStoreHandler} do porównywania kluczy identyfikujących zadania.
-
 \subsection{Modyfikowalny stan}
 
-Implementację modyfikowalnego stanu zobaczyliśmy w przykładach w rozdziale 4 i wykorzystamy ją konstruując systemy kompilacji. Nazwy uchwytom dla stanu, w zależności od zwracanych wartości, nadajemy zgodnie z ich Haskellowymi odpowiednikami -- \haskinl{runState}, \haskinl{evalState}, \haskinl{execState}. Definiujemy także prostą funkcję \helinl{modifyState} przekształcającą stan używając podanej funkcji oraz nieco bardziej skomplikowaną funkcję \helinl{embedState}.
+Implementację modyfikowalnego stanu zobaczyliśmy w przykładach w rozdziale 4 i wykorzystamy ją konstruując systemy kompilacji. Nazwy uchwytom dla stanu, w zależności od zwracanych wartości, nadajemy zgodnie z ich Haskellowymi odpowiednikami -- \haskinl{runState}, \haskinl{evalState}, \haskinl{execState}. Definiujemy także prostą funkcję \helinl{modiy} przekształcającą stan używając podanej funkcji oraz nieco bardziej skomplikowaną funkcję \helinl{embedState}.
 
-\lstinputlisting[language=Haleff, linerange={6-6,32-36}, float=h, title={Definicje \helinl{modifyState} oraz \helinl{embedState}}]{../State.he}
+\lstinputlisting[language=Haleff, linerange={7-7,33-37}, float=h, title={Definicje \helinl{modify} oraz \helinl{embedState}}]{../State.he}
 
 Funkcja \helinl{embedState} tworzy uchwyt dla efektu modyfikowalnego stanu, w którym modifykacje -- zamiast być wykonywane przez uchwyt -- są przekazywanego podanym funkcjom \helinl{getter} oraz \helinl{setter}, które w czasie swojego działania mogą powodować jakiś efekt uboczny. Z takiego zanurzenia modyfikowalnego stanu w innym efekcie będziemy korzystać podczas implementacji planistów, którzy trwałą informację z zasobu będą przekazywać do rekompilatorów jako właśnie modyfikowalny stan.
 
@@ -91,7 +90,7 @@ type Rebuilder c ir k v = k -> v -> Task c k v -> Task (MonadState ir) k v
 
 Nasi planiści także będą mieli sygnatury zbliżone do swoich Haskellowych odpowiedników, wzbogacone oczywiście o efekt uboczny zasobu, a także moduł definiujący podstawowe działania na kluczach i wartościach opisane wcześniej.
 
-\lstinputlisting[language=Haleff, linerange={40-42}]{../Common.he}
+\lstinputlisting[language=Haleff, linerange={18-20}]{../Common.he}
 
 Rebuilder także przypomina swój odpowiednik z oryginalnej implementacji. Jednakże, zamiast zwracać zadanie ze zmienionym \textit{constraint'em}, zadanie jest wzbogacone o dodatkowy efekt stanu mogący występować w czasie kompilacji zadania, a związany z przerobieniem go przez rekompilator.
 
@@ -99,10 +98,44 @@ Rebuilder także przypomina swój odpowiednik z oryginalnej implementacji. Jedna
 
 Skoro ustaliliśmy jak Haskellowa abstrakcja systemów kompilacji przenosi się na naszą w Helium, możemy spróbować zaimplementować prosty system budowania \haskinl{busy} przedstawiony przez autorów.
 
-\lstinputlisting[language=Haleff, linerange={18-29}, float=h, title={System kompilacji \haskinl{busy}}]{../Schedulers.he}
+\lstinputlisting[language=Haleff, linerange={16-28}, float=h, title={System kompilacji \haskinl{busy}}]{../Schedulers.he}
 
 Rdzeniem tej implementacji, podobnie jak oryginalnej w Haskellu, jest definicja uchwytu (tak: funkcji) dla \helinl{fetch}. Jego ciało to przetłumaczenie oryginalnej implementacji z tą różnicą, że zamiast kontynuować obliczenie niejawnie -- przez zwracanie wyniku -- jest ono kontynuowane jawnie przez wywołanie \helinl{resume} w ciele uchwytu.
 
+\section{Implementacje systemów kompilacji}
+
+\subsection{Excel}
+
+\lstinputlisting[style=Haleff-long, linerange={13-14}]{../Systems.he}
+
+\lstinputlisting[style=Haleff-long, linerange={31-34}]{../Rebuilders.he}
+
+\lstinputlisting[style=Haleff-long, linerange={56-102}]{../Schedulers.he}
+
+\subsection{Shake}
+
+\lstinputlisting[style=Haleff-long, linerange={16-17}]{../Systems.he}
+
+\lstinputlisting[style=Haleff-long, linerange={60-66}]{../Rebuilders.he}
+
+\lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
+
+\subsection{CloudShake}
+
+\lstinputlisting[style=Haleff-long, linerange={19-20}]{../Systems.he}
+
+\lstinputlisting[style=Haleff-long, linerange={95-105}]{../Rebuilders.he}
+
+%% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
+
+\subsection{Nix}
+
+\lstinputlisting[style=Haleff-long, linerange={22-23}]{../Systems.he}
+
+\lstinputlisting[style=Haleff-long, linerange={131-141}]{../Rebuilders.he}
+
+%% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
+
 \section{Istniejące podejścia do implementacji w innych językach}
 
-Choć opisane wyżej wyniki są pierwszą -- według wiedzy autora -- próbą implementacji systemów kompilacji inspirowanych \BSaLC\cite{mokhov2018build} używając języka z efektami oraz uchwytami, w \BSaLCTP\cite{mokhov2020build} autorzy wspominają o dwóch znanych im próbach implementacji w innych językach: Rust\cite{translation_rust} oraz Kotlin\cite{translation_kotlin}. Jak jednak zauważają autorzy, w obu przypadkach ograniczenia użytych języków doprowadziły do utracenia precyzji i schludności rozwiązań w prównaniu z oryginalną implementacją w Haskellu.
+Choć opisane wyżej wyniki są pierwszą -- według wiedzy autora -- próbą implementacji systemów kompilacji inspirowanych \BSaLC używając języka z efektami oraz uchwytami, w \BSaLCTP autorzy wspominają o dwóch znanych im próbach implementacji w innych językach: Rust\cite{translation_rust} oraz Kotlin\cite{translation_kotlin}. Jak jednak zauważają autorzy, w obu przypadkach ograniczenia użytych języków doprowadziły do utracenia precyzji i schludności rozwiązań w prównaniu z oryginalną implementacją w Haskellu.

@@ -1,7 +1,7 @@
 % Opcje klasy 'iithesis' opisane sa w komentarzach w pliku klasy. Za ich pomoca
 % ustawia sie przede wszystkim jezyk i rodzaj (lic/inz/mgr) pracy, oraz czy na
 % drugiej stronie pracy ma byc skladany wzor oswiadczenia o autorskim wykonaniu.
-\documentclass[lic,declaration,shortabstract]{iithesis}
+\documentclass[lic,declaration,shortabstract,masc]{iithesis}
 
 \usepackage[utf8]{inputenc}
 
@@ -94,11 +94,17 @@
   columns=fullflexible,
   keepspaces=true,
   literate=*{`}{{`}}{1}
+            {'}{{'}}{1}
 }
 
 \lstdefinestyle{Haleff-inl}{
   language=Haleff,
   basicstyle=\ttfamily
+}
+
+\lstdefinestyle{Haleff-long}{
+  language=Haleff,
+  basicstyle=\scriptsize\ttfamily
 }
 
 \newcommand{\BSaLC}{,,Build systems {\`a} la carte''}
