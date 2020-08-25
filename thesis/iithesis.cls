@@ -91,7 +91,7 @@
 \ExecuteOptions{polish,lic,longabstract}
 \ProcessOptions\relax
 
-\RequirePackage[OT4]{fontenc}
+\RequirePackage[T1]{fontenc}
 \RequirePackage{babel,titling,geometry}
 \geometry{margin=3cm,bindingoffset=1cm,a4paper,onecolumn,twoside}
 
@@ -203,7 +203,8 @@
 
 \RequirePackage[pdftex,unicode=true]{hyperref}
 
-\AtBeginDocument{
+\RequirePackage{etoolbox}
+\AfterEndPreamble{
   \if@pol{\selectlanguage{polish}\old@title{\bfseries\@polishtitle\mdseries}}
          {\selectlanguage{english}\old@title{\bfseries\@englishtitle\mdseries}}
   \let\old@nd\and
