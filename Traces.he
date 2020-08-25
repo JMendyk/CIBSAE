@@ -19,7 +19,7 @@ type Deps (K V: Type) = List (Pair K (Hash V))
 
 let recordVT {K V: Type} {`s: State (VT K V)} (key: K) (hash: Hash V) (deps: Deps K V) =
     modify (fn ts => (Trace key deps hash) :: ts)
-    
+
 let verifyVT {K V: Type} {`s: State (VT K V)} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (hash: Hash V) =
     let fetchedHashMatches (k, h) = h = fetch k in
     let matchFor (Trace k deps result) =
