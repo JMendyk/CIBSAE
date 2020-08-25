@@ -1,0 +1,73 @@
+import Common
+import State
+import Utils
+
+import List
+import Writer
+
+open Common
+open State
+
+(* --------------------------------------------- Traces --------------------------------------------- *)
+
+data TraceType (K V A: Type) = Trace of K, (List (Pair K (Hash V))), A
+
+(* ---------------------------------------- Verifying Traces ---------------------------------------- *)
+
+type VT (K V: Type) = List (TraceType K V (Hash V))
+type Deps (K V: Type) = List (Pair K (Hash V))
+
+let recordVT {K V: Type} {`s: State (VT K V)} (key: K) (hash: Hash V) (deps: Deps K V) =
+    modify (fn ts => (Trace key deps hash) :: ts)
+    
+let verifyVT {K V: Type} {`s: State (VT K V)} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (hash: Hash V) =
+    let fetchedHashMatches (k, h) = h = fetch k in
+    let matchFor (Trace k deps result) =
+        if not (KV.Key.equals k key) || result <> hash then False
+        else List.forAll fetchedHashMatches deps
+    in List.exists matchFor (get ())
+
+(* --------------------------------------- Constructive Traces -------------------------------------- *)
+
+(* This implementation of matchFor in constructCT loops: *)
+(* if KV.Key.equals k key && List.forAll fetchedHashMatches deps *)
+(* then Writer.tell result *)
+(* else () *)
+
+type CT (K V: Type) = List (TraceType K V V)
+
+let recordCT {K V: Type} {`s: State (CT K V)} (key: K) (value: V) (deps: Deps K V) =
+    modify (fn ts => (Trace key deps value) :: ts)
+
+let constructCT {K V: Type} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (ts: CT K V) =
+    let fetchedHashMatches (k, h) = h = fetch k in
+    let matchFor {`r: Writer V} (Trace k deps result) =
+        if not (KV.Key.equals k key) then ()
+        else (let same = List.forAll fetchedHashMatches deps in
+                  if same then Writer.tell result else ()) in
+    let handle `r with Writer.listHandler in
+        List.iter (matchFor `r) ts
+
+(* ------------------------------------ Deep Constructive Traces ------------------------------------ *)
+
+type DCT (K V: Type) = List (TraceType K V V)
+
+let deepDependencies {K V: Type} (module KV: KeyValue K V) (ts: DCT K V) (valueHash: Hash V) (key: K) =
+    open KV in
+    let f (Trace k deps v) = if Key.equals k key && Value.hash v = valueHash
+                             then Writer.tell (List.map fst deps)
+                             else () in
+    let depsList = handle `w in List.iter (f `w) ts with Writer.listHandler in
+        match depsList with
+        | []        => [key]
+        | (deps::_) => deps (* Authors assume that there is only one record for a (k, v) pair *)
+        end
+
+let recordDCT {K V: Type} {`s: State (DCT K V)} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (value: V) (deps: List K) =
+    open KV.Value in
+    let deepDeps = Utils.concatMap (deepDependencies KV (get `s ()) (hash value)) deps in
+    let hs = List.map (fetch `b) deepDeps in
+    let depends = Utils.zip deepDeps hs in
+        modify (fn ts => (Trace key depends value) :: ts)
+
+let constructDCT {K V: Type} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (ts: DCT K V) = constructCT KV key ts
