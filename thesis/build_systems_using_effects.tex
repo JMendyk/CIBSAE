@@ -52,7 +52,7 @@ Implementację modyfikowalnego stanu zobaczyliśmy w przykładach w rozdziale 4 
 
 \lstinputlisting[language=Haleff, linerange={6-7,33-37}, float=h, title={Definicje \helinl{gets}, \helinl{modify} oraz \helinl{embedState}}]{../State.he}
 
-Funkcja \helinl{embedState} tworzy uchwyt dla efektu modyfikowalnego stanu, w którym modifykacje -- zamiast być wykonywane przez uchwyt -- są przekazywanego podanym funkcjom \helinl{getter} oraz \helinl{setter}, które w czasie swojego działania mogą powodować jakiś efekt uboczny. Z takiego zanurzenia modyfikowalnego stanu w innym efekcie będziemy korzystać podczas implementacji planistów, którzy trwałą informację z zasobu będą przekazywać do rekompilatorów jako właśnie modyfikowalny stan.
+Funkcja \helinl{embedState} tworzy uchwyt dla efektu modyfikowalnego stanu, w którym modyfikacje -- zamiast być wykonywane przez uchwyt -- są przekazywanego podanym funkcjom \helinl{getter} oraz \helinl{setter}, które w czasie swojego działania mogą powodować jakiś efekt uboczny. Z takiego zanurzenia modyfikowalnego stanu w innym efekcie będziemy korzystać podczas implementacji planistów, którzy trwałą informację z zasobu będą przekazywać do rekompilatorów jako właśnie modyfikowalny stan.
 
 \begin{lstlisting}[language=Haleff, float=h, caption={Wykorzystanie \helinl{embedState}}]
 handle `store in
@@ -115,7 +115,7 @@ W implementacjach planistów i rekompilatorów będziemy chcieli uruchamiać zad
 
 \lstinputlisting[language=Haleff, linerange={12-13,20-29}]{../Track.he}
 
-Funkcja \helinl{track} otrzymuje etykietę \helinl{`b} uchwytu dla efektu kompilacji oraz zadanie \helinl{task} które mam być uruchomione pod nadzorą tego uchwytu, a funkcja ma wyznaczyć zadania, od których \helinl{task} zależy. W tym celu, konstruowany jest dodatkowych uchwyt \helinl{hTrack}, pod nadzorą którego uruchamiamy zadanie. W sytuacji gdy uruchomione zadanie potrzebuje wyniku innego zadania, \helinl{hTrack} ,,przechwyci'' wystąpienie \helinl{fetch}. Następnie oddeleguje wystąpienie operacji do uchwytu o etykiecie \helinl{`b}, a następnie odnotuje że miało miejsce wywołanie \helinl{fetch}.
+Funkcja \helinl{track} otrzymuje etykietę \helinl{`b} uchwytu dla efektu kompilacji oraz zadanie \helinl{task} które ma być uruchomione pod jego nadzorem, a funkcja ma wyznaczyć zadania, od których \helinl{task} zależy. W tym celu, konstruowany jest dodatkowych uchwyt \helinl{hTrack}, pod nadzorą którego uruchamiamy zadanie. W sytuacji gdy uruchomione zadanie potrzebuje wyniku innego zadania, \helinl{hTrack} ,,przechwyci'' wystąpienie \helinl{fetch}. Następnie oddeleguje wystąpienie operacji do uchwytu o etykiecie \helinl{`b}, a następnie odnotuje że miało miejsce wywołanie \helinl{fetch}.
 
 Implementacja funkcji \helinl{track} jest ciekawym przykładem skonstruowania pośrednika (proxy) pomiędzy obliczeniem, które ma efekty uboczne, a właściwym dla niego uchwytem.
 
@@ -131,11 +131,11 @@ Funkcja \helinl{dirtyBitRebuiler} modyfikuje zadanie tak aby przy uruchomieniu s
 
 \lstinputlisting[style=Haleff-long, linerange={36-39}]{../Rebuilders.he}
 
-W planiście restartującym, utrzymujemy łańcuch który ma aproksymować kolejność kompilacji w której minimalizujemy liczbę restartów. Działanie rozpoczyna się od wykorzystania łańcucha z poprzedniej kompilacji, a jego wersję wykorzystywaną i modyfikowaną w czasie działania utrzymujemy w instancji stanu o etykiecie \helinl{`chain}. Ponadto, w stanie \helinl{`done} odnotowujemy które zadania skompilowaliśmy w tej instacji procesu aby nie musieć uruchamiać ich ponownie oraz tworzymy uchwyt, wykorzystując opisaną wcześniej funkcję \helinl{embedState}, dla modyfikowalnego stanu odpowiadającego trwałej informacji systemu kompilacji.
+W planiście restartującym, utrzymujemy łańcuch który ma aproksymować kolejność kompilacji w której minimalizujemy liczbę restartów. Działanie rozpoczyna się od wykorzystania łańcucha z poprzedniej kompilacji, a jego wersję wykorzystywaną i modyfikowaną w czasie działania utrzymujemy w instancji stanu o etykiecie \helinl{`chain}. Ponadto, w stanie \helinl{`done} odnotowujemy które zadania skompilowaliśmy w tej instancji procesu aby nie musieć uruchamiać ich ponownie oraz tworzymy uchwyt, wykorzystując opisaną wcześniej funkcję \helinl{embedState}, dla modyfikowalnego stanu odpowiadającego trwałej informacji systemu kompilacji.
 
 \lstinputlisting[style=Haleff-long, linerange={56-71}]{../Schedulers.he}
 
-Właściwa część implementacji tego planisty składa się z uchwytu efektu kompilacji \helinl{restartingHandler} oraz funkcji \helinl{loop}. Funkcja ta wykonuje zadania w kolejności zadanej przez łańcuch z poprzedniej instacji, modyfikując zadania z użyciem rekompilatora po czym je uruchamiając. Jednocześnie, konstruowany jest nowy łańcuch który jest wartościową wynikową funkcji \helinl{loop}.
+Właściwa część implementacji tego planisty składa się z uchwytu efektu kompilacji \helinl{restartingHandler} oraz funkcji \helinl{loop}. Funkcja ta wykonuje zadania w kolejności zadanej przez łańcuch z poprzedniej instancji, modyfikując zadania z użyciem rekompilatora po czym je uruchamiając. Jednocześnie, konstruowany jest nowy łańcuch który jest wartościową wynikową funkcji \helinl{loop}.
 
 W czasie kompilacji zadania, wywołania \helinl{fetch} są przechwytywane przez uchwyt, który sprawdza czy zadanie jest już obliczone. W przeciwnym razie modyfikuje łańcuch tak, by potrzebne zadanie znalazło się przed zadaniem aktualnie obliczanym. W uchwycie wykorzystana opcja dla \helinl{return}, która odnotowuje że skończyło się kompilować i wywołuje \helinl{loop}.
 
@@ -153,7 +153,7 @@ Implementacja planisty wstrzymującego jest znacznie krótsza od restartującego
 
 \lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
 
-Uchwyt \helinl{suspendingHandler} jest niezwykle prosty -- jedynie wywołuje funkcję \helinl{build}, po czym wznawia kompilację z wynikiem potrzebnego zadania. Procedura \helinl{build} sprawdza czy zadanie jest nietrywailne (nie jest wejściem) oraz czy nie zostało już obliczone. Wtedy konstruowane jest nowe zadanie z użyciem rekompilatora, po czym następuje jego uruchomienie. W innych przypadkach zadanie jest aktualne i na pewno nie ma potrzeby kompilować go ponownie.
+Uchwyt \helinl{suspendingHandler} jest niezwykle prosty -- jedynie wywołuje funkcję \helinl{build}, po czym wznawia kompilację z wynikiem potrzebnego zadania. Procedura \helinl{build} sprawdza czy zadanie jest nietrywialne (nie jest wejściem) oraz czy nie zostało już obliczone. Wtedy konstruowane jest nowe zadanie z użyciem rekompilatora, po czym następuje jego uruchomienie. W innych przypadkach zadanie jest aktualne i na pewno nie ma potrzeby kompilować go ponownie.
 
 \subsection{CloudShake}
 

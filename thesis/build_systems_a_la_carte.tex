@@ -189,7 +189,7 @@ Gdyby \inl{f} było w pełni dowolne, nie dałoby się nic pożytecznego z nim z
 \item \inl{Functor} -- umożliwia nakładanie funkcji na wartość, którą opakowuje. Myśląc graficznie -- pracując z funktorem, tworzymy ciąg obliczeń modyfikujących wartość.
 \item \inl{Applicative} -- umożliwia scalanie wielu wartości przez nakładanie na nie funkcji. Tutaj obliczenia prezentują się jako skierowany graf acykliczny.
 \item \inl{Monad} -- w tym przypadku otrzymujemy dowolny graf, który jest ponadto dynamiczny (ze względu na wartości wynikowe). W procesie obliczeń możemy wyłuskiwać wartości i podejmować w oparciu o nie decyzje.
-\item \inl{Selective}\cite{mokhov2019selective} -- jest formą pośrednią między funktorami aplikatywnymi, a monadami. Możliwe jest podejmowanie decyzji w oparciu o wyniki, jednak opcje do wyboru są zdefiniowany statycznie.
+\item \inl{Selective}\cite{mokhov2019selective} -- jest formą pośrednią między funktorami aplikatywnymi, a monadami. Możliwe jest podejmowanie decyzji w oparciu o wyniki, jednak opcje do wyboru są zdefiniowane statycznie.
 \end{itemize}
 
 Autorzy dokonują więc niezwykle ciekawego odkrycia: zadania, w których typ \inl{f} jest funktorem aplikatywnym, mogą mieć jedynie statyczne zależności, zaś dynamiczne są możliwe gdy \inl{f} jest monadą!
