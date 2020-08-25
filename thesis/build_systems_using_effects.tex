@@ -4,6 +4,7 @@
 
 \chapter{Systemy kompilacji z użyciem efektów algebraicznych i uchwytów}
 \chaptermark{Systemy z użyciem efektów i uchwytów}
+\label{chapter-bsue}
 
 W tym rozdziale powtórzymy implementację systemów kompilacji przedstawioną w \BSaLC\cite{mokhov2018build}, jednak dokonamy jej w Helium używając efektów i uchwytów. Na początku wymyślimy własne odpowiedniki abstrakcyjnych struktur z Haskella związanych z systemami, następnie zaimplementujemy wszystkich rekompilatorów oraz wszystkich prócz jednego planistów. Na koniec przyglądniemy się co problematycznej jest w pominiętym planiście, że jego implementacja została pominięta.
 
@@ -26,7 +27,7 @@ Autorzy \BSaLC\cite{mokhov2018build} reprezentowali Store jako typ z operacjami 
 
 \lstinputlisting[language=Haleff, firstline=5, lastline=9]{../Store.he}
 
-Podobnie jak \haskinl{Store} w oryginalnej implementacji, \helinl{StoreEff} jest polimorficzny ze względu na typy informacji, kluczy oraz wartości wynikowych kompilacji. Równania dla niego są analogiczne jak dla zwykłego modyfikowanego stanu z dokładnością do ustalenia klucza w operacjach na wartościach wynikowych. Definiujemy ponadto uchwyt \helinl{funStoreHandler} dla obliczeń używających zasobu reprezentowanego przez funkcję -- jak w przykładach w \BSaLC.
+Podobnie jak \haskinl{Store} w oryginalnej implementacji, \helinl{StoreEff} jest polimorficzny ze względu na typy informacji, kluczy oraz wartości wynikowych kompilacji. Równania dla niego są analogiczne jak dla zwykłego modyfikowanego stanu z dokładnością do ustalenia klucza w operacjach na wartościach wynikowych. Definiujemy ponadto uchwyt \helinl{funStoreHandler} dla obliczeń używających zasobu reprezentowanego przez funkcję -- jak w przykładach w \BSaLC{}.
 
 \lstinputlisting[language=Haleff, firstline=38, lastline=52]{../Store.he}
 
@@ -47,9 +48,9 @@ Jako że Helium, podobnie jak inne języki używające ML-owego systemu modułó
 
 \subsection{Modyfikowalny stan}
 
-Implementację modyfikowalnego stanu zobaczyliśmy w przykładach w rozdziale 4 i wykorzystamy ją konstruując systemy kompilacji. Nazwy uchwytom dla stanu, w zależności od zwracanych wartości, nadajemy zgodnie z ich Haskellowymi odpowiednikami -- \haskinl{runState}, \haskinl{evalState}, \haskinl{execState}. Definiujemy także prostą funkcję \helinl{modiy} przekształcającą stan używając podanej funkcji oraz nieco bardziej skomplikowaną funkcję \helinl{embedState}.
+Implementację modyfikowalnego stanu zobaczyliśmy w przykładach w rozdziale 4 i wykorzystamy ją konstruując systemy kompilacji. Nazwy uchwytom dla stanu, w zależności od zwracanych wartości, nadajemy zgodnie z ich Haskellowymi odpowiednikami -- \haskinl{runState}, \haskinl{evalState}, \haskinl{execState}. Definiujemy także proste funkcje \helinl{gets} i \helinl{modify}, odpowiednio odczytującą i przekształcającą stan, używając podanej funkcji oraz nieco bardziej skomplikowaną funkcję \helinl{embedState}.
 
-\lstinputlisting[language=Haleff, linerange={7-7,33-37}, float=h, title={Definicje \helinl{modify} oraz \helinl{embedState}}]{../State.he}
+\lstinputlisting[language=Haleff, linerange={6-7,33-37}, float=h, title={Definicje \helinl{gets}, \helinl{modify} oraz \helinl{embedState}}]{../State.he}
 
 Funkcja \helinl{embedState} tworzy uchwyt dla efektu modyfikowalnego stanu, w którym modifykacje -- zamiast być wykonywane przez uchwyt -- są przekazywanego podanym funkcjom \helinl{getter} oraz \helinl{setter}, które w czasie swojego działania mogą powodować jakiś efekt uboczny. Z takiego zanurzenia modyfikowalnego stanu w innym efekcie będziemy korzystać podczas implementacji planistów, którzy trwałą informację z zasobu będą przekazywać do rekompilatorów jako właśnie modyfikowalny stan.
 
@@ -74,9 +75,9 @@ type Tasks c k v = k -> Maybe (Task c k v)
 
 Możemy jednak zauważyć, że zbudowanie zadania jest oczywistym efektem ubocznym działania systemu kompilacji, stąd w naszej implementacji zamiast przekazywać funkcję, która była przez autorów zazwyczaj nazywana \haskinl{fetch}, zdefiniujemy efekt \helinl{BuildEff}, który będzie występował w czasie kompilacji zadań. Efekt ten będzie miał związaną jedną operację \helinl{fetch}.
 
-\lstinputlisting[language=Haleff, linerange={33-38}]{../Common.he}
+\lstinputlisting[language=Haleff, linerange={14-16}]{../Common.he}
 
-Zadanie będzie funkcją wymagającą informacji o instancji efektu budowania i będzie polimorficzna ze względu na typ kluczy i wartości oraz ewentualnych efektów ubocznych nie będących efektem budowania (przyda się to przy implementacji rebuilderów). Zwróćmy uwagę, że definicja typu zadania nie zawiera informacji o klasie typów \haskinl{c} której element \haskinl{f} ,,opakowuje'' wynik w oryginalnej implementacji -- do tej różnicy powrócimy w dalszej części rozdziału.
+Zadanie będzie funkcją wymagającą informacji o instancji efektu budowania i będzie polimorficzna ze względu na typ kluczy i wartości oraz ewentualnych efektów ubocznych nie będących efektem budowania (będzie to przydatne przy implementacji rebuilderów). Zwróćmy uwagę, że definicja typu zadania nie zawiera informacji analogicznych do klasy typów \haskinl{c} której element \haskinl{f} ,,opakowywał'' wynik w oryginalnej implementacji -- do tej różnicy powrócimy w dalszej części rozdziału.
 
 \subsection{Kompilacja, planista, rekompilator}
 
@@ -100,7 +101,23 @@ Skoro ustaliliśmy jak Haskellowa abstrakcja systemów kompilacji przenosi się 
 
 \lstinputlisting[language=Haleff, linerange={16-28}, float=h, title={System kompilacji \haskinl{busy}}]{../Schedulers.he}
 
-Rdzeniem tej implementacji, podobnie jak oryginalnej w Haskellu, jest definicja uchwytu (tak: funkcji) dla \helinl{fetch}. Jego ciało to przetłumaczenie oryginalnej implementacji z tą różnicą, że zamiast kontynuować obliczenie niejawnie -- przez zwracanie wyniku -- jest ono kontynuowane jawnie przez wywołanie \helinl{resume} w ciele uchwytu.
+Rdzeniem tej implementacji, podobnie jak oryginalnej w Haskellu, jest definicja uchwytu (tam: funkcji) dla \helinl{fetch}. Jego ciało to przetłumaczenie oryginalnej implementacji z tą różnicą, że zamiast kontynuować obliczenie niejawnie -- przez zwracanie wyniku -- jest ono kontynuowane jawnie przez wywołanie \helinl{resume} w ciele uchwytu.
+
+\section{Implementacja okruszków}
+
+Podobnie jak w \BSaLC{}, implementacje funkcji pracujących z okruszkami nie są interesujące -- w naszym przypadku odpowiadają oryginałom poza kilkoma szczegółami w postaci wykorzystania efektu \helinl{Writer} zamiast infrastruktury zbudowanej wokół typu \haskinl{Maybe} w Haskellu. Implementacje w Helium wraz z komentarzami dostępne są w Dodatku A.
+
+%% są dostępne (?)
+
+\section{Uruchamianie i śledzenie działań}
+
+W implementacjach planistów i rekompilatorów będziemy chcieli uruchamiać zadania oraz śledzić od jakich zadań zależy aktualnie rozważane. W tym celu, podobnie jak autorzy \BSaLC{}, definiujemy prostą funkcję \helinl{run} oraz nieco ciekawszą \helinl{track}.
+
+\lstinputlisting[language=Haleff, linerange={12-13,20-29}]{../Track.he}
+
+Funkcja \helinl{track} otrzymuje etykietę \helinl{`b} uchwytu dla efektu kompilacji oraz zadanie \helinl{task} które mam być uruchomione pod nadzorą tego uchwytu, a funkcja ma wyznaczyć zadania, od których \helinl{task} zależy. W tym celu, konstruowany jest dodatkowych uchwyt \helinl{hTrack}, pod nadzorą którego uruchamiamy zadanie. W sytuacji gdy uruchomione zadanie potrzebuje wyniku innego zadania, \helinl{hTrack} ,,przechwyci'' wystąpienie \helinl{fetch}. Następnie oddeleguje wystąpienie operacji do uchwytu o etykiecie \helinl{`b}, a następnie odnotuje że miało miejsce wywołanie \helinl{fetch}.
+
+Implementacja funkcji \helinl{track} jest ciekawym przykładem skonstruowania pośrednika (proxy) pomiędzy obliczeniem, które ma efekty uboczne, a właściwym dla niego uchwytem.
 
 \section{Implementacje systemów kompilacji}
 
@@ -108,23 +125,43 @@ Rdzeniem tej implementacji, podobnie jak oryginalnej w Haskellu, jest definicja 
 
 \lstinputlisting[style=Haleff-long, linerange={13-14}]{../Systems.he}
 
-\lstinputlisting[style=Haleff-long, linerange={31-34}]{../Rebuilders.he}
+Już na starcie widzimy, że udało nam się dopełnić obietnicy którą postulują autorzy \BSaLC{} -- systemy kompilacji powstają przez zaaplikowanie rekompilatora do planisty.
 
-\lstinputlisting[style=Haleff-long, linerange={56-102}]{../Schedulers.he}
+Funkcja \helinl{dirtyBitRebuiler} modyfikuje zadanie tak aby przy uruchomieniu sprawdzało, czy klucz zadania jest oznaczony jako brudny. Gdy tak jest, zadanie zostanie skompilowane, w przeciwnym razie można wykorzystać wartość dostarczoną do rekompilatora gdyż to ją zwróciłoby wykonanie pierwotnego zadania. 
+
+\lstinputlisting[style=Haleff-long, linerange={36-39}]{../Rebuilders.he}
+
+W planiście restartującym, utrzymujemy łańcuch który ma aproksymować kolejność kompilacji w której minimalizujemy liczbę restartów. Działanie rozpoczyna się od wykorzystania łańcucha z poprzedniej kompilacji, a jego wersję wykorzystywaną i modyfikowaną w czasie działania utrzymujemy w instancji stanu o etykiecie \helinl{`chain}. Ponadto, w stanie \helinl{`done} odnotowujemy które zadania skompilowaliśmy w tej instacji procesu aby nie musieć uruchamiać ich ponownie oraz tworzymy uchwyt, wykorzystując opisaną wcześniej funkcję \helinl{embedState}, dla modyfikowalnego stanu odpowiadającego trwałej informacji systemu kompilacji.
+
+\lstinputlisting[style=Haleff-long, linerange={56-71}]{../Schedulers.he}
+
+Właściwa część implementacji tego planisty składa się z uchwytu efektu kompilacji \helinl{restartingHandler} oraz funkcji \helinl{loop}. Funkcja ta wykonuje zadania w kolejności zadanej przez łańcuch z poprzedniej instacji, modyfikując zadania z użyciem rekompilatora po czym je uruchamiając. Jednocześnie, konstruowany jest nowy łańcuch który jest wartościową wynikową funkcji \helinl{loop}.
+
+W czasie kompilacji zadania, wywołania \helinl{fetch} są przechwytywane przez uchwyt, który sprawdza czy zadanie jest już obliczone. W przeciwnym razie modyfikuje łańcuch tak, by potrzebne zadanie znalazło się przed zadaniem aktualnie obliczanym. W uchwycie wykorzystana opcja dla \helinl{return}, która odnotowuje że skończyło się kompilować i wywołuje \helinl{loop}.
+
+\lstinputlisting[style=Haleff-long, linerange={72-102}]{../Schedulers.he}
 
 \subsection{Shake}
 
 \lstinputlisting[style=Haleff-long, linerange={16-17}]{../Systems.he}
 
-\lstinputlisting[style=Haleff-long, linerange={60-66}]{../Rebuilders.he}
+W systemie Shake, rebuilder wykorzystuje okruszki weryfikujące. Rekompilator używając \helinl{verifyVT} sprawdza czy zadanie jest świeże. Jeśli tak, nie musi być obliczane ponownie. W przeciwnym razie zadanie jest kompilowane w nadzorowanym sposób z użyciem funkcji \helinl{track}, która akumuluje listę bezpośrednich zależności zadania, by utworzyć z nich nowe okruszki do trwałego zachowania z użyciem \helinl{recordVT}.
+
+\lstinputlisting[style=Haleff-long, linerange={43-49}]{../Rebuilders.he}
+
+Implementacja planisty wstrzymującego jest znacznie krótsza od restartującego. Utrzymujemy tylko dwa stany: \helinl{`done} dla odnotowania już skompilowanych zadań oraz osadzenie trwałej informacji w stanie na potrzeby działania rekompilatora -- podobnie jak w planiście restartującym.
 
 \lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
+
+Uchwyt \helinl{suspendingHandler} jest niezwykle prosty -- jedynie wywołuje funkcję \helinl{build}, po czym wznawia kompilację z wynikiem potrzebnego zadania. Procedura \helinl{build} sprawdza czy zadanie jest nietrywailne (nie jest wejściem) oraz czy nie zostało już obliczone. Wtedy konstruowane jest nowe zadanie z użyciem rekompilatora, po czym następuje jego uruchomienie. W innych przypadkach zadanie jest aktualne i na pewno nie ma potrzeby kompilować go ponownie.
 
 \subsection{CloudShake}
 
 \lstinputlisting[style=Haleff-long, linerange={19-20}]{../Systems.he}
 
-\lstinputlisting[style=Haleff-long, linerange={95-105}]{../Rebuilders.he}
+\lstinputlisting[style=Haleff-long, linerange={59-69}]{../Rebuilders.he}
+
+W przypadku okruszków konstruktywnych, rebuilder sprawdza czy podana wartość zadania jest już wśród znanych wartości. W przeciwnym razie można zwrócić dowolną znaną wartość lub -- gdy żadna wartość nie jest znana -- następuje kompilacja zadania. Podobnie, jak w przypadku rekompilatora opartego o okruszki weryfikujące, tutaj też kompilacja odbywa się ze śledzeniem zadań od których kompilowane zależy.
 
 %% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
 
@@ -132,10 +169,20 @@ Rdzeniem tej implementacji, podobnie jak oryginalnej w Haskellu, jest definicja 
 
 \lstinputlisting[style=Haleff-long, linerange={22-23}]{../Systems.he}
 
-\lstinputlisting[style=Haleff-long, linerange={131-141}]{../Rebuilders.he}
+Rekompilator używający głębokich okruszków konstruktywnych przypomina swoich poprzedników. Jednak, zgodnie ze swoją nazwą zamiast wyznaczać tylko klucze zadań których bezpośrednio badane zadanie używa do obliczenia wyniku, sprawdza od których zadań wejściowych w istocie badane zależy.
+
+\lstinputlisting[style=Haleff-long, linerange={73-84}]{../Rebuilders.he}
 
 %% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
 
+\section{Nieobecny planista topologiczny}
+
+Jak zobaczyliśmy w rozdziale \ref{chapter-bsalc}, planiści restartujący i wstrzymujący radzą sobie z zadaniami o dynamicznych jak i statycznych zależnościach. Inaczej sytuacja ma się w przypadku planisty topologicznego, który działa jedynie z zadaniami o statycznych zależnościach, które w \BSaLC{} są modelowane z wykorzystaniem klasy \haskinl{Applicative}.
+
+W naszym przypadku, wydaje się że nie mamy jak uniemożliwić zadaniom inspekcję wartości wynikowych z wywołań \helinl{fetch} w prosty sposób. Moglibyśmy wyniki \helinl{fetch} opakowywać w nieznany twórcy zadania typ, co wydaje się powracać do oryginalnej implementacji i wykorzystania funktorów aplikatywnych. W ten sposób oddalamy się jednak od efektów algebraicznych i uchwytów będących tematem tej pracy, stąd nie będziemy badać dokładniej tematu modelowania statycznych zależności.
+
 \section{Istniejące podejścia do implementacji w innych językach}
 
-Choć opisane wyżej wyniki są pierwszą -- według wiedzy autora -- próbą implementacji systemów kompilacji inspirowanych \BSaLC używając języka z efektami oraz uchwytami, w \BSaLCTP autorzy wspominają o dwóch znanych im próbach implementacji w innych językach: Rust\cite{translation_rust} oraz Kotlin\cite{translation_kotlin}. Jak jednak zauważają autorzy, w obu przypadkach ograniczenia użytych języków doprowadziły do utracenia precyzji i schludności rozwiązań w prównaniu z oryginalną implementacją w Haskellu.
+Choć opisane wyżej wyniki są pierwszą -- według wiedzy autora -- próbą implementacji systemów kompilacji inspirowanych \BSaLC{} używając języka z efektami oraz uchwytami, w \BSaLCTP{} autorzy wspominają o dwóch znanych im próbach implementacji w innych językach: Rust\cite{translation_rust} oraz Kotlin\cite{translation_kotlin}. Jak jednak zauważają autorzy, w obu przypadkach ograniczenia użytych języków doprowadziły do utracenia precyzji i schludności rozwiązań w porównaniu z oryginalną implementacją w Haskellu.
+
+O ile brak planisty topologicznego w naszej implementacji rzeczywiście oddala nas od oryginału, o tyle planiści oraz rekompilatorzy zaimplementowani przez nas -- z dokładnością do różnic składniowych języków -- nie odbiegają jakością oraz czytelnością od swoich Haskellowych pierwowzorów.
