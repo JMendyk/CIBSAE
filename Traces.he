@@ -11,11 +11,11 @@ open State
 (* --------------------------------------------- Traces --------------------------------------------- *)
 
 data TraceType (K V A: Type) = Trace of K, (List (Pair K (Hash V))), A
+type Deps (K V: Type) = List (Pair K (Hash V))
 
 (* ---------------------------------------- Verifying Traces ---------------------------------------- *)
 
 type VT (K V: Type) = List (TraceType K V (Hash V))
-type Deps (K V: Type) = List (Pair K (Hash V))
 
 let recordVT {K V: Type} {`s: State (VT K V)} (key: K) (hash: Hash V) (deps: Deps K V) =
     modify (fn ts => (Trace key deps hash) :: ts)
