@@ -102,9 +102,9 @@ Skoro ustaliliśmy jak Haskellowa abstrakcja systemów kompilacji przenosi się 
 
 Rdzeniem implementacji, podobnie jak oryginalnej w Haskellu, jest definicja uchwytu (tam: funkcji) dla \helinl{fetch}. Jego ciało to przetłumaczenie oryginalnej implementacji z tą różnicą, że zamiast kontynuować obliczenie niejawnie -- przez zwracanie wyniku -- jest ono kontynuowane jawnie przez wywołanie \helinl{resume} w ciele uchwytu.
 
-\section{Implementacja okruszków}
+\section{Implementacja śladów}
 
-Podobnie jak w \BSaLC{}, implementacje funkcji pracujących z okruszkami nie są interesujące -- w naszym przypadku odpowiadają oryginałom poza kilkoma szczegółami w postaci wykorzystania efektu \helinl{Writer} zamiast infrastruktury zbudowanej wokół typu \haskinl{Maybe} w Haskellu. Implementacje w Helium dostępne są w kodzie źródłowym implementacji.% w Dodatku A.
+Podobnie jak w \BSaLC{}, implementacje funkcji pracujących ze śladami nie są interesujące -- w naszym przypadku odpowiadają oryginałom poza kilkoma szczegółami w postaci wykorzystania efektu \helinl{Writer} zamiast infrastruktury zbudowanej wokół typu \haskinl{Maybe} oraz list comprehensions w Haskellu. Implementacje wraz z komentarzami dostępne są w Dodatku A oraz kodzie źródłowym.
 
 \section{Uruchamianie i śledzenie działań}
 
@@ -152,7 +152,7 @@ W czasie kompilacji zadania, wystąpienia \helinl{fetch} są przechwytywane prze
 
 \lstinputlisting[style=Haleff-long, linerange={16-17}]{../Systems.he}
 
-W systemie Shake, rebuilder wykorzystuje okruszki weryfikujące. Rekompilator używając \helinl{verifyVT} sprawdza czy zadanie jest świeże. Jeśli tak, nie musi być obliczane ponownie. W przeciwnym razie zadanie jest kompilowane w nadzorowanym sposób z użyciem funkcji \helinl{track}, która akumuluje listę bezpośrednich zależności zadania, by utworzyć z nich nowe okruszki do trwałego zachowania z użyciem \helinl{recordVT}.
+W systemie Shake, rebuilder wykorzystuje ślady weryfikujące. Rekompilator używając \helinl{verifyVT} sprawdza czy zadanie jest świeże. Jeśli tak, nie musi być obliczane ponownie. W przeciwnym razie zadanie jest kompilowane w nadzorowanym sposób z użyciem funkcji \helinl{track}, która akumuluje listę bezpośrednich zależności zadania, by utworzyć z nich nowe ślady do trwałego zachowania z użyciem \helinl{recordVT}.
 
 \pagebreak
 
@@ -170,7 +170,7 @@ Uchwyt \helinl{suspendingHandler} jest niezwykle prosty -- wywołuje jedynie fun
 
 \lstinputlisting[style=Haleff-long, linerange={59-69}]{../Rebuilders.he}
 
-W przypadku okruszków konstruktywnych, rebuilder sprawdza czy podana wartość zadania jest już wśród znanych wartości. W przeciwnym razie można zwrócić dowolną znaną wartość lub -- gdy żadna wartość nie jest znana -- następuje kompilacja zadania. Podobnie jak w przypadku rekompilatora opartego o okruszki weryfikujące, tutaj kompilacja też odbywa się ze śledzeniem zadań od których kompilowane zależy.
+W przypadku śladów konstruktywnych, rebuilder sprawdza czy podana wartość zadania jest już wśród znanych wartości. W przeciwnym razie można zwrócić dowolną znaną wartość lub -- gdy żadna wartość nie jest znana -- następuje kompilacja zadania. Podobnie, jak w przypadku rekompilatora opartego o ślady weryfikujące, tutaj kompilacja też odbywa się ze śledzeniem zadań od których kompilowane zależy.
 
 %% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
 
@@ -178,7 +178,7 @@ W przypadku okruszków konstruktywnych, rebuilder sprawdza czy podana wartość 
 
 \lstinputlisting[style=Haleff-long, linerange={22-23}]{../Systems.he}
 
-Rekompilator używający głębokich okruszków konstruktywnych przypomina swoich poprzedników. Jednak, zgodnie ze swoją nazwą, zamiast wyznaczać tylko klucze zadań których bezpośrednio badane zadanie używa do obliczenia wyniku, sprawdza od których zadań wejściowych w istocie badane zależy.
+Rekompilator używający głębokich śladów konstruktywnych przypomina swoich poprzedników. Jednak, zgodnie ze swoją nazwą, zamiast wyznaczać tylko klucze zadań których bezpośrednio badane zadanie używa do obliczenia wyniku, sprawdza od których zadań wejściowych w istocie badane zależy.
 
 \lstinputlisting[style=Haleff-long, linerange={73-84}]{../Rebuilders.he}
 

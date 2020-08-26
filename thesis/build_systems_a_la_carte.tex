@@ -273,22 +273,22 @@ Tak więc, system kompilacji powstaje przez scalenie jakiegoś schedulera z jaki
 W przypadku rekompilatorów różnorodność jest trochę większa, wyszczególniamy rebuildery oparte o:
 \begin{itemize}
 \item brudny bit -- czy to w formie dosłownego bitu dla każdej komórki, jak to ma miejsce w Excelu, czy nietrywialnie przez weryfikowanie dat modyfikacji jak w Make'u -- mechanizm jest oparty na oznaczaniu wszystkich zadań wejściowych, których wartości się zmieniły od ostatniego uruchomienia systemu.
-\item okruszki weryfikujące -- które w procesie budowania rejestrują wartości funkcji skrótu uzyskanych wyników zadań i pamiętają, że na przykład zadanie A, gdy miało wartość o skrócie 1 było zależne od zadania B, gdy to miało wartość o skrócie 2. W sytuacji, gdy skróty są zgodne uznaje się, że ponowne obliczenie nie jest potrzebne.
-\item okruszki konstruktywne -- podobne do poprzedników, jednak funkcja skrótu jest funkcją identycznościową. Innymi słowy -- spamiętujemy całe wartości wynikowe zadań.
-\item głębokie okruszki konstruktywne -- zamiast rejestrować wartości bezpośrednich zależności, rejestrowane są wartości zadań wejściowych od których zadanie zależy (niezależnie czy bezpośrednio czy nie). Wadą tego mechanizmu jest brak wsparcia dla niedeterministycznych zadań, które rozważają autorzy w dalszej części swojej publikacji oraz brak możliwości wykonania wczesnego odcięcia, gdyż nie spoglądamy na wartości od których zadanie zależy bezpośrednio.
+\item ślady weryfikujące -- które w procesie budowania rejestrują wartości funkcji skrótu uzyskanych wyników zadań i pamiętają, że na przykład zadanie A, gdy miało wartość o skrócie 1 było zależne od zadania B, gdy to miało wartość o skrócie 2. W sytuacji, gdy skróty są zgodne uznaje się, że ponowne obliczenie nie jest potrzebne.
+\item ślady konstruktywne -- podobne do poprzedników, jednak funkcja skrótu jest funkcją identycznościową. Innymi słowy -- spamiętujemy całe wartości wynikowe zadań.
+\item głębokie ślady konstruktywne -- zamiast rejestrować wartości bezpośrednich zależności, rejestrowane są wartości zadań wejściowych od których zadanie zależy (niezależnie czy bezpośrednio czy nie). Wadą tego mechanizmu jest brak wsparcia dla niedeterministycznych zadań, które rozważają autorzy w dalszej części swojej publikacji oraz brak możliwości wykonania wczesnego odcięcia, gdyż nie spoglądamy na wartości od których zadanie zależy bezpośrednio.
 \end{itemize}
 
 Sposób skategoryzowania systemów kompilacji przedstawiony przez autorów prowadzi do podziału przestrzeni systemów na 12 komórek, z czego 8 jest zamieszkałych przez istniejące rozwiązania:
 
 \begin{tabular}{r | c c c}
 \hline
-                                & \multicolumn{3}{c}{Planista} \\
-Rekompilator                    & Topologiczny & Restartujący & Wstrzymujący \\
+                             & \multicolumn{3}{c}{Planista} \\
+Rekompilator                 & Topologiczny & Restartujący & Wstrzymujący \\
 \hline
-Brudny bit                      & Make         & Excel        & - \\
-Okruszki weryfikujące           & Ninja        & -            & Shake \\
-Okruszki konstruktywne          & CloudBuild   & Bazel        & -\\
-Głębokie okruszki konstruktywne & Buck         & -            & Nix \\
+Brudny bit                   & Make         & Excel        & - \\
+Ślady weryfikujące           & Ninja        & -            & Shake \\
+Ślady konstruktywne          & CloudBuild   & Bazel        & -\\
+Głębokie ślady konstruktywne & Buck         & -            & Nix \\
 \hline
 \end{tabular}
 
