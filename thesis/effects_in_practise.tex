@@ -1,5 +1,5 @@
 
-\renewcommand{\inl}[1]{\lstinline[style=Haleff-inl]{#1}}
+\newcommand{\inl}[1]{\lstinline[style=Haleff-inl]{#1}}
 
 \chapter{Efekty algebraiczne i uchwyty w~praktyce}
 
@@ -181,3 +181,5 @@ Tutaj uchwyt dla porażki znajduje się na zewnątrz -- wystąpienie porażki oz
 Z łatwością napisaliśmy program, który korzysta z wielu efektów ubocznych jednocześnie, mimo że żaden z nich (ani uchwyty) nie wiedzą o istnieniu drugiego. Łączenie efektów jest bardzo proste, a kolejność w jakiej umieszczamy uchwyty umożliwia nam łatwe i czytelne definiowanie zachowania programu w przypadku wystąpienie któregokolwiek z efektów.
 
 Dzięki językowi Helium, przyjrzeliśmy się z bliska efektom algebraicznym oraz uchwytom, zobaczyliśmy przykłady implementacji uchwytów oraz rozwiązań prostych problemów. Jesteśmy gotowi do podjęcia próby zaimplementowania systemów kompilacji z użyciem efektów i uchwytów -- czego dokonamy w następnym rozdziale.
+
+\undef\inl
