@@ -60,7 +60,7 @@ let deepDependencies {K V: Type} (module KV: KeyValue K V) (ts: DCT K V) (valueH
     let depsList = handle `w in List.iter (f `w) ts with Writer.listHandler in
         match depsList with
         | []        => [key]
-        | (deps::_) => deps (* Authors assume that there is only one record for a (k, v) pair *)
+        | (deps::_) => deps (* Authors assume there is only one record for a (k, v) pair *)
         end
 
 let recordDCT {K V: Type} {`s: State (DCT K V)} {`b: BuildEff K (Hash V)} (module KV: KeyValue K V) (key: K) (value: V) (deps: List K) =

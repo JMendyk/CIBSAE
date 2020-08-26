@@ -1,0 +1,57 @@
+
+\newcommand{\file}[1]{\texttt{#1}}
+
+\chapter{Omówienie załączonego kodu źródłowego}
+
+\section{Podział implementacji na pliki}
+
+\begin{itemize}
+\item \file{Common.he} oraz \file{Signature.he} -- definicje podstawowych typów oraz sygnatur,
+\item \file{Store.he} -- efekt zasobu oraz uchwyty dla niego,
+\item \file{Schedulers.he} -- implementacje planistów,
+\item \file{Rebuilders.he} -- implementacje rekompilatorów,
+\item \file{Traces.he} -- funkcje do interakcji z okruszkami,
+\item \file{Track.he} -- implementacje funkcji \helinl{run} oraz \helinl{track},
+\item \file{Systems.he} -- przykłady definicji omawianych systemów,
+\item \file{Spreadsheet.he} -- implementacja obiektów związanych z arkuszami kalkulacyjnymi,
+\item \file{scratch.he} -- demonstracja wykorzystania systemów w celu kompilacji przykładowych zadań,
+\item \file{Utils.he} -- implementacje funkcji pomocniczych,
+\item \file{PatchedWriter.he} -- rozszerzenie modułu \helinl{Writer} z biblioteki standardowej,
+\item \file{State.he} -- implementacja efektu modyfikowalnego stanu wraz z uchwytami,
+\item \file{Logger.he} -- moduł umożliwiający śledzenie działania programu,
+\item \file{SchedulersWithLogging.he} -- implementacje planistów wzbogacone o wyświetlanie informacji diagnostycznych
+\end{itemize}
+
+\section{Implementacje okruszków}
+
+Dokładny opis okruszków w rozdziale 5 został pominięty, gdyż nie wydają się one być ciekawą częścią implementacji systemów kompilacji. Jednak dla porządku ich implementacje są przedstawione poniżej. 
+
+\subsection{Typ okruszków}
+
+Dla okruszków definiujemy typ analogiczny to tego z oryginalnej implementacji w Haskellu.
+
+\begin{minipage}{\textwidth}
+  \lstinputlisting[style=Haleff-long, linerange={13-14}]{../Traces.he}
+\end{minipage}
+
+Warto zwrócić uwagę, że kompilacja zadań w czasie działania funkcji weryfikujących lub konstruujących okruszki odbywa się w kontekście specjalnego uchwytu, który zwraca nie wartości lecz ich skróty.
+
+\subsection{Okruszki weryfikujące}
+
+\begin{minipage}{\textwidth}
+  \lstinputlisting[style=Haleff-long, linerange={18-28}]{../Traces.he}
+\end{minipage}
+
+\subsection{Okruszki konstruktywne}
+
+\begin{minipage}{\textwidth}
+  \lstinputlisting[style=Haleff-long, linerange={37-49}]{../Traces.he}
+\end{minipage}
+
+W funkcjach \helinl{constructCT} oraz \helinl{deepDependencies} wykorzystywany jest efekt \helinl{Writer}. W \BSaLC{} wykorzystywane były typ \haskinl{Maybe} i funkcja \haskinl{catMaybes} oraz list comprehensions. Autor zachęcony brakiem infrastruktury wokół \helinl{Some} (Heliumowego odpowiednika \haskinl{Maybe}) postanowił wypróbować moduł \helinl{Writer} i zobaczyć jaki da to efekt.
+
+\subsection{Głębokie okruszki konstruktywne}
+
+\begin{minipage}{\textwidth}
+  \lstinputlisting[style=Haleff-long, linerange={53-73}]{../Traces.he}
+\end{minipage}
