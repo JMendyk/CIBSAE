@@ -1,8 +1,6 @@
-signature NonDet =
-| amb : Unit => Bool
+signature NonDet = amb : Unit => Bool
 
-signature Fail =
-| fail : {A: Type}, Unit => A
+signature Fail = fail : {A: Type}, Unit => A
 
 let failHandler =
   handler
@@ -41,8 +39,6 @@ let main () =
   then printStr "a tautology\n"
   else printStr "not a tautology\n"
 
-(*
-  Formula is satisfiable and not a tautology
-*)
+(* Formula is satisfiable and not a tautology *)
 
 let _ = main ()

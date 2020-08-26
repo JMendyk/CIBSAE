@@ -17,10 +17,8 @@ let main () =
   printStr "Finished with "; printInt state;
   printStr "Returned "; printInt ret
 
-(* 
-  Started with 2
-  Finished with 16
-  Returned 8
-*)
+(* Started with 2
+   Finished with 16
+   Returned 8 *)
 
 (* let _ = main () *)

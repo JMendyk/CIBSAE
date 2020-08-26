@@ -4,7 +4,7 @@
 \chapter{O systemach kompilacji (i ich klasyfikacji)}
 \label{chapter-bsalc}
 
-Systemy kompilacji, choć są wykorzystywane w praktycznie wszystkich projektach programistycznych, są przez ich użytkowników na ogół zaniedbywane, traktowane jak zło konieczne, a czasem nawet wywołują lęk oraz złość. Mimo tak dużej popularności i większym~--~niż mogłoby się wydawać~--~stopniu skomplikowania, nie cieszyły się specjalnym zainteresowaniem ze strony badaczy. Przyglądnęli się im jednak bliżej Andrey Mokhov, Neil Mitchell oraz Simon Peyton Jones w artykułach \BSaLC\cite{mokhov2018build} oraz \BSaLCTP\cite{mokhov2020build}. W tym rozdziale prześledzimy ich kroki i omówimy wyniki które otrzymali autorzy, aby w dalszej części tej pracy samodzielnie zaimplementować przedstawione systemy kompilacji w języku z efektami algebraicznymi oraz uchwytami.
+Systemy kompilacji, choć są wykorzystywane w praktycznie wszystkich projektach programistycznych, są przez ich użytkowników na ogół zaniedbywane, traktowane jak zło konieczne, a czasem nawet wywołują lęk oraz złość. Mimo tak dużej popularności i większym~--~niż mogłoby się wydawać~--~stopniu skomplikowania, nie cieszyły się specjalnym zainteresowaniem ze strony badaczy. Przyglądnęli się im jednak bliżej Andrey Mokhov, Neil Mitchell oraz Simon Peyton Jones w artykułach \BSaLC\cite{mokhov2018build} oraz \BSaLCTP\cite{mokhov2020build}. W tym rozdziale prześledzimy ich kroki i omówimy wyniki które otrzymali autorzy, aby w dalszej części pracy samodzielnie zaimplementować przedstawione systemy kompilacji w języku z efektami algebraicznymi oraz uchwytami.
 
 \section{Przykłady systemów kompilacji}
 
@@ -12,11 +12,13 @@ Chcąc zrozumieć głębsze i nietrywialne relacje oraz podobieństwa między sy
 
 \subsection{Make}
 
-Make jest bardzo popularnym systemem kompilacji. Konfiguruje się go przez tworzenie plików zwanych \textit{makefile'ami}, które definiują zadania, zależności między nimi oraz sposób ich zbudowania. Przykładowa konfiguracja prezentuje się następująco:
+Make jest bardzo popularnym, szeroko dostępnym oraz względnie starym systemem kompilacji. Konfiguruje się go przez tworzenie plików zwanych \textit{makefile'ami}, które definiują zadania, zależności między nimi oraz sposób ich zbudowania. Rozważmy przykład konfiguracji dla systemu Make do kompilacji prostego programu w języku C.
+
+\pagebreak
 
 \lstset{language=make}
 
-\begin{lstlisting}
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily, float=h, title={Przykładowa konfiguracja systemu Make}]
   util.o: util.h util.c
       gcc -c util.c
 
@@ -27,7 +29,7 @@ Make jest bardzo popularnym systemem kompilacji. Konfiguruje się go przez tworz
       gcc util.o main.o -o main.exe
 \end{lstlisting}
 
-Konfiguracja ta definiuje sposób budowania trzech zadań: \textit{util.o}, \textit{main.o} oraz \textit{main.exe}. W linii zawierającej definicję zadania zawarta jest informacja o innych zadaniach, od których definiowane zależy~--~np. dowiadujemy się że \textit{util.o} zależy od zadań (tutaj: plików) \textit{util.h} oraz \textit{util.c}, a zadanie jest realizowane przez wykonanie polecenia \textit{gcc~\nobreakdash-c~util.c}. Jeśli zadanie nie ma zdefiniowanego sposobu zbudowania, na przykład \textit{util.h} mówimy, że jest wejściem lub zadaniem wejściowym w tej konfiguracji.
+Przedstawiona konfiguracja definiuje sposób budowania trzech zadań: \textit{util.o}, \textit{main.o} oraz \textit{main.exe}. W linii zawierającej definicję zadania zawarta jest informacja o innych zadaniach, od których definiowane zależy~--~np. dowiadujemy się że \textit{util.o} zależy od zadań (tutaj: plików) \textit{util.h} oraz \textit{util.c}, a zadanie jest realizowane przez wykonanie polecenia \textit{gcc~\nobreakdash-c~util.c}. Jeśli zadanie nie ma zdefiniowanego sposobu zbudowania, na przykład \textit{util.h} mówimy, że jest wejściem lub zadaniem wejściowym w tej konfiguracji.
 
 Wszystkie informacje o zależnościach między zadaniami są wyrażone w tym jednym pliku \textit{makefile}. Użytkownik, chcąc zbudować zadanie \textit{main.exe}, uruchamia program używając polecenia \textit{make~main.exe}. Po uruchomieniu system określi, które zadania mają zostać zbudowane, by zrealizować otrzymane żądanie. Z racji tego, że procedura budowania zadań przebiega tak samo, niezależnie od wyników podzadań, będziemy o takim systemie mówić, że ma statyczne zależności. Dla takich systemów naturalnym porządkiem, w którym zadania powinny być budowane jest porządek topologiczny. W ten sposób każde zadanie będzie wykonane ,,na świeżych'' zależnościach. W przeciwnym razie mogłaby istnieć potrzeba zbudowania zadania jeszcze raz.
 
@@ -61,6 +63,8 @@ Porządkowanie komórek w procesie ich obliczania jest w Excelu trochę bardziej
 \item zawierają w formule funkcje, które uniemożliwiają statyczne określenie zależności -- jak na przykład INDIRECT czy IF.
 \end{itemize}
 
+\pagebreak
+
 Łatwo zauważyć, że Excel nie jest zatem minimalnym systemem budowania, gdyż z nadmiarem przyjmuje, które komórki muszą być obliczone ponownie. Ponadto, Excel śledzi nie tylko zmiany w wartościach wejść, ale także definicjach budowania zadań (formułach), co jest rzadką własnością w systemach kompilacji. Na ogół zmiana specyfikacji zadań wymusza na użytkowniku manualne rozpoczęcie pełnego procesu budowania.
 
 \subsection{Shake}
@@ -77,7 +81,7 @@ Ostatnim przykładem systemu kompilacji jest Bazel, który powstał w odpowiedzi
 
 Bazel jest chmurowym systemem budowania -- gdy użytkownik chce zbudować oprogramowanie, system komunikuje się z serwerem i sprawdza, które z zadań mają niezmienione wejścia oraz czy zostały już przez kogoś zbudowane. Bazel skopiuje wyniki takich zadań do komputera użytkownika oszczędzając mu czas. Jako że pojedynczy programista na ogół wykonuje zmiany zamknięte w zaledwie kilku modułach, wyniki wielu zadań pozostają niezmienne i jedynie niewielka część z zadań będzie musiała być ponownie zbudowana.
 
-Bazel śledzi zmiany sprawdzając wartości funkcji skrótu plików źródłowych. Gdy skróty pliku na komputerze użytkownika oraz serwerze systemu nie są zgodne, zadanie jest uznawane ze nieaktualne i budowane od nowa. Następnie wynik oraz nowe wartości funkcji skrótu są zapisywane na serwerze, funkcjonującym dla użytkowników jako ,,pamięć podręczna'' wyników budowania zadań.
+System śledzi zmiany sprawdzając wartości funkcji skrótu plików źródłowych. Gdy skróty pliku na komputerze użytkownika oraz serwerze systemu nie są zgodne, zadanie jest uznawane ze nieaktualne i budowane od nowa. Następnie wynik oraz nowe wartości funkcji skrótu są zapisywane na serwerze, funkcjonującym dla użytkowników jako ,,pamięć podręczna'' wyników budowania zadań.
 
 Bazel nie wspiera aktualnie dynamicznych zależności. W procesie budowania wykorzystuje mechanizm restartowania zadań, a w celu określenia, które zadania muszą być przebudowane, utrzymuje wartości i skróty wyników zadań oraz historię wykonanych komend budowania.
 
@@ -144,6 +148,8 @@ Typ systemu kompilacji wynika wprost z jego definicji -- otrzymuje zadania, zas�
 \begin{lstlisting}
 type Build c i k v = Tasks c k v -> k -> Store i k v -> Store i k v
 \end{lstlisting}
+
+\pagebreak
 
 Rozważmy implementację bardzo prostego systemu budowania wyrażonego z użyciem przedstawionej abstrakcji:
 
