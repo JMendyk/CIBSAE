@@ -5,4 +5,5 @@ let question () =
     let num = readInt () in
     if is_negative num
        then printStr "This number is negative\n"
-       else printStr "This number is nonnegative\n"
+       else printStr "This number is nonnegative\n";
+    printStr "Question finished\n"

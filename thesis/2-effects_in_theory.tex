@@ -60,7 +60,6 @@ Obliczanie wartości wyrażenia przebiega następująco:
     \eval{e_f} & \text{wpp}
     \end{matrix}\right.
   \end{aligned}\)
-%% \item \(\eval{\opi{i}{a}{f}} = \opi{i}{a}{f}\) -- obliczenie z efektem ubocznym nie może poczynić postępu póki nie ma określonego działania,
 \item \(\eval{\handle{\return v}{H}} = \eval{\return v}\) -- uchwyt nie wpływa na wartość obliczenia, które nie zawiera efektów ubocznych,
 \item \(\eval{\handle{\opi{i}{a}{f}}{H}} = \eval{\handle{h_i \left[n / \eval{a},\, \kappa / f\right]}{H}} \), gdzie \(H~=~\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}\), a \(h_i\) nie ma wystąpień \(op_i\).
   
@@ -81,8 +80,6 @@ Do tego momentu, nie przyjmowaliśmy żadnych założeń na temat operacji powod
 \begin{align}
   \forall n\ \forall e.\ \eval{\handle{op_r(n, \fun{x}{e})}{H}} = n
 \end{align}
-
-%% \pagebreak
 
 Zauważmy, że istnieje tylko jeden naturalny uchwyt spełniający tej warunek, jest nim \(H = \{\ \hcase{op_r}{n\ \kappa}{n} \ \}\). Co więcej, jego działanie łudząco przypomina konstrukcję wyjątków w popularnych językach programowania:
 
@@ -114,15 +111,14 @@ Rozważmy kolejny przykład. Dla poprawienia czytelności, zrezygnujemy z oznacz
   komórka zachowuje się, jak gdyby pamiętała jedynie najnowszą włożoną do niej wartość.
 \end{itemize}
 
-Zauważmy, że choć nakładamy warunki na zewnętrzne skutki działania operacji \(get\) oraz \(put\), to w żaden sposób nie ograniczyliśmy swobody autora w implementacji uchwytów dla tych operacji. % W rozdziale 4 przyglądniemy się kilku przykładom uchwytów realizujących te operacje.
+Zauważmy, że choć nakładamy warunki na zewnętrzne skutki działania operacji \(get\) oraz \(put\), to w żaden sposób nie ograniczyliśmy swobody autora w implementacji uchwytów dla tych operacji.
 
-% Chyba jednak nie. Chociaż można dodać przykład, który agreguje historyczne wartości komórki i zwraca je w parze z wynikiem obliczenia.
+% W rozdziale 4 przyglądniemy się kilku przykładom uchwytów realizujących te operacje.
+% ^^^ Chyba jednak nie. Chociaż można dodać przykład, który agreguje historyczne wartości komórki i zwraca je w parze z wynikiem obliczenia.
 
 \section{Poszukiwanie sukcesu}
 
-%% sygnatura amb powinna mieć B zamiast Bool
-
-Kolejnym rodzajem efektu ubocznego, który rozważymy w tym rozdziale jest niedeterminizm. Chcielibyśmy wyrażać obliczenia, w których pewne parametry mogą przyjmować wiele wartości, a ich dobór ma zostać dokonany tak by spełnić pewien określony warunek. Przykładowo, mamy trzy zmienne \(x,\, y\) oraz \(z\) i chcemy napisać program sprawdzający czy formuła \(\phi(x, y, z)\) jest spełnialna. W tym celu zdefiniujemy operację \(amb: U \rightarrow (Bool \rightarrow Bool) \rightarrow \mathit{Bool}\) związaną z efektem niedeterminizmu. Napiszmy obliczenie rozwiązujące nasz problem:
+Kolejnym rodzajem efektu ubocznego, który rozważymy w tym rozdziale jest niedeterminizm. Chcielibyśmy wyrażać obliczenia, w których pewne parametry mogą przyjmować wiele wartości, a ich dobór ma zostać dokonany tak by spełnić pewien określony warunek. Przykładowo, mamy trzy zmienne \(x,\, y\) oraz \(z\) i chcemy napisać program sprawdzający czy formuła \(\phi(x, y, z)\) jest spełnialna. W tym celu zdefiniujemy operację \(amb: U \rightarrow (B \rightarrow B) \rightarrow B\) związaną z efektem niedeterminizmu. Napiszmy obliczenie rozwiązujące nasz problem:
 \begin{equation}\begin{split}
   \handle{
     &\op{amb}{u}{\fun{x}{

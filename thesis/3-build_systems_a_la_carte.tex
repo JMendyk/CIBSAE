@@ -254,7 +254,6 @@ Nie robiąc tego wprost rozważaliśmy już różne przykłady schedulerów i re
 
 \begin{itemize}
 \item topologicznego (topological) -- który wykorzystuje fakt, że zadania mają statyczne zależności,
-%% \item restartującego (restarting) -- który w przypadku napotkania w czasie obliczania zadanie na inne niezaktualizowane zadanie przerywa obliczanie bieżącego i kiedyś zacznie je od nowa,
 \item restartującego (restarting) -- który gdy w czasie obliczania zadania napotka na inne, niezaktualizowane zadanie, przerywa obliczanie bieżącego i kiedyś zacznie je od nowa,
 \item wstrzymującego (suspending) -- który zamiast zaczynać od nowa, wstrzymuje jedynie obliczanie zadania do czasu uzyskania żądanej wartości.
 \end{itemize}
@@ -265,8 +264,6 @@ Autorzy abstrakcyjnie przedstawiają planistów i rekompilatorów jako typy:
 type Scheduler c i ir k v = Rebuilder c ir k v -> Build c i k v
 type Rebuilder c ir k v = k -> v -> Task c k v -> Task (MonadState ir) k v
 \end{lstlisting}
-
-%% albo -- przecinki
 
 Tak więc, system kompilacji powstaje przez scalenie jakiegoś schedulera z jakimś rebuilderem. Rebuilder otrzymując klucz zadania oraz jego aktualną wartość i sposób obliczania tworzy nowe zadanie, które w oparciu o wnioski rekompilatora albo zbuduje zadanie i zagreguje dane dla rebuildera na potrzeby kolejnych uruchomień, albo zwróci wartość ze Store'a jeśli jest ona aktualna.
 
