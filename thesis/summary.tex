@@ -1,0 +1,16 @@
+
+\chapter{Podsumowanie i wnioski}
+
+Celem pracy było zapoznanie i zaciekawienie czytelnika tematem efektów algebraicznych i uchwytów oraz zaprezentowanie nowej implementacji systemów kompilacji podążając krokami autorów \BSaLC{}. Implementacja w eksperymentalnym języku Helium miała zademonstrować jak wygląda programowanie z efektami algebraicznymi i uchwytami oraz umożliwić zaobserwowanie jak różni się ono od radzenia sobie z efektami ubocznymi przez użycie monad w języku Haskell.
+
+Traktując \helinl{fetch} jako operację efektu ubocznego kompilacji, a nie jako argument do zadania, udało się nam wykorzystać możliwości języka z efektami i uchwytami w centralnej części implementacji systemów kompilacji.
+
+Uzyskana -- dzięki programowaniu z efektami i uchwytami, a nie monadami -- swoboda użycia wielu efektów jednocześnie uspokoiła nasze obawy i zachęciła do eksperymentowania. Etykietowanie różnych instancji tego samego efektu umożliwiło utrzymywanie w modyfikowalnym stanie wielu wartości bez szkody dla czytelności oraz rozumieniu kodu. Dało to też możliwość tworzenia pośredników między różnymi efektami. % (\helinl{embedState}, funkcja \helinl{track}).
+
+Reprezentacja zasobu, nad którym odbywała się kompilacja, jako efektu ubocznego nie tylko zapobiegła potrzebie każdorazowego umieszczania go w modyfikowalnym stanie, ale także lepiej oddało jego naturę bycia trwałym i zewnętrznym tworem.
+
+Tym co utraciliśmy była precyzja opisu skomplikowania relacji między zadaniami. Transparentność wyników operacji z efektami, w porównaniu do ,,opakowywania'' ich instancjami funktorów aplikatywnych lub monad, uniemożliwiła łatwe reprezentowanie zadań o statycznych zależnościach.
+
+Problem ten był jednak łatwy do zauważenia już na początku rozważań nad własną implementacją \BSaLC{}. Oprócz tego, w czasie implementowania systemów kompilacji, autor nie napotkał na znaczące trudności w programowaniu z efektami algebraicznymi i uchwytami. Pozostałe były związane z ograniczonym doświadczeniem autora z językiem Helium lub eksperymentalną naturą języka i chwilowymi problemami środowiska uruchomieniowego z klarownym objaśnieniem źródła niezgodności typów.
+
+Podsumowując, programowanie z efektami algebraicznymi i uchwytami jest możliwe, jest przyjemne i uwalnia autora od ograniczeń, które dotychczas wydawały się nie do uniknięcia. Jak zobaczyliśmy, można spróbować powtórzyć wyniki przeprowadzone w znanym funkcyjnym języku programowania i z zachwytem odkryć, że implementacja z efektami i uchwytami jest równie interesująca.
