@@ -52,7 +52,7 @@ Dla czytelności, pisząc w uchwycie zbiór który nie przebiega wszystkich oper
 Obliczanie wartości wyrażenia przebiega następująco:
 \begin{itemize}
 \item \(\eval{\return v} = v\) -- wartością \(\mathbf{return}\) jest wartość wyrażenia arytmetycznego,
-\item \(\eval{(\fun{x}{e})\ y} = \eval{e \left[x / \eval{y}\right]}\) -- aplikacja argumentu do funkcji,
+\item \(\eval{(\fun{x}{e})\ y} = \eval{e \left[\sfrac{x}{\eval{y}}\right]}\) -- aplikacja argumentu do funkcji,
 \item
   \(\begin{aligned}[t]
     \eval{\cond{v_1 = v_2}{e_t}{e_f}} = \left\{\begin{matrix}
@@ -61,7 +61,7 @@ Obliczanie wartości wyrażenia przebiega następująco:
     \end{matrix}\right.
   \end{aligned}\)
 \item \(\eval{\handle{\return v}{H}} = \eval{\return v}\) -- uchwyt nie wpływa na wartość obliczenia, które nie zawiera efektów ubocznych,
-\item \(\eval{\handle{\opi{i}{a}{f}}{H}} = \eval{\handle{h_i \left[n / \eval{a},\, \kappa / f\right]}{H}} \), gdzie \(H~=~\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}\), a \(h_i\) nie ma wystąpień \(op_i\).
+\item \(\eval{\handle{\opi{i}{a}{f}}{H}} = \eval{\handle{h_i \left[\sfrac{n}{\eval{a}},\, \sfrac{\kappa}{f}\right]}{H}} \), gdzie \(H~=~\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}\), a \(h_i\) nie ma wystąpień \(op_i\).
   
 \end{itemize}
 
