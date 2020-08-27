@@ -3,7 +3,6 @@ import State
 import Store
 import Track
 import Utils
-import Logger
 import Set
 
 open Common
@@ -11,7 +10,6 @@ open State
 open Store
 open Track
 open Utils
-open Logger
 
 
 
@@ -31,7 +29,6 @@ let busy {I K V: Type} {`a: StoreEff I K V} (tasks: Tasks K V) (key: K) =
 
 let suspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K V) (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
     open KV in
-    let handle with indentLogger in
     (* Tasks that are up to date in this build session *)
     let type ST = Set Key in
     let handle `done with evalState ST.empty in
@@ -42,31 +39,22 @@ let suspending {IR K V: Type} {`ste: StoreEff IR K V} (module KV: KeyValue K V) 
             | fetch k => build k; resume (getValue k)
             end
         and build key =
-            entry ();
-            logln (Key.toString key ++ " ");
             match (tasks key, gets `done (ST.mem key)) with
-            (* Input task *)
-            | (None, _) => log "(i)\n"
-            (* Task already built it this run *)
-            | (Some _, True) => log "already built\n"
             (* Not built yet, rebuilder takes over *)
             | (Some task, False) =>
-              log "running...\n";
               let value = getValue key in
               let handle with suspendingHandler in
               let newTask = rebuilder KV key value task in
               let newValue = run newTask in
                   modify `done (ST.add key);
                   putValue key newValue
-            end;
-            exit ()
+            | _ => ()
+            end
     in
-    log ("Building " ++ Key.toString key ++ " with suspending scheduler\n");
     build key
 
 let restarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR (List K)) K V} (rebuilder: Rebuilder IR K V) (tasks: Tasks K V) (key: K) =
     open KV in
-    let handle with indentLogger in
     (* Setup and handling of calculation chain *)
     let chainInsert dep chain =
         let uniqPrepend x xs = x :: filter (not <.> Key.equals x) xs in
@@ -83,15 +71,12 @@ let restarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR
     let handle with embedState (fst <.> getInfo `ste) (modifyInfo `ste <.> setFst) in
     let rec restartingHandler =
             handler
-            | fetch k => logln ("Fetching: " ++ Key.toString k ++ "\n");
-                         if gets `done (ST.mem k) then
+            | fetch k => if gets `done (ST.mem k) then
                             resume (getValue k)
                          else (let (curr, rest) = gets `chain uncons in
-                                   log (Key.toString curr ++ " will be restarted\n");
                                    modify `chain (chainInsert k);
                                    loop ())
             | return x => let (curr, rest) = gets `chain uncons in
-                              logln ("Finished " ++ Key.toString curr ++ "\n");
                               modify `done (ST.add curr);
                               put `chain rest;
                               putValue curr x;
@@ -101,11 +86,9 @@ let restarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR
             match get `chain () with
             | [] => []
             | (key::keys) =>
-              log ("Processing " ++ Key.toString key ++ "\n");
               match tasks key with
               (* Input task *)
-              | None => log ("input " ++ Key.toString key ++ "\n");
-                        modify `done (ST.add key);
+              | None => modify `done (ST.add key);
                         put `chain keys;
                         key :: loop ()
               (* Not built yet, rebuilder takes over *)
@@ -115,6 +98,5 @@ let restarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR
               end
             end
     in
-    log ("Building " ++ Key.toString key ++ " with restarting scheduler\n");
     let resultChain = loop () in
         modifyInfo (mapSnd (fn _ => resultChain))
