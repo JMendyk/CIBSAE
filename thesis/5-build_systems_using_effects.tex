@@ -22,11 +22,11 @@ putValue :: Eq k => k -> v -> Store i k v -> Store i k v
 
 Autorzy \BSaLC\cite{mokhov2018build} reprezentowali Store jako typ z operacjami odczytu i zapisu trwałej informacji dla systemu oraz wartości wynikowych. Każdorazowo jednak, zasób był przechowywany w modyfikowalnym stanie. Możemy więc uprościć implementację przez scalenie zasobu z modyfikowalnym stanem przez uczynienie \haskinl{Store} efektem, a działania na nim operacjami powodującymi ten efekt.
 
-\lstinputlisting[language=Haleff, firstline=5, lastline=9]{../Store.he}
+\lstinputlisting[language=Haleff, firstline=5, lastline=9]{../src/Store.he}
 
 Podobnie jak \haskinl{Store} w oryginalnej implementacji, \helinl{StoreEff} jest parametryzowany typem trwałej informacji, kluczy oraz wartości wynikowych kompilacji. Równania dla niego są analogiczne jak dla zwykłego modyfikowanego stanu z dokładnością do ustalenia klucza w operacjach na wartościach wynikowych. Definiujemy ponadto uchwyt \helinl{funStoreHandler}, w którym słownik klucz--wartość zadania utrzymywane są przez funkcję -- jak w przykładach w \BSaLC{}.
 
-\lstinputlisting[language=Haleff, firstline=38, lastline=52]{../Store.he}
+\lstinputlisting[language=Haleff, firstline=38, lastline=52]{../src/Store.he}
 
 Implementacja jest zbliżona do przykładu modyfikowalnego stanu z rozdziału 4. Dla porządku wartość początkowa trwałej informacji oraz słownika wartości jest opakowana w typ \helinl{FunStoreType I K V}.
 
@@ -34,12 +34,12 @@ Jako że Helium, podobnie jak inne języki używające ML-owego systemu modułó
 
 \begin{minipage}[t]{.45\textwidth}
 
-  \lstinputlisting[language=Haleff, firstline=4, lastline=16]{../Signatures.he}
+  \lstinputlisting[language=Haleff, firstline=4, lastline=16]{../src/Signatures.he}
 
 \end{minipage}\hfill
 \begin{minipage}[t]{.45\textwidth}
 
-  \lstinputlisting[language=Haleff, firstline=18, lastline=27]{../Signatures.he}
+  \lstinputlisting[language=Haleff, firstline=18, lastline=27]{../src/Signatures.he}
 
 \end{minipage}
 
@@ -47,7 +47,7 @@ Jako że Helium, podobnie jak inne języki używające ML-owego systemu modułó
 
 Implementację modyfikowalnego stanu zobaczyliśmy w przykładach w rozdziale 4 i wykorzystamy ją konstruując systemy kompilacji. Nazwy uchwytom dla stanu, w zależności od zwracanych wartości, nadajemy zgodnie z ich odpowiednikami w Haskellu -- \haskinl{runState}, \haskinl{evalState}, \haskinl{execState}. Definiujemy także proste funkcje \helinl{gets} i \helinl{modify}, które używając podanego przekształcenia odpowiednio odczytują i modyfikują stan, oraz nieco bardziej skomplikowaną funkcję \helinl{embedState}.
 
-\lstinputlisting[language=Haleff, linerange={6-7,33-37}, float=h, title={Definicje \helinl{gets}, \helinl{modify} oraz \helinl{embedState}}]{../State.he}
+\lstinputlisting[language=Haleff, linerange={6-7,33-37}, float=h, title={Definicje \helinl{gets}, \helinl{modify} oraz \helinl{embedState}}]{../src/State.he}
 
 Funkcja \helinl{embedState} tworzy uchwyt dla efektu modyfikowalnego stanu, w którym modyfikacje -- zamiast być wykonywane przez uchwyt -- są przekazywane podanym funkcjom \helinl{getter} oraz \helinl{setter}, które w czasie swojego działania mogą powodować jakiś efekt uboczny. Z takiego zanurzenia modyfikowalnego stanu w innym efekcie będziemy korzystać podczas implementacji planistów, którzy trwałą informację z zasobu będą przekazywać do rekompilatorów jako właśnie modyfikowalny stan.
 
@@ -72,7 +72,7 @@ type Tasks c k v = k -> Maybe (Task c k v)
 
 Możemy jednak zauważyć, że kompilacja zadania jest oczywistym efektem ubocznym działania systemu kompilacji, stąd w naszej implementacji zamiast przekazywać funkcję, która była przez autorów zazwyczaj nazywana \haskinl{fetch}, zdefiniujemy efekt \helinl{BuildEff}, który będzie występował w czasie kompilacji zadań. Z efektem tym związana będzie jedna operacja \helinl{fetch}.
 
-\lstinputlisting[language=Haleff, linerange={14-16}]{../Common.he}
+\lstinputlisting[language=Haleff, linerange={14-16}]{../src/Common.he}
 
 Zadanie będzie funkcją wymagającą informacji o instancji efektu budowania i będzie polimorficzna ze względu na typ kluczy i wartości oraz ewentualnych efektów ubocznych nie będących efektem budowania (będzie to przydatne przy implementacji rebuilderów). Zwróćmy uwagę, że definicja typu zadania nie zawiera informacji analogicznych do klasy typów \haskinl{c}, której element \haskinl{f} ,,opakowywał'' wynik w oryginalnej implementacji -- do tej różnicy powrócimy w dalszej części rozdziału.
 
@@ -90,7 +90,7 @@ Kompilacja, tak jak w oryginalnej implementacji, wymagać będzie wskazania zbio
 
 Nasi planiści także będą mieli sygnatury zbliżone do swoich odpowiedników z Haskella, wzbogacone oczywiście o efekt uboczny zasobu, a także moduł definiujący opisane wcześniej podstawowe działania na kluczach i wartościach.
 
-\lstinputlisting[language=Haleff, linerange={18-20}]{../Common.he}
+\lstinputlisting[language=Haleff, linerange={18-20}]{../src/Common.he}
 
 Rebuilder przypomina swój odpowiednik z oryginalnej implementacji. Jednak, zamiast zwracać zadanie ze zmienionym \textit{constraint'em}, zadanie jest wzbogacone o dodatkowy efekt stanu mogący występować w czasie kompilacji zadania.
 
@@ -98,7 +98,7 @@ Rebuilder przypomina swój odpowiednik z oryginalnej implementacji. Jednak, zami
 
 Skoro ustaliliśmy jak abstrakcja systemów kompilacji w Haskellu przenosi się na naszą w Helium, możemy spróbować zaimplementować prosty system budowania \haskinl{busy} przedstawiony przez autorów.
 
-\lstinputlisting[language=Haleff, linerange={16-28}, float=h, title={System kompilacji \haskinl{busy}}]{../Schedulers.he}
+\lstinputlisting[language=Haleff, linerange={16-28}, float=h, title={System kompilacji \haskinl{busy}}]{../src/Schedulers.he}
 
 Rdzeniem implementacji, podobnie jak oryginalnej w Haskellu, jest definicja uchwytu (tam: funkcji) dla \helinl{fetch}. Jego ciało to przetłumaczenie oryginalnej implementacji z tą różnicą, że zamiast kontynuować obliczenie niejawnie -- przez zwracanie wyniku -- jest ono kontynuowane jawnie przez wywołanie \helinl{resume} w ciele uchwytu.
 
@@ -110,7 +110,7 @@ Podobnie jak w \BSaLC{}, implementacje funkcji pracujących ze śladami nie są 
 
 W implementacjach planistów i rekompilatorów będziemy chcieli uruchamiać zadania oraz śledzić od jakich zadań zależy aktualnie rozważane. W tym celu, podobnie jak autorzy \BSaLC{}, definiujemy prostą funkcję \helinl{run} oraz nieco ciekawszą \helinl{track}.
 
-\lstinputlisting[language=Haleff, linerange={12-13,20-29}]{../Track.he}
+\lstinputlisting[language=Haleff, linerange={12-13,20-29}]{../src/Track.he}
 
 Funkcja \helinl{track} otrzymuje etykietę \helinl{`b} uchwytu dla efektu kompilacji oraz zadanie \helinl{task}, które ma być uruchomione pod jego nadzorem, a \helinl{track} ma wyznaczyć zadania, od których \helinl{task} zależy. W tym celu konstruowany jest dodatkowy uchwyt \helinl{hTrack}, pod nadzorem którego uruchamiamy zadanie. W sytuacji, gdy uruchomione zadanie potrzebuje wyniku innego zadania, \helinl{hTrack} ,,przechwyci'' wystąpienie \helinl{fetch} i oddeleguje wystąpienie operacji do uchwytu o etykiecie \helinl{`b}, a następnie odnotuje, że miało miejsce wywołanie \helinl{fetch}.
 
@@ -122,17 +122,17 @@ Implementacja funkcji \helinl{track} jest ciekawym przykładem skonstruowania po
 
 \subsection{Excel}
 
-\lstinputlisting[style=Haleff-long, linerange={13-14}]{../Systems.he}
+\lstinputlisting[style=Haleff-long, linerange={13-14}]{../src/Systems.he}
 
 Już na starcie widzimy, że udało nam się dopełnić obietnicy, którą postulują autorzy \BSaLC{} -- systemy kompilacji powstają przez zaaplikowanie rekompilatora do planisty.
 
 Funkcja \helinl{dirtyBitRebuiler} modyfikuje zadanie tak, aby przy uruchomieniu sprawdzało, czy klucz zadania jest oznaczony jako brudny. Gdy tak jest, zadanie zostanie skompilowane, w przeciwnym razie można wykorzystać wartość dostarczoną do rekompilatora, gdyż to ją zwróciłoby wykonanie pierwotnego zadania. 
 
-\lstinputlisting[style=Haleff-long, linerange={36-39}]{../Rebuilders.he}
+\lstinputlisting[style=Haleff-long, linerange={36-39}]{../src/Rebuilders.he}
 
 W planiście restartującym utrzymujemy łańcuch, który ma aproksymować kolejność kompilacji, w której minimalizujemy liczbę restartów. Działanie rozpoczyna się od wykorzystania łańcucha z poprzedniej kompilacji, a jego wersję wykorzystywaną i modyfikowaną w czasie działania utrzymujemy w instancji stanu o etykiecie \helinl{`chain}. Ponadto, w stanie \helinl{`done} odnotowujemy, które zadania skompilowaliśmy w tej instancji procesu, aby nie musieć uruchamiać ich ponownie oraz tworzymy uchwyt, wykorzystując opisaną wcześniej funkcję \helinl{embedState} dla modyfikowalnego stanu odpowiadającego trwałej informacji systemu kompilacji.
 
-\lstinputlisting[style=Haleff-long, linerange={56-71}]{../Schedulers.he}
+\lstinputlisting[style=Haleff-long, linerange={56-71}]{../src/Schedulers.he}
 \vspace{-1.25em}
 \begin{lstlisting}[style=Haleff-long]
     let rec restartingHandler = (* ... *)
@@ -144,45 +144,45 @@ W planiście restartującym utrzymujemy łańcuch, który ma aproksymować kolej
 
 Właściwa część implementacji tego planisty składa się z uchwytu efektu kompilacji \helinl{restartingHandler} oraz funkcji \helinl{loop}. Funkcja ta wykonuje zadania w kolejności zadanej przez łańcuch z poprzedniej instancji, modyfikując zadania z użyciem rekompilatora, po czym je uruchamiając. Jednocześnie konstruowany jest nowy łańcuch, który jest wartościową zwracaną przez \helinl{loop}.
 
-\lstinputlisting[style=Haleff-long, linerange={72-99}]{../Schedulers.he}
+\lstinputlisting[style=Haleff-long, linerange={72-99}]{../src/Schedulers.he}
 
 W czasie kompilacji zadania wystąpienia \helinl{fetch} są przechwytywane przez uchwyt, który sprawdza, czy zadanie jest już obliczone. W przeciwnym razie modyfikuje łańcuch tak, by potrzebne zadanie znalazło się przed zadaniem aktualnie obliczanym. W uchwycie wykorzystana jest opcja dla \helinl{return}, która odnotowuje, że zadanie skończyło się kompilować, a następnie wywołuje \helinl{loop}.
 
 \subsection{Shake}
 
-\lstinputlisting[style=Haleff-long, linerange={16-17}]{../Systems.he}
+\lstinputlisting[style=Haleff-long, linerange={16-17}]{../src/Systems.he}
 
 W systemie Shake rebuilder wykorzystuje ślady weryfikujące. Rekompilator używając \helinl{verifyVT} sprawdza, czy zadanie jest świeże. Jeśli tak, nie musi być obliczane ponownie. W przeciwnym razie zadanie jest kompilowane pod nadzorem funkcji \helinl{track}, która akumuluje listę bezpośrednich zależności zadania, by utworzyć z nich nowe ślady do trwałego zachowania z użyciem \helinl{recordVT}.
 
 \pagebreak
 
-\lstinputlisting[style=Haleff-long, linerange={43-49}]{../Rebuilders.he}
+\lstinputlisting[style=Haleff-long, linerange={43-49}]{../src/Rebuilders.he}
 
 Implementacja planisty wstrzymującego jest znacznie krótsza od restartującego. Utrzymujemy tylko dwa stany: pierwszy (\helinl{`done}) dla odnotowania już skompilowanych zadań oraz drugi dla osadzenia trwałej informacji w stanie na potrzeby działania rekompilatora -- podobnie jak w planiście restartującym.
 
-\lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
+\lstinputlisting[style=Haleff-long, linerange={30-54}]{../src/Schedulers.he}
 
 Uchwyt \helinl{suspendingHandler} jest niezwykle prosty -- wywołuje jedynie funkcję \helinl{build}, po czym wznawia kompilację z wynikiem potrzebnego zadania uzyskanym ze Store'a. Procedura \helinl{build} sprawdza, czy zadanie jest nietrywialne (czy nie jest wejściem) oraz czy nie zostało już obliczone. Wtedy konstruowane jest nowe zadanie z użyciem rekompilatora, po czym następuje jego uruchomienie. W innych przypadkach zadanie jest aktualne i na pewno nie ma potrzeby kompilować go ponownie.
 
 \subsection{CloudShake}
 
-\lstinputlisting[style=Haleff-long, linerange={19-20}]{../Systems.he}
+\lstinputlisting[style=Haleff-long, linerange={19-20}]{../src/Systems.he}
 
-\lstinputlisting[style=Haleff-long, linerange={59-69}]{../Rebuilders.he}
+\lstinputlisting[style=Haleff-long, linerange={59-69}]{../src/Rebuilders.he}
 
 W przypadku śladów konstruktywnych rebuilder sprawdza, czy podana wartość zadania jest już wśród znanych wartości. W przeciwnym razie można zwrócić dowolną znaną wartość lub -- gdy żadna wartość nie jest znana -- następuje kompilacja zadania. Podobnie jak w przypadku rekompilatora opartego o ślady weryfikujące, tutaj kompilacja też odbywa się ze śledzeniem zadań, od których kompilowane zależy.
 
-%% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
+%% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../src/Schedulers.he}
 
 \subsection{Nix}
 
-\lstinputlisting[style=Haleff-long, linerange={22-23}]{../Systems.he}
+\lstinputlisting[style=Haleff-long, linerange={22-23}]{../src/Systems.he}
 
 Rekompilator używający głębokich śladów konstruktywnych przypomina swoich poprzedników. Jednak -- zgodnie ze swoją nazwą -- sprawdza, od których zadań wejściowych w istocie badane zadanie zależy.
 
-\lstinputlisting[style=Haleff-long, linerange={73-84}]{../Rebuilders.he}
+\lstinputlisting[style=Haleff-long, linerange={73-84}]{../src/Rebuilders.he}
 
-%% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../Schedulers.he}
+%% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../src/Schedulers.he}
 
 \section{Nieobecny planista topologiczny}
 
