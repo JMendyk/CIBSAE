@@ -34,7 +34,7 @@ Dla śladów definiujemy typ analogiczny to tego z oryginalnej implementacji w H
   \lstinputlisting[style=Haleff-long, linerange={13-14}]{../Traces.he}
 \end{minipage}
 
-Warto zwrócić uwagę, że kompilacja zadań w czasie działania funkcji weryfikujących lub konstruujących ślady odbywa się w kontekście specjalnego uchwytu, który zwraca nie wartości lecz ich skróty.
+Warto zwrócić uwagę, że kompilacja zadań z użyciem \helinl{fetch} w funkcjach weryfikujących lub konstruujących ślady odbywa się w kontekście specjalnego uchwytu, który zwraca nie wartości lecz ich skróty.
 
 \subsection{Ślady weryfikujące}
 
@@ -48,7 +48,7 @@ Warto zwrócić uwagę, że kompilacja zadań w czasie działania funkcji weryfi
   \lstinputlisting[style=Haleff-long, linerange={37-49}]{../Traces.he}
 \end{minipage}
 
-W funkcjach \helinl{constructCT} oraz \helinl{deepDependencies} wykorzystywany jest efekt \helinl{Writer}. W \BSaLC{} wykorzystywane były typ \haskinl{Maybe} i funkcja \haskinl{catMaybes} oraz list comprehensions. Autor zachęcony brakiem infrastruktury wokół \helinl{Some} (Heliumowego odpowiednika \haskinl{Maybe}) postanowił wypróbować moduł \helinl{Writer} i zobaczyć jaki da to efekt.
+W funkcjach \helinl{constructCT} oraz \helinl{deepDependencies} wykorzystywany jest efekt \helinl{Writer}. W \BSaLC{} wykorzystywane były typ \haskinl{Maybe} i funkcja \haskinl{catMaybes} oraz list comprehensions. Autor zachęcony brakiem infrastruktury wokół \helinl{Some} (odpowiednika \haskinl{Maybe} w Helium) postanowił wypróbować moduł \helinl{Writer} i zobaczyć jaki da to efekt.
 
 \subsection{Głębokie ślady konstruktywne}
 
