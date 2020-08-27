@@ -61,7 +61,7 @@ Obliczanie wartości wyrażenia przebiega następująco:
     \end{matrix}\right.
   \end{aligned}\)
 \item \(\eval{\handle{\return v}{H}} = \eval{\return v}\) -- uchwyt nie wpływa na wartość obliczenia, które nie zawiera efektów ubocznych,
-\item \(\eval{\handle{\opi{i}{a}{f}}{H}} = \eval{\handle{h_i \left[\sfrac{n}{\eval{a}},\, \sfrac{\kappa}{f}\right]}{H}} \), gdzie \(H~=~\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}\), a \(h_i\) nie ma wystąpień \(op_i\).
+\item \(\eval{\handle{\opi{i}{a}{\fun{x}{e}}}{H}} = \eval{h_i \left[\sfrac{n}{\eval{a}},\, \sfrac{\kappa}{\fun{x}{\handle{e}{H}}}\right]} \), \\gdzie \(H~=~\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}\).
   
 \end{itemize}
 
