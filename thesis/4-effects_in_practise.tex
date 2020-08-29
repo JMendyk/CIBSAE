@@ -76,6 +76,7 @@ Jeśli skorzystamy z tego uchwytu w programie, po wyświetleniu ostrzeżenia obl
 Powróćmy do problemu, który w rozdziale drugim był inspiracją do rozważania niedeterminizmu -- sprawdzanie czy formuła jest spełnialna oraz czy jest tautologią. Przedstawiliśmy wtedy uchwyty dla obu tych problemów w naszej notacji. Implementacja efektu niedeterminizmu, operacji \inl{amb} oraz uchwytów wraz z wykorzystaniem ich wygląda następująco:
 
 \lstinputlisting[linerange={1-7}]{code_examples/nondet1__simple.he}
+\pagebreak
 \lstinputlisting[linerange={8-22}]{code_examples/nondet1__simple.he}
 
 Będziemy sprawdzać, czy formuła wyrażona za pomocą funkcji \inl{formula1} jest spełnialna. W tym celu w \inl{main} -- wewnątrz uchwytu -- niedeterministycznie ustalamy wartości zmiennych \inl{x}, \inl{y}, \inl{z}, po czym obliczamy wartość \inl{formula1}. Wartość obsługiwanego wyrażenia, którą przypisujemy do zmiennej \inl{ret}, jest następnie wykorzystana do wypisania komunikatu. Ponadto -- w celu demonstracji możliwości języka -- w uchwytach zamiast kontynuować obliczenie używając \inl{resume}, przypisujemy kontynuacji nazwę \inl{r}.
