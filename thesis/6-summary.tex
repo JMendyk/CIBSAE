@@ -7,7 +7,7 @@ Traktując \helinl{fetch} jako operację efektu ubocznego kompilacji, a nie jako
 
 Uzyskana -- dzięki programowaniu z efektami i uchwytami, a nie monadami -- swoboda użycia wielu efektów jednocześnie uspokoiła nasze obawy i zachęciła do eksperymentowania. Etykietowanie różnych instancji tego samego efektu umożliwiło utrzymywanie w modyfikowalnym stanie wielu wartości bez szkody dla czytelności oraz rozumieniu kodu. Dało to też możliwość tworzenia pośredników między różnymi efektami. % (\helinl{embedState}, funkcja \helinl{track}).
 
-Reprezentacja zasobu, nad którym odbywała się kompilacja jako efektu ubocznego, nie tylko zapobiegła potrzebie każdorazowego umieszczania go w modyfikowalnym stanie, ale także lepiej oddało jego naturę bycia trwałym i zewnętrznym tworem.
+Reprezentacja zasobu, nad którym odbywała się kompilacja jako efektu ubocznego, nie tylko zapobiegła potrzebie każdorazowego umieszczania go w modyfikowalnym stanie, ale także lepiej oddała jego naturę bycia trwałym i zewnętrznym tworem.
 
 Tym, co utraciliśmy, była precyzja opisu skomplikowania relacji między zadaniami. Transparentność wyników operacji z efektami, w porównaniu do ,,opakowywania'' ich instancjami funktorów aplikatywnych lub monad, uniemożliwiła łatwe reprezentowanie zadań o statycznych zależnościach.
 

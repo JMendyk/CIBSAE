@@ -35,7 +35,7 @@ Nasz model składać się będzie z wyrażeń:
 \begin{itemize}
 \item \(\return{v}\) -- gdzie \(v\) jest wyrażeniem boolowskim lub arytmetycznym,
 \item \(\cond{v_1 = v_2}{e_t}{e_f}\) -- wyrażenie warunkowe, gdzie \(v_1 = v_2\) jest pytaniem o równość wartości dwóch wyrażeń arytmetycznych,
-\item abstrakcyjnych operacji oznaczanych \(\{op_i\}_{i \in I}\) -- powodujących wystąpienie efektów ubocznych -- których działanie nie jest nam znane, zaś ich sygnatury to \(op_i: A \rightarrow (B \rightarrow C) \rightarrow D\), gdzie \(A\), \(B\), \(C\) oraz \(D\) to pewne typy w naszym modelu. Wyrażenie~\(\opi{i}{n}{\kappa}\) opisuje operację z argumentem \(n\) oraz dalszą częścią obliczenia \(\kappa\) parametryzowaną wynikiem operacji, które \textit{może (nie musi)} zostać wykonane po wykonaniu operacji,
+\item abstrakcyjnych operacji oznaczanych \(\{op_i\}_{i \in I}\) -- powodujących wystąpienie efektów ubocznych -- których działanie nie jest nam znane, zaś ich sygnatury to \(op_i: A \rightarrow (B \rightarrow C) \rightarrow D\), gdzie \(A\), \(B\), \(C\) oraz \(D\) to pewne typy w naszym modelu. Wyrażenie \(\opi{i}{n}{\kappa}\) opisuje operację z argumentem \(n\) oraz dalszą częścią obliczenia \(\kappa\) parametryzowaną wynikiem operacji, które \textit{może (nie musi)} zostać wykonane po wykonaniu operacji,
 \item uchwytów, czyli wyrażeń postaci \(\handle{e}{\{\ \hcase{op_i}{n\ \kappa}{h_i}\ \}_{i \in I}}\), gdzie \(e\) to inne wyrażenie; uchwyt definiuje działanie (dotychczas abstrakcyjnych) operacji. 
 \end{itemize}
 
@@ -79,12 +79,12 @@ Korzystając z równoważności uprośćmy ostatni z powyższych przykładów:
 
 \section{Równania, efekt porażki i modyfikowalny stan}
 
-Do tego momentu, nie przyjmowaliśmy żadnych założeń na temat operacji powodujących efekty uboczne. Uchwyty mogły w związku z tym działać w sposób całkowicie dowolny. Ograniczymy się w tej dowolności i nałożymy warunki na uchwyty wybranych operacji. Przykładowo, ustalmy że dla operacji \(op_r\), uchwyty muszą być takie aby następujący warunek był spełniony:
+Do tego momentu nie przyjmowaliśmy żadnych założeń na temat operacji powodujących efekty uboczne. Uchwyty mogły w związku z tym działać w sposób całkowicie dowolny. Ograniczymy się w tej dowolności i nałożymy warunki na uchwyty wybranych operacji. Przykładowo, ustalmy że dla operacji \(op_r\), uchwyty muszą być takie, aby następujący warunek był spełniony:
 \begin{align}
   \forall n\ \forall e.\ \handle{op_r(n, \fun{x}{e})}{H} \equiv n
 \end{align}
 
-Zauważmy, że istnieje tylko jeden naturalny uchwyt spełniający tej warunek, jest nim \(H = \{\ \hcase{op_r}{n\ \kappa}{n} \ \}\). Co więcej, jego działanie łudząco przypomina konstrukcję wyjątków w popularnych językach programowania:
+Zauważmy, że istnieje tylko jeden naturalny uchwyt spełniający ten warunek, jest nim \(H = \{\ \hcase{op_r}{n\ \kappa}{n} \ \}\). Co więcej, jego działanie łudząco przypomina konstrukcję wyjątków w popularnych językach programowania:
 
 \begin{lstlisting}
   try {
@@ -95,7 +95,7 @@ Zauważmy, że istnieje tylko jeden naturalny uchwyt spełniający tej warunek, 
   }
 \end{lstlisting}
 
-Podobieństwo to jest w pełni zamierzone. Okazuje się że nasz język z jedną operacją oraz równaniem ma już moc wystarczającą do opisu konstrukcji, która w większości popularnych języków nie może zaistnieć z woli programisty, a zamiast tego musi być dostarczona przez twórcę języka.
+Podobieństwo to jest w pełni zamierzone. Okazuje się, że nasz język z jedną operacją oraz równaniem ma już moc wystarczającą do opisu konstrukcji, która w większości popularnych języków nie może zaistnieć z woli programisty, a zamiast tego musi być dostarczona przez twórcę języka.
 
 Rozważmy kolejny przykład. Dla poprawienia czytelności, zrezygnujemy z oznaczeń \(op_i\) na operacje powodujące efekty, zamiast tego nadamy im znaczące nazwy: \(get\) oraz \(put\). Operacje te mają sygnatury \(get: U \rightarrow (\mathbb{Z} \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\), \(put: \mathbb{Z} \rightarrow (U \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\). Spróbujemy wyrazić działanie tych dwóch operacji by otrzymać modyfikowalną komórkę pamięci. Ustalamy równania:
 
@@ -108,7 +108,7 @@ Rozważmy kolejny przykład. Dla poprawienia czytelności, zrezygnujemy z oznacz
   umieszczenie w komórce wartości, która już tam się znajduje, nie wpływa na wynik obliczenia,
 \item \(\forall n.\ \forall f.\ put(n, \fun{u}{get(u, \fun{x}{f\ x})}) \equiv f\ n\)
 
-  obliczenie które odczytuje wartość z komórki daje taki sam wyniki, jak gdyby miało wartość komórki podaną wprost jako argument,
+  obliczenie, które odczytuje wartość z komórki daje taki sam wynik, jak gdyby miało wartość komórki podaną wprost jako argument,
 \item \(\forall n_1.\ \forall n_2.\ \forall e.\ put(n_1, \fun{u}{put(n_2, \fun{u}{e})}) \equiv put(n_2, \fun{u}{e})\)
 
   komórka zachowuje się, jak gdyby pamiętała jedynie najnowszą włożoną do niej wartość.
@@ -121,7 +121,7 @@ Zauważmy, że choć nakładamy warunki na zewnętrzne skutki działania operacj
 
 \section{Poszukiwanie sukcesu}
 
-Kolejnym rodzajem efektu ubocznego, który rozważymy w tym rozdziale jest niedeterminizm. Chcielibyśmy wyrażać obliczenia, w których pewne parametry mogą przyjmować wiele wartości, a ich dobór ma zostać dokonany tak by spełnić pewien określony warunek. Przykładowo, mamy trzy zmienne \(x,\, y\) oraz \(z\) i chcemy napisać program sprawdzający czy formuła \(\phi(x, y, z)\) jest spełnialna. W tym celu zdefiniujemy operację \(amb: U \rightarrow (B \rightarrow B) \rightarrow B\) związaną z efektem niedeterminizmu. Napiszmy obliczenie rozwiązujące nasz problem:
+Kolejnym rodzajem efektu ubocznego, który rozważymy w tym rozdziale, jest niedeterminizm. Chcielibyśmy wyrażać obliczenia, w których pewne parametry mogą przyjmować wiele wartości, a ich dobór ma zostać dokonany tak, by spełnić pewien określony warunek. Przykładowo, mamy trzy zmienne \(x,\, y\) oraz \(z\) i chcemy napisać program sprawdzający, czy formuła \(\phi(x, y, z)\) jest spełnialna. W tym celu zdefiniujemy operację \(amb: U \rightarrow (B \rightarrow B) \rightarrow B\) związaną z efektem niedeterminizmu. Napiszmy obliczenie rozwiązujące nasz problem:
 \begin{equation}\begin{split}
   \handle{
     &\op{amb}{u}{\fun{x}{
@@ -149,11 +149,11 @@ Możemy zauważyć, że gdybyśmy chcieli zamiast sprawdzania spełnialności, w
   }{ \{ \ &\hcase{amb}{u\ \kappa}{ \kappa\ (T) \ \mathbf{and} \ \kappa\ (F) } \ \} }
 \end{split}\end{equation}
 
-Przedstawiona konstrukcja efektów, operacji i uchwytów tworzy dualny mechanizm w którym operacje są producentami efektów, a uchwyty ich konsumentami. Zabierając źródłom efektów ubocznych ich konkretne znaczenia semantyczne, lub nakładając na nie jedynie proste warunki wyrażone równaniami, otrzymaliśmy niezwykle silne narzędzie umożliwiające proste, deklaratywne oraz -- co najważniejsze, w kontraście do popularnych języków programowania -- samodzielne konstruowanie zaawansowanych efektów ubocznych.
+Przedstawiona konstrukcja efektów, operacji i uchwytów tworzy dualny mechanizm, w którym operacje są producentami efektów, a uchwyty ich konsumentami. Zabierając źródłom efektów ubocznych ich konkretne znaczenia semantyczne lub nakładając na nie jedynie proste warunki wyrażone równaniami, otrzymaliśmy niezwykle silne narzędzie umożliwiające proste, deklaratywne oraz -- co najważniejsze, w kontraście do popularnych języków programowania -- samodzielne konstruowanie zaawansowanych efektów ubocznych.
 
 \section{Dalsza lektura}
 
-Rozdział ten miał na celu w lekki sposób wprowadzić idee, definicje i konstrukcje związane z efektami algebraicznymi i uchwytami, które będą fundamentem do zrozumienia ich wykorzystania w praktycznych przykładach oraz implementacji systemów kompilacji w dalszych rzodziałach. Czytelnicy zainteresowani głębszym poznaniem historii oraz rodowodu efektów algebraicznych i uchwytów mogą zapoznać się z następującymi materiałami:
+Rozdział ten miał na celu w przystępny sposób wprowadzić idee, definicje i konstrukcje związane z efektami algebraicznymi i uchwytami, które będą fundamentem do zrozumienia ich wykorzystania w praktycznych przykładach oraz implementacji systemów kompilacji w dalszych rozdziałach. Czytelnicy zainteresowani głębszym poznaniem historii oraz rodowodu efektów algebraicznych i uchwytów mogą zapoznać się z następującymi materiałami:
 
 \begin{itemize}
 \item ,,An Introduction to Algebraic Effects and Handlers'' autorstwa Matija Pretnara \cite{pretnar2015introduction},

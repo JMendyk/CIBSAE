@@ -55,7 +55,7 @@ Stwórzmy funkcję podobną do \inl{question} z tym, że nie będzie ona ,,lubi�
 
 \lstinputlisting[firstline=7, lastline=18]{code_examples/error2__inline_abort.he}
 
-Zdefiniowaliśmy efekt uboczny \inl{Error} wraz z operacją \inl{error}, która go powoduje. Operacja ta jest parametryzowana wartością typu \inl{Unit}, a jej (możliwy) wynik to także wartość z \inl{Unit}. Definiujemy też funkcję \inl{main}, w której wywołujemy \inl{no\_negatives\_question}. Jednakże obliczenie wykonujemy w uchwycie, w którym definiujemy co ma się wydarzyć, gdy w czasie obliczenia wystąpi efekt błędu spowodowany operacją \inl{error}. W tym przypadku mówimy, że będzie to skutkowało wypisaniem wiadomości na standardowe wyjście. Nie wznawiamy obliczenia, stąd wystąpienie błędu skutkuje zakończeniem nadzorowanego obliczenia. Jeśli uruchomimy teraz program i podamy ujemną liczbę, zakończy się on komunikatem zdefiniowanym w uchwycie, a tekst ,,Question finished'' nie zostanie wypisany. Zgodnie z oczekiwaniami -- obliczenie \inl{no\_negatives\_question} nie zostało kontynuowane po wystąpieniu błędu.
+Zdefiniowaliśmy efekt uboczny \inl{Error} wraz z operacją \inl{error}, która go powoduje. Operacja ta jest parametryzowana wartością typu \inl{Unit}, a jej (możliwy) wynik to także wartość z \inl{Unit}. Definiujemy też funkcję \inl{main}, w której wywołujemy \inl{no\_negatives\_question}. Jednakże obliczenie wykonujemy w uchwycie, w którym definiujemy co ma się wydarzyć, gdy w czasie obliczenia wystąpi efekt błędu spowodowany operacją \inl{error}. W tym przypadku mówimy, że będzie to skutkowało wypisaniem wiadomości na standardowe wyjście. Nie wznawiamy obliczenia, stąd błąd skutkuje zakończeniem nadzorowanego obliczenia. Jeśli uruchomimy teraz program i podamy ujemną liczbę, zakończy się on komunikatem zdefiniowanym w uchwycie, a tekst ,,Question finished'' nie zostanie wypisany. Zgodnie z oczekiwaniami -- obliczenie \inl{no\_negatives\_question} nie zostało kontynuowane po wystąpieniu błędu.
 
 Jeśli pewnego uchwytu zamierzamy używać wiele razy, możemy przypisać mu identyfikator -- w Helium uchwyty są wartościami:
 
@@ -65,7 +65,7 @@ zmodyfikujmy funkcję \inl{main} by korzystać ze zdefiniowanego uchwytu:
 
 \lstinputlisting[firstline=12, lastline=13]{code_examples/error3__reused_handler.he}
 
-Na potrzeby przykładu możemy rozważyć ,,spokojniejszy'' uchwyt dla wystąpień \inl{error}, który wypisze ostrzeżenie o wystąpieniu błędu ale będzie kontynuował obliczenie:
+Na potrzeby przykładu możemy rozważyć ,,spokojniejszy'' uchwyt dla wystąpień \inl{error}, który wypisze ostrzeżenie o błędzie ale będzie kontynuował obliczenie:
 
 \lstinputlisting[firstline=7, lastline=10]{code_examples/error4__warn_not_abort.he}
 
@@ -182,7 +182,7 @@ Tutaj uchwyt dla porażki znajduje się na zewnątrz -- wystąpienie porażki oz
 
 \lstinputlisting[linerange={33-42}]{code_examples/fail_and_amb.he}
 
-Z łatwością napisaliśmy program, który korzysta z wielu efektów ubocznych jednocześnie, mimo że żaden z nich (ani uchwyty) nie wiedzą o istnieniu drugiego. Łączenie efektów jest bardzo proste, a kolejność w jakiej umieszczamy uchwyty umożliwia nam łatwe i czytelne definiowanie zachowania programu w przypadku wystąpienie któregokolwiek z efektów.
+Z łatwością napisaliśmy program, który korzysta z wielu efektów ubocznych jednocześnie, mimo że żaden z nich (ani uchwyty) nie wiedzą o istnieniu drugiego. Łączenie efektów jest bardzo proste, a kolejność w jakiej umieszczamy uchwyty umożliwia nam łatwe i czytelne definiowanie zachowania programu w przypadku wystąpienia któregokolwiek z efektów.
 
 Dzięki językowi Helium przyjrzeliśmy się z bliska efektom algebraicznym oraz uchwytom, zobaczyliśmy przykłady implementacji uchwytów oraz rozwiązań prostych problemów. Jesteśmy gotowi do podjęcia próby zaimplementowania systemów kompilacji z użyciem efektów i uchwytów -- czego dokonamy w następnym rozdziale.
 
