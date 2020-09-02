@@ -3,12 +3,14 @@ import Store
 import Spreadsheet
 import Schedulers
 import Rebuilders
+import Traces
 
 open Common
 open Store
 open Spreadsheet
 open Schedulers
 open Rebuilders
+open Traces
 
 let excel {K V: Type} {`s: StoreEff (Pair (K -> Bool) (List K)) K V} (module KV: KeyValue K V) =
     restarting KV dirtyBitRebuilder

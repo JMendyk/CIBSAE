@@ -110,7 +110,7 @@ newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
 type Tasks c k v = k -> Maybe (Task c k v)
 \end{lstlisting}
 
-Zadanie oblicza swoją wartość korzystając z dostarczonej funkcji służącej uzyskiwaniu wartości innych zadań. Jest ono parametryzowane typem \textit{v} zwracanej wartości, typem kluczy \textit{k}. Jak widzimy, wartość nie jest zwracana wprost, a w nieznanym nośniku \textit{f}, który spełnia jednak warunek \textit{c}. Przykładami warunków w tym kontekście będą \textit{Applicative} oraz \textit{Monad}.
+Zadanie jest parametryzowane typem kluczy \textit{k} oraz zwracanej wartości \textit{v}. Swoją wartość oblicza korzystając z dostarczonej funkcji służącej uzyskiwaniu wartości innych zadań. Jak widzimy, wartość nie jest zwracana wprost, a w nieznanym nośniku \textit{f}, który spełnia jednak warunek \textit{c}. Przykładami warunków w tym kontekście będą \textit{Applicative} oraz \textit{Monad}.
 
 Grupa zadań jest funkcją, która kluczowi być może przyporządkowuje definicję jak skonstruować zadanie identyfikowane wskazanym kluczem. Zadania wejściowe nie mają do swoich kluczy przyporządkowanych definicji, a ich wartości są pobierane ze Store'a. Przykładowo, następującą instancję arkusza kalkulacyjnego:
 

@@ -8,8 +8,7 @@ open Signatures
 
 include Signatures
 
-signature BuildEff (K V: Type) =
-| fetch : K => V
+signature BuildEff (K V: Type) = fetch : K => V
 
 data TaskType (K V: Type) (E: Effect) = Task of ({`a: BuildEff K V} -> Unit ->[E, `a] V)
 

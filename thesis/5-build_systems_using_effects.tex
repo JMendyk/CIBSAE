@@ -24,11 +24,11 @@ Autorzy \BSaLC\cite{mokhov2018build} reprezentowali Store jako typ z operacjami 
 
 \lstinputlisting[language=Haleff, firstline=5, lastline=9]{../src/Store.he}
 
-Podobnie jak \haskinl{Store} w oryginalnej implementacji, \helinl{StoreEff} jest parametryzowany typem trwałej informacji, kluczy oraz wartości wynikowych kompilacji. Równania dla niego są analogiczne jak dla zwykłego modyfikowanego stanu z dokładnością do ustalenia klucza w operacjach na wartościach wynikowych. Definiujemy ponadto uchwyt \helinl{funStoreHandler}, w którym słownik klucz--wartość zadania utrzymywane są przez funkcję -- jak w przykładach w \BSaLC{}.
+Podobnie jak \haskinl{Store} w oryginalnej implementacji, \helinl{StoreEff} jest parametryzowany typem trwałej informacji, kluczy oraz wartości wynikowych kompilacji. Równania dla niego są analogiczne jak dla zwykłego modyfikowanego stanu z dokładnością do ustalenia klucza w operacjach na wartościach wynikowych. Definiujemy ponadto uchwyt \helinl{funStoreHandler}, w którym słownik klucz--wartość zadania utrzymywany jest przez funkcję -- jak w przykładach w \BSaLC{}.
 
 \lstinputlisting[language=Haleff, firstline=38, lastline=52]{../src/Store.he}
 
-Implementacja jest zbliżona do przykładu modyfikowalnego stanu z rozdziału 4. Dla porządku wartość początkowa trwałej informacji oraz słownika wartości jest opakowana w typ \helinl{FunStoreType I K V}.
+Implementacja jest zbliżona do przykładu modyfikowalnego stanu z rozdziału~4. Dla porządku wartość początkowa trwałej informacji oraz słownika wartości jest opakowana w typ \helinl{FunStoreType I K V}.
 
 Jako że Helium, podobnie jak inne języki używające ML-owego systemu modułów, nie posiada klas typów znanych z Haskella, definiujemy kilka sygnatur odpowiadających klasom typów użytym w oryginalnej implementacji. W przypadku \helinl{funStoreHandler} moduł o sygnaturze \helinl{Comparable K} jest używany do porównywania kluczy identyfikujących zadania. Można zauważyć, że alternatywnym rozwiązaniem byłoby reprezentowanie odpowiedników klas typów jako efekty.
 
@@ -72,7 +72,7 @@ type Tasks c k v = k -> Maybe (Task c k v)
 
 Możemy jednak zauważyć, że kompilacja zadania jest oczywistym efektem ubocznym działania systemu kompilacji, stąd w naszej implementacji zamiast przekazywać funkcję, która była przez autorów zazwyczaj nazywana \haskinl{fetch}, zdefiniujemy efekt \helinl{BuildEff}, który będzie występował w czasie kompilacji zadań. Z efektem tym związana będzie jedna operacja \helinl{fetch}.
 
-\lstinputlisting[language=Haleff, linerange={14-16}]{../src/Common.he}
+\lstinputlisting[language=Haleff, linerange={11-15}]{../src/Common.he}
 
 Zadanie będzie funkcją wymagającą informacji o instancji efektu budowania i będzie polimorficzna ze względu na typ kluczy i wartości oraz ewentualnych efektów ubocznych nie będących efektem budowania (będzie to przydatne przy implementacji rebuilderów). Zwróćmy uwagę, że definicja typu zadania nie zawiera informacji analogicznych do klasy typów \haskinl{c}, której element \haskinl{f} ,,opakowywał'' wynik w oryginalnej implementacji -- do tej różnicy powrócimy w dalszej części rozdziału.
 
@@ -90,7 +90,7 @@ Kompilacja, tak jak w oryginalnej implementacji, wymagać będzie wskazania zbio
 
 Nasi planiści także będą mieli sygnatury zbliżone do swoich odpowiedników z Haskella, wzbogacone oczywiście o efekt uboczny zasobu, a także moduł definiujący opisane wcześniej podstawowe działania na kluczach i wartościach.
 
-\lstinputlisting[language=Haleff, linerange={18-20}]{../src/Common.he}
+\lstinputlisting[language=Haleff, linerange={17-19}]{../src/Common.he}
 
 Rebuilder przypomina swój odpowiednik z oryginalnej implementacji. Jednak, zamiast zwracać zadanie ze zmienionym \textit{constraint'em}, zadanie jest wzbogacone o dodatkowy efekt stanu mogący występować w czasie kompilacji zadania.
 

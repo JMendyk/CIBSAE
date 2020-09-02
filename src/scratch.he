@@ -13,14 +13,6 @@ open Spreadsheet
 open Systems
 open Utils
 
-(* let sprsh1_B1 () = 2 * fetch (C "A1") *)
-(* let sprsh1_B2 () = *)
-(*     let valA1 = if fetch (C "A3") >= 1 then fetch (C "A1") else 0 in *)
-(*     let valA2 = if fetch (C "A3") >= 2 then fetch (C "A2") else 0 in *)
-(*     let valA3 = if fetch (C "A3") >= 3 then fetch (C "A3") else 0 in *)
-(*         valA1 + valA2 + valA3 *)
-(* let sprsh1_C3 () = fetch B1 + fetch B2 *)
-
 let sprsh1_B1 () = fetch (C "A1") + fetch (C "A2")
 let sprsh1_B2 () = fetch (C "A2") + fetch (C "A3")
 let sprsh1_C3 () = fetch B1 + fetch B2
@@ -39,12 +31,6 @@ let sprsh1_initState key = open String in
                if equal c "A2" then 20 else
                if equal c "A3" then 30 else 0
     | _ => 0
-    end
-
-(* Oblicz zadanie bez modyfikowania stanu (Carte 3.6) *)
-let compute (Task task) =
-    handle task () with
-    | fetch k => getValue k
     end
 
 let dumpStoreContents {I K: Type} {`s: StoreEff I K Int} (keys: List K) =
@@ -75,14 +61,14 @@ let allCleanButA3 x = match x with
 let excelDemo () =
     let store = FunStore (allDirtyInfo, []) sprsh1_initState in
     handle
-        dumpStoreContents dumpKeys;
+        printStr "Input store:           "; dumpStoreContents dumpKeys;
         excel Spreadsheet sprsh1 C3;
-        dumpStoreContents dumpKeys;
+        printStr "After first build:     "; dumpStoreContents dumpKeys;
         (* Key A1 was modified, dirty bit updated appropriately *)
-        putValue (C "A1") 20;
-        modifyInfo (mapFst (fn _ => allCleanButA1));
+        putValue (C "A1") 20; modifyInfo (mapFst (fn _ => allCleanButA1));
+        printStr "After A1 was modified: "; dumpStoreContents dumpKeys;
         excel Spreadsheet sprsh1 C3;
-        dumpStoreContents dumpKeys
+        printStr "After second build:    "; dumpStoreContents dumpKeys
     with funStoreHandler CellOrder store
 
 (* ------------------------------------------- Shake Demo ------------------------------------------- *)
@@ -90,14 +76,14 @@ let excelDemo () =
 let shakeDemo () =
     let store = FunStore [] sprsh1_initState in
     handle
-        dumpStoreContents dumpKeys;
+        printStr "Input store:           "; dumpStoreContents dumpKeys;
         shake Spreadsheet sprsh1 C3;
-        dumpStoreContents dumpKeys;
+        printStr "After first build:     "; dumpStoreContents dumpKeys;
         (* Key A1 was modified *)
         putValue (C "A1") 20;
-        dumpStoreContents dumpKeys;
+        printStr "After A1 was modified: "; dumpStoreContents dumpKeys;
         shake Spreadsheet sprsh1 C3;
-        dumpStoreContents dumpKeys
+        printStr "After second build:    "; dumpStoreContents dumpKeys
     with funStoreHandler Spreadsheet.Key store
 
 (* ---------------------------------------- Cloud Shake Demo ---------------------------------------- *)
@@ -105,14 +91,14 @@ let shakeDemo () =
 let cloudShakeDemo () =
     let store = FunStore [] sprsh1_initState in
     handle
-        dumpStoreContents dumpKeys;
+        printStr "Input store:           "; dumpStoreContents dumpKeys;
         cloudShake Spreadsheet sprsh1 C3;
-        dumpStoreContents dumpKeys;
+        printStr "After first build:     "; dumpStoreContents dumpKeys;
         (* Key A1 was modified *)
         putValue (C "A1") 20;
-        dumpStoreContents dumpKeys;
+        printStr "After A1 was modified: "; dumpStoreContents dumpKeys;
         cloudShake Spreadsheet sprsh1 C3;
-        dumpStoreContents dumpKeys
+        printStr "After second build:    "; dumpStoreContents dumpKeys
     with funStoreHandler Spreadsheet.Key store
 
 (* -------------------------------------------- Nix Demo -------------------------------------------- *)
@@ -120,14 +106,14 @@ let cloudShakeDemo () =
 let nixDemo () =
     let store = FunStore [] sprsh1_initState in
     handle
-        dumpStoreContents dumpKeys;
+        printStr "Input store:           "; dumpStoreContents dumpKeys;
         nix Spreadsheet sprsh1 C3;
-        dumpStoreContents dumpKeys;
+        printStr "After first build:     "; dumpStoreContents dumpKeys;
         (* Key A1 was modified *)
         putValue (C "A1") 20;
-        dumpStoreContents dumpKeys;
+        printStr "After A1 was modified: "; dumpStoreContents dumpKeys;
         nix Spreadsheet sprsh1 C3;
-        dumpStoreContents dumpKeys
+        printStr "After second build:    "; dumpStoreContents dumpKeys
     with funStoreHandler Spreadsheet.Key store
 
-let _ = cloudShakeDemo ()
+let _ = excelDemo ()
