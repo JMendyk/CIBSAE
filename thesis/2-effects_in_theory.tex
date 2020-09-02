@@ -16,7 +16,7 @@ Następnie przyjrzymy się, jak możemy zapisać popularne przykłady efektów u
 %% \newcommand{\eval}[1]{\llbracket\, #1\, \rrbracket}
 \newcommand{\cond}[3]{\mathbf{if}\ #1\ \mathbf{then}\ #2\ \mathbf{else}\ #3}
 
-Będziemy rozważać obliczenia nad wartościami następujących trzech typów:
+Będziemy rozważać obliczenia nad wartościami następujących typów:
 \begin{itemize}
 \item boolowskim \(B\) -- z wartościami \(T\) i \(F\) oraz standardowymi spójnikami logicznymi,
 \item liczb całkowitych \(\mathbb{Z}\) -- wraz z ich relacją równości oraz podstawowymi działaniami arytmetycznymi,
@@ -35,7 +35,7 @@ Nasz model składać się będzie z wyrażeń:
 \begin{itemize}
 \item \(\return{v}\) -- gdzie \(v\) jest wyrażeniem boolowskim lub arytmetycznym,
 \item \(\cond{v_1 = v_2}{e_t}{e_f}\) -- wyrażenie warunkowe, gdzie \(v_1 = v_2\) jest pytaniem o równość wartości dwóch wyrażeń arytmetycznych,
-\item abstrakcyjnych operacji oznaczanych \(\{op_i\}_{i \in I}\) -- powodujących wystąpienie efektów ubocznych -- których działanie nie jest nam znane, zaś ich sygnatury to \(op_i: A \rightarrow (B \rightarrow C) \rightarrow D\), gdzie \(A\), \(B\), \(C\) oraz \(D\) to pewne typy w naszym modelu. Wyrażenie \(\opi{i}{n}{\kappa}\) opisuje operację z argumentem \(n\) oraz dalszą częścią obliczenia \(\kappa\) parametryzowaną wynikiem operacji, które \textit{może (nie musi)} zostać wykonane po wykonaniu operacji,
+\item abstrakcyjnych operacji oznaczanych \(\{op_i\}_{i \in I}\) -- powodujących wystąpienie efektów ubocznych -- których działanie nie jest nam znane, zaś ich sygnatury to \(op_i: A_i \rightarrow (B_i \rightarrow C_i) \rightarrow D_i\), gdzie \(A_i\), \(B_i\), \(C_i\) oraz \(D_i\) to pewne typy w naszym modelu. Wyrażenie \(\opi{i}{n}{\kappa}\) opisuje operację z argumentem \(n\) oraz dalszą częścią obliczenia \(\kappa\) parametryzowaną wynikiem operacji, które \textit{może (nie musi)} zostać wykonane przez operację,
 \item uchwytów, czyli wyrażeń postaci \(\handle{e}{\{\ \hcase{op_i}{n\ \kappa}{h_i}\ \}_{i \in I}}\), gdzie \(e\) to inne wyrażenie; uchwyt definiuje działanie (dotychczas abstrakcyjnych) operacji. 
 \end{itemize}
 
@@ -50,7 +50,7 @@ Przykładowymi obliczeniami w naszej notacji są więc:
 Dla czytelności, pisząc w uchwycie zbiór który nie przebiega wszystkich operacji, przyjmujemy że uchwyt nie definiuje działania operacji; równoważnie, zbiór wzbogacamy o element: \(\hcase{op_i}{n\ \kappa}{op_i(n, \kappa)}\).
 
 %% Obliczanie wartości wyrażenia przebiega następująco:
-Nie będziemy wprost definiować przebiegu obliczeń, ale definiujemy kilka równoważności, które będą zachodzić:
+Nie będziemy wprost definiować przebiegu obliczeń, ale opiszemy kilka równoważności, które będą zachodzić:
 \begin{itemize}
 %% \item \(\eval{\return v} = v\) -- wartością \(\mathbf{return}\) jest wartość wyrażenia arytmetycznego,
 \item \((\fun{x}{e_1})\ e_2 \equiv e_1 \left[\sfrac{x}{e_2}\right]\) -- aplikacja argumentu do funkcji,
