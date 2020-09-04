@@ -45,17 +45,6 @@
 \date{\today}
 \institute[]{Instytut Informatyki Uniwersytetu Wrocławskiego}
 
-%% \AtBeginSection[]{
-%%   \begin{frame}
-%%   \vfill
-%%   \centering
-%%   \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
-%%     \usebeamerfont{title}\insertsectionhead\par%
-%%   \end{beamercolorbox}
-%%   \vfill
-%%   \end{frame}
-%% }
-
 \begin{document}
 
 \begin{frame}
@@ -76,8 +65,6 @@
 
 \begin{frame}
   \frametitle{Efekty uboczne}
-  %% \begin{columns}
-  %% \column{0.45\textwidth}
   \begin{exampleblock}{Zalety}
     \begin{itemize}
       \pro komunikacja z innymi systemami
@@ -85,7 +72,6 @@
       \pro interaktywność
     \end{itemize}
   \end{exampleblock}
-  %% \column{0.45\textwidth}
   \begin{alertblock}{Wady}
     \begin{itemize}
       \con zależność od świata zewnętrzengo
@@ -93,9 +79,6 @@
       \con częstsze pomyłki
     \end{itemize}
   \end{alertblock}
-  %% \end{columns}
-  %% \pause
-  %% \vspace{.5em}
 \end{frame}
 
 \begin{frame}
@@ -114,9 +97,7 @@
 
 \begin{frame}
   \frametitle{Radzenie sobie z efektami ubocznymi}
-  %% \begin{block}{Problem}
     Potrzebujemy znaleźć kogoś, kto będzie pilnował czy funkcje, które twierdzą że nie mają efektów ubocznych rzeczywiście takie są.
-  %% \end{block}
   \pause
   \begin{exampleblock}{Pomysł}
     Wykorzystajmy system typów -- jest dobry w sprawdzaniu czy deklaracje programisty (adnotacje typów) są zgodne ze stanem faktycznym (implementacjami funkcji). Inferencja wyręczy nas od potrzeby pisania typów w wielu przypadkach (w przeciwieństwie do np. języka C).
@@ -129,7 +110,6 @@
   \pro umożliwiają bezpieczne programowanie z efektami
   \pro informacje o efektach ubocznych w sygnaturze
   \pro efekty nie mogą ,,uciec''
-  %% \con niewygodne gdy trzeba użyć kilku efektów naraz -- potrzeba transformerów monad
   \con potrzeba transformerów monad by użyć wielu efektów naraz
   \con modularność wciąż problematyczna
   \end{itemize}
@@ -141,7 +121,6 @@
     \pro umożliwiają bezpieczne programowanie z efektami
     \pro informacje o efektach ubocznych w sygnaturze
     \pro efekty nie mogą ,,uciec''
-    %% \pro wykorzystanie systemu typów
     \pro łatwość użycia wielu efektów jednocześnie
     \pro modularność i przejrzystość
   \end{itemize}
@@ -166,6 +145,62 @@
     \caption*{\begin{tiny}{https://dl.acm.org/doi/pdf/10.1145/3236774}
       \end{tiny}}
   \end{figure}
+\end{frame}
+
+\section{Efekty algebraiczne i uchwyty}
+
+\subsection{W teorii}
+
+\subsection{W praktyce}
+
+\begin{frame}
+  \frametitle{}
+  \begin{columns}
+    \column{.4\paperwidth}
+    Biblioteki:
+    \begin{itemize}
+      \item extensible-effects (Haskell)
+      \item fused-effects (Haskell)
+      \item atnos-org/eff (Scala)
+      \item Effects (Idris)
+    \end{itemize}
+    \column{.4\paperwidth}
+    Języki programowania:
+    \begin{itemize}
+      \item Eff
+      \item Frank
+      \item Koka
+      \item Helium
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\section{Podsumowanie i wnioski}
+
+\begin{frame}
+  \frametitle{Podsumowanie i wnioski}
+  Programowanie z efektami algebraicznymi i uchwytami:
+  \begin{itemize}
+  \item jest możliwe,
+  \item jest przyjemne
+  \item i uwalnia autora od ograniczeń, które dotychczas wydawały się nie do uniknięcia.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Obserwacje po implementacji}
+  \begin{itemize}
+  \item swoboda użycia wielu efektów uspokoiła obawy i zachęciła do eksperymentowania
+  \item etykietowanie różnych instancji tego samego efektu umożliwiło utrzymywanie w modyfikowalnym stanie wielu wartości bez szkody dla czytelności oraz rozumieniu kodu
+  \end{itemize}
+\end{frame}
+
+\section{}
+
+\begin{frame}{}
+  \vspace{2em}
+  \centering
+  \Large\emph{Dziękuję za uwagę}
 \end{frame}
 
 \end{document}
