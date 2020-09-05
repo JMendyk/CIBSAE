@@ -54,7 +54,7 @@
   morecomment=[l]{//},
   morecomment=[s]{(*}{*)},
   morestring=[b]",
-  basicstyle=\small\ttfamily,
+  basicstyle=\footnotesize\ttfamily,
   keywordstyle=\bf\ttfamily\color[rgb]{0,.3,.7},
   commentstyle=\color[rgb]{0.133,0.545,0.133},
   stringstyle={\color[rgb]{0.75,0.49,0.07}},
@@ -69,7 +69,7 @@
 
 \lstdefinestyle{Haleff-inl}{
   language=Haleff,
-  basicstyle=\ttfamily
+  basicstyle=\normalsize\ttfamily
 }
 
 \lstdefinestyle{Haleff-long}{
@@ -127,257 +127,21 @@
 \tableofcontents
 \end{frame}
 
-\section{Wstęp pracy}
+\input{1-introduction}
 
-\subsection{Problemy z efektami ubocznymi}
 
-\newcommand\pro{\item[\textcolor{example text.fg}{$+$}]}
-\newcommand\con{\item[\alert{$-$}]}
-
-\begin{frame}
-  \frametitle{Efekty uboczne}
-  \begin{exampleblock}{Zalety}
-    \begin{itemize}
-      \pro komunikacja z innymi systemami
-      \pro trwała pamięć -- system plików, bazy danych
-      \pro interaktywność
-    \end{itemize}
-  \end{exampleblock}
-  \begin{alertblock}{Wady}
-    \begin{itemize}
-      \con zależność od świata zewnętrzengo
-      \con utrudnione rozumienie, brak modularności
-      \con częstsze pomyłki
-    \end{itemize}
-  \end{alertblock}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Efekty uboczne są problematyczne}
-  \begin{exampleblock}{Pomysł}
-    Rozdzielić program na część czystą oraz część mającą efekty uboczne.
-  \end{exampleblock}
-  \pause
-  \vspace{1em}
-  \begin{alertblock}{Problem}
-    Musimy zaufać autorowi, że funkcja rzeczywiście nie powoduje efektów ubocznych.
-  \end{alertblock}
-\end{frame}
-
-\subsection{Radzenie sobie z efektami ubocznymi}
-
-\begin{frame}
-  \frametitle{Radzenie sobie z efektami ubocznymi}
-    Potrzebujemy znaleźć kogoś, kto będzie pilnował czy funkcje, które twierdzą że nie mają efektów ubocznych rzeczywiście takie są.
-  \pause
-  \begin{exampleblock}{Pomysł}
-    Wykorzystajmy system typów -- jest dobry w sprawdzaniu czy deklaracje programisty (adnotacje typów) są zgodne ze stanem faktycznym (implementacjami funkcji). Inferencja wyręczy nas od potrzeby pisania typów w wielu przypadkach (w przeciwieństwie do np. języka C).
-  \end{exampleblock}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Monady}
-  \begin{itemize}
-  \pro umożliwiają bezpieczne programowanie z efektami
-  \pro informacje o efektach ubocznych w sygnaturze
-  \pro efekty nie mogą ,,uciec''
-  \con potrzeba transformerów monad by użyć wielu efektów naraz
-  \con modularność wciąż problematyczna
-  \end{itemize}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Efekty algebraiczne i uchwyty}
-  \begin{itemize}
-    \pro umożliwiają bezpieczne programowanie z efektami
-    \pro informacje o efektach ubocznych w sygnaturze
-    \pro efekty nie mogą ,,uciec''
-    \pro łatwość użycia wielu efektów jednocześnie
-    \pro modularność i przejrzystość
-  \end{itemize}
-\end{frame}
-
-\subsection{Systemy kompilacji}
-
-\begin{frame}
-  \frametitle{Systemy kompilacji}
-  \begin{itemize}
-  \item interakcja z zewnętrznymi zasobami
-  \item uznawane za zło konieczne, zbyt skomplikowane
-  \item powszechne wykorzystanie w ,,przemyśle''
-  \item rzadko obiekt zainteresowań badaczy
-  \end{itemize}
-\end{frame}
-
-\begin{frame}
-  \begin{figure}
-    \includegraphics[width=0.8\paperwidth, height=0.8\paperheight, keepaspectratio,
-      trim=45 295 45 80, clip]{../pdfs/build-systems.pdf}
-    \caption*{\begin{tiny}{https://dl.acm.org/doi/pdf/10.1145/3236774}
-      \end{tiny}}
-  \end{figure}
-\end{frame}
 
 \section{Efekty algebraiczne i uchwyty}
 
 \subsection{W teorii}
-
-\newcommand{\return}[1]{\mathbf{return}\ #1}
-\newcommand{\op}[3]{#1(#2, #3)}
-\newcommand{\opi}[3]{\op{op_{#1}}{#2}{#3}}
-\newcommand{\handle}[2]{\mathbf{handle}\ #1\ \mathbf{with}\ #2}
-\newcommand{\hcase}[3]{#1\ #2\ \Rightarrow\ #3}
-\newcommand{\fun}[2]{\lambda #1.\ #2}
-%% \newcommand{\eval}[1]{\llbracket\, #1\, \rrbracket}
-\newcommand{\cond}[3]{\mathbf{if}\ #1\ \mathbf{then}\ #2\ \mathbf{else}\ #3}
-
-\begin{frame}
-  \frametitle{Prosty i nieformalny rachunek}
-  Proste wyrażenia:
-  \begin{itemize}
-  \item \(\return{v}\),
-  \item \(\cond{v_1 = v_2}{e_t}{e_f}\),
-  \item abstrakcyjne operacje -- \(\{op_i\}_{i \in I}\),
-  \item uchwyty -- \(\handle{e}{\{\ \hcase{op_i}{n\ \kappa}{h_i}\ \}_{i \in I}}\).
-  \end{itemize}
-
-  \pause
-  \vspace{.5em}
-
-  Zachodzące równoważności:
-  \begin{itemize}
-    \item \((\fun{x}{e_1})\ e_2 \equiv e_1 \left[\sfrac{x}{e_2}\right]\),
-    \item
-      \(\begin{aligned}[t]
-      \cond{v_1 = v_2}{e_t}{e_f} \equiv \left\{\begin{matrix}
-      e_t & \text{gdy }v_1 \equiv v_2 \\
-      e_f & \text{wpp}
-      \end{matrix}\right.
-      \end{aligned}\)
-    \item \(\handle{\return v}{H} \equiv \return v\),
-    \item \(\handle{\opi{i}{a}{\fun{x}{e}}}{H} \equiv h_i \left[\sfrac{n}{a},\, \sfrac{\kappa}{\fun{x}{\handle{e}{H}}}\right] \), \\*gdzie \(H~=~\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}\).
-  \end{itemize}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Prosty i nieformalny rachunek}
-  \begin{example}
-    \vspace{-1em}
-  \begin{equation*}\begin{split}%
-      \handle{\opi{1}{2}{\fun{x}{\return{x + 1}}}}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}} &\equiv \\
-      \handle{(\fun{x}{\return{x+1}}) (2 \cdot 2)}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}} &\equiv \\
-      \handle{\return{4+1}}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}} &\equiv \\
-      \return{5} %&= 5
-  \end{split}\end{equation*}
-  \end{example}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Równania dla efektów}
-
-  Porażka:
-  \begin{itemize}
-    \item \(\forall n\ \forall e.\ \handle{op_r(n, \fun{x}{e})}{H} \equiv n\)
-  \end{itemize}
-
-  \vspace{1em}
-
-  Modyfikowalny stan:
-  \begin{itemize}
-  \item \(\forall e.\ get(u, \fun{\_}{get(u, \fun{x}{e})}) \equiv get(u, \fun{x}{e})\)
-  \item \(\forall e.\ get(u, \fun{n}{put(n, \fun{u}{e})}) \equiv e\)
-  \item \(\forall n.\ \forall f.\ put(n, \fun{u}{get(u, \fun{x}{f\ x})}) \equiv f\ n\)
-  \item \(\forall n_1.\ \forall n_2.\ \forall e.\ put(n_1, \fun{u}{put(n_2, \fun{u}{e})}) \equiv put(n_2, \fun{u}{e})\)
-  \end{itemize}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Inne przykłady: niedeterminizm}
-
-  Sprawdzanie spełnialności formuły boolowskiej:
-  \begin{equation*}\begin{split}
-  \handle{
-    &\op{amb}{u}{\fun{x}{
-        \op{amb}{u}{\fun{y}{
-            \op{amb}{u}{\fun{z}{
-                \phi(x, y, z)
-            }}
-        }}
-    }}\\
-  }{ \{ \ &\hcase{amb}{u\ \kappa}{ \kappa\ (T) \ \mathbf{or} \ \kappa\ (F) } \ \} }
-  \end{split}\end{equation*}
-
-  Sprawdzanie tautologiczności:
-  \begin{equation*}\begin{split}
-  \handle{
-    &\op{amb}{u}{\fun{x}{
-        \op{amb}{u}{\fun{y}{
-            \op{amb}{u}{\fun{z}{
-                \phi(x, y, z)
-            }}
-        }}
-    }}\\
-  }{ \{ \ &\hcase{amb}{u\ \kappa}{ \kappa\ (T) \ \mathbf{and} \ \kappa\ (F) } \ \} }
-  \end{split}\end{equation*}
-
-  Ten sam efekt, inne zachowanie dzięki uchwytom.
-\end{frame}
-
-\begin{frame}
-  \frametitle{Efekty i uchwyty}
-  Konstrukcja efektów, operacji i uchwytów tworzy dualny mechanizm, w którym operacje są producentami efektów, a uchwyty ich konsumentami.
-
-  \vspace{1em}
-
-  Zabierając źródłom efektów ubocznych ich konkretne znaczenia (...), otrzymaliśmy niezwykle silne narzędzie umożliwiające (...) samodzielne konstruowanie zaawansowanych efektów ubocznych.
-\end{frame}
+\input{2-effects_in_theory}
 
 \subsection{W praktyce}
+\input{4-effects_in_practise}
 
-\begin{frame}
-  \frametitle{}
-  \begin{columns}
-    \column{.4\paperwidth}
-    Biblioteki:
-    \begin{itemize}
-      \item extensible-effects (Haskell)
-      \item fused-effects (Haskell)
-      \item atnos-org/eff (Scala)
-      \item Effects (Idris)
-    \end{itemize}
-    \column{.4\paperwidth}
-    Języki programowania:
-    \begin{itemize}
-      \item Eff
-      \item Frank
-      \item Koka
-      \item Helium
-    \end{itemize}
-  \end{columns}
-\end{frame}
 
-\newcommand{\inl}[1]{\lstinline[style=Haleff-inl]{#1}}
-\lstset{language=Haleff, showstringspaces=false}
 
-\section{Podsumowanie i wnioski}
-
-\begin{frame}
-  \frametitle{Podsumowanie i wnioski}
-  Programowanie z efektami algebraicznymi i uchwytami:
-  \begin{itemize}
-  \item jest możliwe,
-  \item jest przyjemne
-  \item i uwalnia autora od ograniczeń, które dotychczas wydawały się nie do uniknięcia.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Obserwacje po implementacji}
-  \begin{itemize}
-  \item swoboda użycia wielu efektów uspokoiła obawy i zachęciła do eksperymentowania
-  \item etykietowanie różnych instancji tego samego efektu umożliwiło utrzymywanie w modyfikowalnym stanie wielu wartości bez szkody dla czytelności oraz rozumieniu kodu
-  \end{itemize}
-\end{frame}
+\input{6-summary}
 
 \section{}
 

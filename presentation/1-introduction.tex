@@ -1,0 +1,91 @@
+
+\section{Wstęp pracy}
+
+\subsection{Problemy z efektami ubocznymi}
+
+\newcommand\pro{\item[\textcolor{example text.fg}{$+$}]}
+\newcommand\con{\item[\alert{$-$}]}
+
+\begin{frame}
+  \frametitle{Efekty uboczne}
+  \begin{exampleblock}{Zalety}
+    \begin{itemize}
+      \pro komunikacja z innymi systemami
+      \pro trwała pamięć -- system plików, bazy danych
+      \pro interaktywność
+    \end{itemize}
+  \end{exampleblock}
+  \begin{alertblock}{Wady}
+    \begin{itemize}
+      \con zależność od świata zewnętrzengo
+      \con utrudnione rozumienie, brak modularności
+      \con częstsze pomyłki
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Efekty uboczne są problematyczne}
+  \begin{exampleblock}{Pomysł}
+    Rozdzielić program na część czystą oraz część mającą efekty uboczne.
+  \end{exampleblock}
+  \pause
+  \vspace{1em}
+  \begin{alertblock}{Problem}
+    Musimy zaufać autorowi, że funkcja rzeczywiście nie powoduje efektów ubocznych.
+  \end{alertblock}
+\end{frame}
+
+\subsection{Radzenie sobie z efektami ubocznymi}
+
+\begin{frame}
+  \frametitle{Radzenie sobie z efektami ubocznymi}
+    Potrzebujemy znaleźć kogoś, kto będzie pilnował czy funkcje, które twierdzą że nie mają efektów ubocznych rzeczywiście takie są.
+  \pause
+  \begin{exampleblock}{Pomysł}
+    Wykorzystajmy system typów -- jest dobry w sprawdzaniu czy deklaracje programisty (adnotacje typów) są zgodne ze stanem faktycznym (implementacjami funkcji). Inferencja wyręczy nas od potrzeby pisania typów w wielu przypadkach (w przeciwieństwie do np. języka C).
+  \end{exampleblock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Monady}
+  \begin{itemize}
+  \pro umożliwiają bezpieczne programowanie z efektami
+  \pro informacje o efektach ubocznych w sygnaturze
+  \pro efekty nie mogą ,,uciec''
+  \con potrzeba transformerów monad by użyć wielu efektów naraz
+  \con modularność wciąż problematyczna
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Efekty algebraiczne i uchwyty}
+  \begin{itemize}
+    \pro umożliwiają bezpieczne programowanie z efektami
+    \pro informacje o efektach ubocznych w sygnaturze
+    \pro efekty nie mogą ,,uciec''
+    \pro łatwość użycia wielu efektów jednocześnie
+    \pro modularność i przejrzystość
+  \end{itemize}
+\end{frame}
+
+\subsection{Systemy kompilacji}
+
+\begin{frame}
+  \frametitle{Systemy kompilacji}
+  \begin{itemize}
+  \item interakcja z zewnętrznymi zasobami
+  \item uznawane za zło konieczne, zbyt skomplikowane
+  \item powszechne wykorzystanie w ,,przemyśle''
+  \item rzadko obiekt zainteresowań badaczy
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \begin{figure}
+    \includegraphics[width=0.8\paperwidth, height=0.8\paperheight, keepaspectratio,
+      trim=45 295 45 80, clip]{../pdfs/build-systems.pdf}
+    \caption*{\begin{tiny}{https://dl.acm.org/doi/pdf/10.1145/3236774}
+      \end{tiny}}
+  \end{figure}
+\end{frame}

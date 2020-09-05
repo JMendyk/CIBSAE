@@ -1,0 +1,110 @@
+
+\newcommand{\return}[1]{\mathbf{return}\ #1}
+\newcommand{\op}[3]{#1(#2, #3)}
+\newcommand{\opi}[3]{\op{op_{#1}}{#2}{#3}}
+\newcommand{\handle}[2]{\mathbf{handle}\ #1\ \mathbf{with}\ #2}
+\newcommand{\hcase}[3]{#1\ #2\ \Rightarrow\ #3}
+\newcommand{\fun}[2]{\lambda #1.\ #2}
+%% \newcommand{\eval}[1]{\llbracket\, #1\, \rrbracket}
+\newcommand{\cond}[3]{\mathbf{if}\ #1\ \mathbf{then}\ #2\ \mathbf{else}\ #3}
+
+\begin{frame}
+  \frametitle{Prosty i nieformalny rachunek}
+  Proste wyrażenia:
+  \begin{itemize}
+  \item \(\return{v}\),
+  \item \(\cond{v_1 = v_2}{e_t}{e_f}\),
+  \item abstrakcyjne operacje -- \(\{op_i\}_{i \in I}\),
+  \item uchwyty -- \(\handle{e}{\{\ \hcase{op_i}{n\ \kappa}{h_i}\ \}_{i \in I}}\).
+  \end{itemize}
+
+  \pause
+  \vspace{.5em}
+
+  Zachodzące równoważności:
+  \begin{itemize}
+    \item \((\fun{x}{e_1})\ e_2 \equiv e_1 \left[\sfrac{x}{e_2}\right]\),
+    \item
+      \(\begin{aligned}[t]
+      \cond{v_1 = v_2}{e_t}{e_f} \equiv \left\{\begin{matrix}
+      e_t & \text{gdy }v_1 \equiv v_2 \\
+      e_f & \text{wpp}
+      \end{matrix}\right.
+      \end{aligned}\)
+    \item \(\handle{\return v}{H} \equiv \return v\),
+    \item \(\handle{\opi{i}{a}{\fun{x}{e}}}{H} \equiv h_i \left[\sfrac{n}{a},\, \sfrac{\kappa}{\fun{x}{\handle{e}{H}}}\right] \), \\*gdzie \(H~=~\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}\).
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Prosty i nieformalny rachunek}
+  \begin{example}
+    \vspace{-1em}
+  \begin{equation*}\begin{split}%
+      \handle{\opi{1}{2}{\fun{x}{\return{x + 1}}}}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}} &\equiv \\
+      \handle{(\fun{x}{\return{x+1}}) (2 \cdot 2)}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}} &\equiv \\
+      \handle{\return{4+1}}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}} &\equiv \\
+      \return{5} %&= 5
+  \end{split}\end{equation*}
+  \end{example}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Równania dla efektów}
+
+  Porażka:
+  \begin{itemize}
+    \item \(\forall n\ \forall e.\ \handle{op_r(n, \fun{x}{e})}{H} \equiv n\)
+  \end{itemize}
+
+  \vspace{1em}
+
+  Modyfikowalny stan:
+  \begin{itemize}
+  \item \(\forall e.\ get(u, \fun{\_}{get(u, \fun{x}{e})}) \equiv get(u, \fun{x}{e})\)
+  \item \(\forall e.\ get(u, \fun{n}{put(n, \fun{u}{e})}) \equiv e\)
+  \item \(\forall n.\ \forall f.\ put(n, \fun{u}{get(u, \fun{x}{f\ x})}) \equiv f\ n\)
+  \item \(\forall n_1.\ \forall n_2.\ \forall e.\ put(n_1, \fun{u}{put(n_2, \fun{u}{e})}) \equiv put(n_2, \fun{u}{e})\)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Inne przykłady: niedeterminizm}
+
+  Sprawdzanie spełnialności formuły boolowskiej:
+  \begin{equation*}\begin{split}
+  \handle{
+    &\op{amb}{u}{\fun{x}{
+        \op{amb}{u}{\fun{y}{
+            \op{amb}{u}{\fun{z}{
+                \phi(x, y, z)
+            }}
+        }}
+    }}\\
+  }{ \{ \ &\hcase{amb}{u\ \kappa}{ \kappa\ (T) \ \mathbf{or} \ \kappa\ (F) } \ \} }
+  \end{split}\end{equation*}
+
+  Sprawdzanie tautologiczności:
+  \begin{equation*}\begin{split}
+  \handle{
+    &\op{amb}{u}{\fun{x}{
+        \op{amb}{u}{\fun{y}{
+            \op{amb}{u}{\fun{z}{
+                \phi(x, y, z)
+            }}
+        }}
+    }}\\
+  }{ \{ \ &\hcase{amb}{u\ \kappa}{ \kappa\ (T) \ \mathbf{and} \ \kappa\ (F) } \ \} }
+  \end{split}\end{equation*}
+
+  Ten sam efekt, inne zachowanie dzięki uchwytom.
+\end{frame}
+
+\begin{frame}
+  \frametitle{Efekty i uchwyty}
+  Konstrukcja efektów, operacji i uchwytów tworzy dualny mechanizm, w którym operacje są producentami efektów, a uchwyty ich konsumentami.
+
+  \vspace{1em}
+
+  Zabierając źródłom efektów ubocznych ich konkretne znaczenia (...), otrzymaliśmy niezwykle silne narzędzie umożliwiające (...) samodzielne konstruowanie zaawansowanych efektów ubocznych.
+\end{frame}

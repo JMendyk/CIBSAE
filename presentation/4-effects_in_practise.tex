@@ -1,0 +1,97 @@
+
+\begin{frame}
+  \frametitle{}
+  \begin{columns}
+    \column{.4\paperwidth}
+    Biblioteki:
+    \begin{itemize}
+      \item extensible-effects (Haskell)
+      \item fused-effects (Haskell)
+      \item atnos-org/eff (Scala)
+      \item Effects (Idris)
+    \end{itemize}
+    \column{.4\paperwidth}
+    Języki programowania:
+    \begin{itemize}
+      \item Eff
+      \item Frank
+      \item Koka
+      \item Helium
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\newcommand{\inl}[1]{\lstinline[style=Haleff-inl]{#1}}
+\lstset{language=Haleff, showstringspaces=false, inputpath=../thesis/code_examples}
+
+\begin{frame}
+  \frametitle{Przykład programu w Helium}
+  \lstinputlisting{syntax.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Efekt błędu}
+  \lstinputlisting{error1__signature.he}
+  \lstinputlisting[firstline=7, lastline=18]{error2__inline_abort.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Jeden efekt, różne uchwyty}
+  \lstinputlisting[firstline=7, lastline=10]{error3__reused_handler.he}
+  \lstinputlisting[firstline=7, lastline=10]{error4__warn_not_abort.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Niedeterminizm}
+  \lstinputlisting[linerange={1-2}]{nondet1__simple.he}
+  \begin{columns}
+    \column{.455\paperwidth}
+    \lstinputlisting[linerange={4-7}]{nondet1__simple.he}
+    \column{.455\paperwidth}
+    \lstinputlisting[linerange={9-12}]{nondet1__simple.he}
+  \end{columns}
+  \lstinputlisting[linerange={14-22}]{nondet1__simple.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Niedeterminizm 2}
+  \lstinputlisting[linerange={5-16}]{nondet2__count_sats.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Modyfikowalny stan}
+  \lstinputlisting[lastline=3]{state1__basics.he}
+  \lstinputlisting[firstline=5, lastline=11]{state1__basics.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Rekursja}
+  \lstinputlisting[firstline=2, lastline=5]{rec1__rec.he}
+  \vspace{2em}
+  \lstinputlisting[firstline=2, lastline=13]{rec2__effect.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Rekursja}
+  \lstinputlisting[firstline=5, lastline=23]{rec3__mutual.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Wiele efektów naraz}
+  \lstinputlisting[linerange={1-13}]{fail_and_amb.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Wiele efektów naraz -- sprawdzanie spełnialności}
+  \lstinputlisting[linerange={17-23}]{fail_and_amb.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Wiele efektów naraz -- sprawdzanie tautologiczności}
+  \lstinputlisting[linerange={25-31}]{fail_and_amb.he}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Wiele efektów naraz}
+  Łączenie efektów jest bardzo proste, a kolejność w jakiej umieszczamy uchwyty umożliwia łatwe i czytelne definiowanie zachowania programu w przypadku wystąpienia któregokolwiek z efektów.
+\end{frame}
