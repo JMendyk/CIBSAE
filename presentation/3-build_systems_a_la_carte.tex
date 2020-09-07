@@ -1,0 +1,224 @@
+
+\section{O systemach kompilacji}
+
+\subsection{Przykłady systemów}
+
+\begin{frame}[fragile]
+  \frametitle{Make}
+  \begin{columns}[t]
+    \column{.5\textwidth}
+    \begin{itemize}
+    \item bardzo popularny
+    \item szeroko dostępny
+    \item względnie starym
+    \item pliki \textit{makefile'e}
+    \end{itemize}
+
+    \column{.5\textwidth}
+    \begin{lstlisting}[language=make, basicstyle=\scriptsize\ttfamily]
+  util.o: util.h util.c
+      gcc -c util.c
+
+  main.o: util.h main.c
+      gcc -c main.c
+
+  main.exe: util.o main.o
+      gcc util.o main.o -o main.exe
+    \end{lstlisting}
+  \end{columns}
+  \begin{itemize}
+  \item statyczne zależności: kompilacja przebiega tak samo, niezależnie od wyników podzadań
+  \item naturalna kolejność kompilacji: porządek topologiczny -- każde zadanie skompilowane co najwyżej raz
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \begin{definition}[Minimalność]
+    System kompilacji jest minimalny, gdy w trakcie budowania każde zadanie jest wykonane co najwyżej raz i tylko gdy w przechodnim domknięciu zadań, od których zależy, istnieje takie zadanie wejściowe, które zmieniło swoją wartość od czasu ostatniego budowania.
+  \end{definition}
+
+  \begin{example}
+    Make jest minimalny
+  \end{example}
+
+  \begin{definition}[Wejście/zadanie wejściowe]
+     Jeśli zadanie nie ma zdefiniowanego sposobu zbudowania, na przykład \textit{util.h} mówimy, że jest wejściem lub zadaniem wejściowym w tej konfiguracji.
+  \end{definition}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Excel}
+
+  Excel to system kompilacji:
+  \begin{itemize}
+  \item komórki -- zadania wejściowe
+  \item formuły -- definicja sposobu budowania
+  \end{itemize}
+
+  \vspace{1em}
+  \begin{tabular}{ l c r }
+  A1: 10 & B1: INDIRECT(``A"\,\&\,C1) & C1: 1 \\
+  A2: 20 & &
+  \end{tabular}
+
+  \vspace{1em}
+  Dynamiczne zależności -- bez sprawdzenia C1 nie da się określić od jakich zadań zależy B1.
+\end{frame}
+
+\subsection{Abstrakcyjnie o systemach kompilacji}
+
+\begin{frame}
+  \frametitle{Nomenklatura}
+
+  \begin{itemize}
+  \item Zasób (Store) -- modyfikowany przez system (Excel -- komórki, Make -- system plików)
+  %% \item Opis zadań, instrukcje konstrukcji wyników -- dostarczone przez użytkownika
+  \item Trwała informacja -- pamięć systemu między uruchomieniami
+  \end{itemize}
+
+  \vspace{1.25em}
+  \textbf{System kompilacji}
+  \vspace{.75em}
+  
+  \textbf{Cel}: zmodyfikowanie stanu zasobu w takich sposób, by wartość związana ze wskazanym przez użytkownika kluczem stała się aktualna.
+  
+  \textbf{Otrzymuje}: definicje zadań, zasób na którym działa oraz klucz, który ma zostać zaktualizowany. Po zakończeniu działania, wartość w Store związana ze wskazanym kluczem ma być aktualna.
+\end{frame}
+  
+\subsection{Reprezentacja}
+
+\lstset{style=haskell-style}
+
+\begin{frame}[fragile]
+  \frametitle{Zadania i zasób}
+
+  \begin{lstlisting}
+    newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
+    type Tasks c k v = k -> Maybe (Task c k v)
+  \end{lstlisting}
+
+  \begin{lstlisting}
+    data Store i k v
+    initialise :: i -> (k -> v) -> Store i k v
+    getInfo :: Store i k v -> i
+    putInfo :: i -> Store i k v -> Store i k v
+    getValue :: k -> Store i k v -> v
+    putValue :: Eq k => k -> v -> Store i k v -> Store i k v
+  \end{lstlisting}
+
+  \begin{example}
+  \begin{lstlisting}
+    sprsh1 :: Tasks Applicative String Integer
+    sprsh1 "B1" = Just $ Task $ \fetch -> ((+)  <$> fetch "A1" <*> fetch "A2")
+    sprsh1 "B2" = Just $ Task $ \fetch -> ((*2) <$> fetch "B1")
+    sprsh1 _    = Nothing
+  \end{lstlisting}
+  \vspace{-1em}
+  \end{example}
+  
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{System kompilacji}
+  \begin{lstlisting}
+    type Build c i k v = Tasks c k v -> k -> Store i k v -> Store i k v
+  \end{lstlisting}
+
+  \begin{example}
+  \begin{lstlisting}
+    busy :: Eq k => Build Applicative () k v
+    busy tasks key store = execState (fetch key) store
+      where
+        fetch :: k -> State (Store () k v) v
+        fetch k = case tasks k of
+            Nothing   -> gets (getValue k)
+            Just task -> do v <- run task fetch
+                            modify (putValue k v)
+                            return v
+  \end{lstlisting}
+  \vspace{-1em}
+  \end{example}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Rodzaje zależności}
+
+  Klasy typów to rodzaje zależności!
+
+  \vspace{1em}
+  \begin{lstlisting}
+    type Build c i k v = Tasks c k v -> k -> Store i k v -> Store i k v
+    newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
+  \end{lstlisting}
+
+  \begin{itemize}
+  \item \haskinl{f = Functor} -- sekwencyjne obliczenia
+  \item \haskinl{f = Applicative} -- statyczne zależności
+  \item \haskinl{f = Monad} -- dynamiczne zależności
+  \item \haskinl{f = Selective} -- opcje wyboru znane statycznie
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Określanie zależności}
+
+  \begin{lstlisting}
+    dependencies :: Task Applicative k v -> [k]
+    dependencies task = getConst $ run task (\k -> Const [k]) where
+      run :: c f => Task c k v -> (k -> f v) -> f v
+      run (Task task) fetch = task fetch
+  \end{lstlisting}
+
+  \begin{lstlisting}
+    track :: Monad m => Task Monad k v -> (k -> m v) -> m (v, [(k, v)])
+    track task fetch = runWriterT $ run task trackingFetch
+      where
+        trackingFetch :: k -> WriterT [(k, v)] m v
+        trackingFetch k = do v <- lift (fetch k); tell [(k, v)]; return v
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Klasyfikacja}
+  \begin{center}
+    System kompilacji = planista + rekompilator
+  \end{center}
+  
+  \begin{lstlisting}
+    type Scheduler c i ir k v = Rebuilder c ir k v -> Build c i k v
+    type Rebuilder c ir k v = k -> v -> Task c k v -> Task (MonadState ir) k v
+  \end{lstlisting}
+
+  %% \begin{columns}[t]
+  %%   \column{.5\textwidth}
+  %%   \begin{itemize}
+  %%   \item topologiczny
+  %%   \item restartujący
+  %%   \item wstrzymujący
+  %%   \end{itemize}
+
+  %%   \column{.5\textwidth}
+  %%   \begin{itemize}
+  %%   \item brudny bit
+  %%   \item ślady weryfikujące
+  %%   \item ślady konstruktywne
+  %%   \item głębokie ślady konstruktywne
+  %%   \end{itemize}
+  %% \end{columns}
+
+  {\small
+  \vspace{-0.5em}
+  \begin{center}
+  \begin{tabular}{r | c c c}
+    \hline
+                                 & \multicolumn{3}{c}{Planista} \\
+    Rekompilator                 & Topologiczny & Restartujący & Wstrzymujący \\
+    \hline
+    Brudny bit                   & Make         & Excel        & - \\
+    Ślady weryfikujące           & Ninja        & -            & Shake \\
+    Ślady konstruktywne          & CloudBuild   & Bazel        & -\\
+    Głębokie ślady konstrukcyjne & Buck         & -            & Nix \\
+    \hline
+  \end{tabular}
+  \end{center}}
+\end{frame}

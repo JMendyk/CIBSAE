@@ -15,6 +15,8 @@
 
 %% Pomocnicze makra związane z tematem pracy
 
+%% \theoremstyle{definition} \newtheorem*{definition}{Definicja}
+
 \lstdefinestyle{haskell-style}{
   language=Haskell,
   inputencoding=utf8,
@@ -24,7 +26,7 @@
   morecomment=[l]{--},
   %% morecomment=[s]{(*}{*)},
   morestring=[b]",
-  basicstyle=\small\ttfamily,
+  basicstyle=\scriptsize\ttfamily,
   keywordstyle=\bf\ttfamily\color[rgb]{0,.3,.7},
   commentstyle=\color[rgb]{0.133,0.545,0.133},
   stringstyle={\color[rgb]{0.75,0.49,0.07}},
@@ -42,7 +44,7 @@
 
 \lstdefinestyle{haskell-inl}{
   style=haskell-style,
-  basicstyle=\ttfamily
+  basicstyle=\small\ttfamily
 }
 
 \lstdefinelanguage{Haleff}{
@@ -138,6 +140,10 @@
 
 \subsection{W praktyce}
 \input{4-effects_in_practise}
+
+
+
+\input{3-build_systems_a_la_carte}
 
 
 
