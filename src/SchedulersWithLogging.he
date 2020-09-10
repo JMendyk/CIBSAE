@@ -83,11 +83,13 @@ let restarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR
     let handle with embedState (fst <.> getInfo `ste) (modifyInfo `ste <.> setFst) in
     let rec restartingHandler =
             handler
-            | fetch k => logln ("Fetching: " ++ Key.toString k ++ "\n");
-                         if gets `done (ST.mem k) then
-                            resume (getValue k)
+            | fetch k => logln (Key.toString k ++ " fetched");
+                         if gets `done (ST.mem k) then (
+                            log (" | ready\n");
+                            resume (getValue k))
                          else (let (curr, rest) = gets `chain uncons in
-                                   log (Key.toString curr ++ " will be restarted\n");
+                                   log (" | not ready\n");
+                                   logln (Key.toString curr ++ " will be restarted\n");
                                    modify `chain (chainInsert k);
                                    loop ())
             | return x => let (curr, rest) = gets `chain uncons in
@@ -98,13 +100,15 @@ let restarting {IR K V: Type} (module KV: KeyValue K V) {`ste: StoreEff (Pair IR
                               curr :: loop ()
             end
         and loop () =
+            reset ();
+            entry ();
             match get `chain () with
             | [] => []
             | (key::keys) =>
-              log ("Processing " ++ Key.toString key ++ "\n");
+              log ("Building " ++ Key.toString key ++ "\n");
               match tasks key with
               (* Input task *)
-              | None => log ("input " ++ Key.toString key ++ "\n");
+              | None => logln (Key.toString key ++ " is input\n");
                         modify `done (ST.add key);
                         put `chain keys;
                         key :: loop ()
