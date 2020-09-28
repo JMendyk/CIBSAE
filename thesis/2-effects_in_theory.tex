@@ -1,11 +1,11 @@
 
-\chapter{O efektach algebraicznych teoretycznie}
+\chapter{Algebraic effects in theory}
 
-Wprowadzimy notację służącą opisowi prostych obliczeń, która pomoże nam -- bez zanurzania się głęboko w ich rodowód matematyczny -- zrozumieć jak prostym, a jednocześnie fascynującym tworem są efekty algebraiczne i uchwyty. Przedstawiona notacja jest intencjonalnie nieformalna, gdyż ma w dostępny sposób przedstawić abstrakcyjny opis obliczeń z efektami bez prezentowania konkretnego języka programowania.
+We will introduce notation serving as a description of simple computation, which will help us -- with diving deep into it's mathematical origins -- understand how simple and fascinating at the same time are algebraic effects and handlers. Presented notation is purposefully informal, since it should present abstract description of computations with effects in an accessible way without introducing concrete programming language.
 
-Następnie przyjrzymy się, jak możemy zapisać popularne przykłady efektów ubocznych używając naszej notacji. Na koniec, czytelnikowi zostaną polecone zasoby do dalszej lektury, które rozszerzają opis z tego rozdziału.
+Next, we will see how popular examples of side effects can be expressed using our notation. Finally, reader will be presented with resources for further reading, which extend the information presented in this chapter.
 
-\section{Notacja}
+\section{Notation}
 
 \newcommand{\return}[1]{\mathbf{return}\ #1}
 \newcommand{\op}[3]{#1(#2, #3)}
@@ -16,12 +16,12 @@ Następnie przyjrzymy się, jak możemy zapisać popularne przykłady efektów u
 %% \newcommand{\eval}[1]{\llbracket\, #1\, \rrbracket}
 \newcommand{\cond}[3]{\mathbf{if}\ #1\ \mathbf{then}\ #2\ \mathbf{else}\ #3}
 
-Będziemy rozważać obliczenia nad wartościami następujących typów:
+We will consider computations on values of following types:
 \begin{itemize}
-\item boolowskim \(B\) -- z wartościami \(T\) i \(F\) oraz standardowymi spójnikami logicznymi,
-\item liczb całkowitych \(\mathbb{Z}\) -- wraz z ich relacją równości oraz podstawowymi działaniami arytmetycznymi,
-\item typem jednostkowym \(U\) -- zamieszkałym przez pojedynczą wartość \(u\),
-\item oraz pary tychże typów.
+\item booleans \(B\) -- with values \(T\), \(F\), and standard logical operators,
+\item integers \(\mathbb{Z}\) -- with equality checking and basic arithmetic operations,
+\item unit type \(U\) -- inhabited by single value \(u\),
+\item and pairs of these types.
 \end{itemize}
 
 % 
@@ -31,15 +31,15 @@ Będziemy rozważać obliczenia nad wartościami następujących typów:
 %    Można by wtedy rozszerzyć przykłady o zmianę wartości wynikowej
 % 
 
-Nasz model składać się będzie z wyrażeń:
+Our model will consist of expressions:
 \begin{itemize}
-\item \(\return{v}\) -- gdzie \(v\) jest wyrażeniem boolowskim lub arytmetycznym,
-\item \(\cond{v_1 = v_2}{e_t}{e_f}\) -- wyrażenie warunkowe, gdzie \(v_1 = v_2\) jest pytaniem o równość wartości dwóch wyrażeń arytmetycznych,
-\item abstrakcyjnych operacji oznaczanych \(\{op_i\}_{i \in I}\) -- powodujących wystąpienie efektów ubocznych -- których działanie nie jest nam znane, zaś ich sygnatury to \(op_i: A_i \rightarrow (B_i \rightarrow C_i) \rightarrow D_i\), gdzie \(A_i\), \(B_i\), \(C_i\) oraz \(D_i\) to pewne typy w naszym modelu. Wyrażenie \(\opi{i}{n}{\kappa}\) opisuje operację z argumentem \(n\) oraz dalszą częścią obliczenia \(\kappa\) parametryzowaną wynikiem operacji, które \textit{może (nie musi)} zostać wykonane przez operację,
-\item uchwytów, czyli wyrażeń postaci \(\handle{e}{\{\ \hcase{op_i}{n\ \kappa}{h_i}\ \}_{i \in I}}\), gdzie \(e\) to inne wyrażenie; uchwyt definiuje działanie (dotychczas abstrakcyjnych) operacji. 
+\item \(\return{v}\) -- where \(v\) is an expression with booleans or integers,
+\item \(\cond{v_1 = v_2}{e_t}{e_f}\) -- conditional expression, where \(v_1 = v_2\) is a check for equality of two integer expressions,
+\item abstract operations \(\{op_i\}_{i \in I}\) -- causing side effects -- whose behaviour is not specified, and their signatures are \(op_i: A_i \rightarrow (B_i \rightarrow C_i) \rightarrow D_i\), where \(A_i\), \(B_i\), \(C_i\) and \(D_i\) are some types. Expression \(\opi{i}{n}{\kappa}\) represents and operation with argument \(n\) and further part of the computation \(\kappa\) parameterised by the result of the operation, which \textit{may} be executed by the operation,
+\item handlers, that is expressions of the form \(\handle{e}{\{\ \hcase{op_i}{n\ \kappa}{h_i}\ \}_{i \in I}}\), where \(e\) is some other expression; handler defines the behaviour of (until now abstract) operations.
 \end{itemize}
 
-Przykładowymi obliczeniami w naszej notacji są więc:
+For instance, these are examples of computations in our notation:
 \begin{equation}
 \begin{gathered}
   \return{0},\quad\return{2 + 2},\quad \opi{1}{2}{\fun{x}{\return{x + 1}}} \\
@@ -47,28 +47,28 @@ Przykładowymi obliczeniami w naszej notacji są więc:
 \end{gathered}
 \end{equation}
 
-Dla czytelności, pisząc w uchwycie zbiór który nie przebiega wszystkich operacji, przyjmujemy że uchwyt nie definiuje działania operacji; równoważnie, zbiór wzbogacamy o element: \(\hcase{op_i}{n\ \kappa}{op_i(n, \kappa)}\).
+For increased readability, if set in a handler doesn't include all operations, we assume that the handler doesn't define behaviour of the operation; equivalently, the set is extended with \(\hcase{op_i}{n\ \kappa}{op_i(n, \kappa)}\).
 
 %% Obliczanie wartości wyrażenia przebiega następująco:
-Nie będziemy wprost definiować przebiegu obliczeń, ale opiszemy kilka równoważności, które będą zachodzić:
+We won't explicitly define evaluation of expressions, instead we will describe some equalities that will hold:
 \begin{itemize}
 %% \item \(\eval{\return v} = v\) -- wartością \(\mathbf{return}\) jest wartość wyrażenia arytmetycznego,
-\item \((\fun{x}{e_1})\ e_2 \equiv e_1 \left[\sfrac{x}{e_2}\right]\) -- aplikacja argumentu do funkcji,
+\item \((\fun{x}{e_1})\ e_2 \equiv e_1 \left[\sfrac{x}{e_2}\right]\) -- application of an argument to function,
 \item
   \(\begin{aligned}[t]
     \cond{v_1 = v_2}{e_t}{e_f} \equiv \left\{\begin{matrix}
-    e_t & \text{gdy }v_1 \equiv v_2 \\
-    e_f & \text{wpp}
+    e_t & \text{when }v_1 \equiv v_2 \\
+    e_f & \text{otherwise}
     \end{matrix}\right.
   \end{aligned}\)
-\item \(\handle{\return v}{H} \equiv \return v\) -- uchwyt nie wpływa na wartość obliczenia, które nie zawiera efektów ubocznych,
-\item \(\handle{\opi{i}{a}{\fun{x}{e}}}{H} \equiv h_i \left[\sfrac{n}{a},\, \sfrac{\kappa}{\fun{x}{\handle{e}{H}}}\right] \), \\*gdzie \(H~=~\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}\).
+\item \(\handle{\return v}{H} \equiv \return v\) -- handler doesn't modify behaviour of pure expressions,
+\item \(\handle{\opi{i}{a}{\fun{x}{e}}}{H} \equiv h_i \left[\sfrac{n}{a},\, \sfrac{\kappa}{\fun{x}{\handle{e}{H}}}\right] \), \\*where \(H~=~\{\ \hcase{op_i}{n\ \kappa}{h_i} \ \}\).
   
 \end{itemize}
 
 %% Zobaczmy jak zatem wygląda obliczenie ostatniego z powyższych przykładów:
 %% Zobaczmy zatem jaką wartość zwróci wyrażenie z ostatniego z powyższych przykładów:
-Korzystając z równoważności uprośćmy ostatni z powyższych przykładów:
+Using above equalities, let's simplify expression from the last example:
 \begin{equation}\begin{split}
   \handle{\opi{1}{2}{\fun{x}{\return{x + 1}}}}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}} &\equiv \\
   \handle{(\fun{x}{\return{x+1}}) (2 \cdot 2)}{\{\ \hcase{op_1}{n\ \kappa}{\kappa\ (2 \cdot n)} \ \}} &\equiv \\
@@ -77,14 +77,15 @@ Korzystając z równoważności uprośćmy ostatni z powyższych przykładów:
 \end{split}\end{equation}
 
 
-\section{Równania, efekt porażki i modyfikowalny stan}
+\section{Equations, failure effect and mutable state}
 
-Do tego momentu nie przyjmowaliśmy żadnych założeń na temat operacji powodujących efekty uboczne. Uchwyty mogły w związku z tym działać w sposób całkowicie dowolny. Ograniczymy się w tej dowolności i nałożymy warunki na uchwyty wybranych operacji. Przykładowo, ustalmy że dla operacji \(op_r\), uchwyty muszą być takie, aby następujący warunek był spełniony:
+Up until now we didn't assume anything about behaviour of effectful operations. Handlers could work in any possible way. Let's limit ourselves and define conditions for handlers of selected operations. For example, let's say that for operation \(op_r\), all handlers must satisfy following equality:
+
 \begin{align}
   \forall n\ \forall e.\ \handle{op_r(n, \fun{x}{e})}{H} \equiv n
 \end{align}
 
-Zauważmy, że istnieje tylko jeden naturalny uchwyt spełniający ten warunek, jest nim \(H = \{\ \hcase{op_r}{n\ \kappa}{n} \ \}\). Co więcej, jego działanie łudząco przypomina konstrukcję wyjątków w popularnych językach programowania:
+We notice that there exists only one intuitive handler satisfying this equality, this handler is: \(H = \{\ \hcase{op_r}{n\ \kappa}{n} \ \}\). What is more, it's behaviour is suspiciously similar to the construct of exceptions in popular programming languages:
 
 \begin{lstlisting}
   try {
@@ -95,33 +96,35 @@ Zauważmy, że istnieje tylko jeden naturalny uchwyt spełniający ten warunek, 
   }
 \end{lstlisting}
 
-Podobieństwo to jest w pełni zamierzone. Okazuje się, że nasz język z jedną operacją oraz równaniem ma już moc wystarczającą do opisu konstrukcji, która w większości popularnych języków nie może zaistnieć z woli programisty, a zamiast tego musi być dostarczona przez twórcę języka.
+The similarity is fully intended. As it turns out, our language with single operation and an equation has enough power to express the construct that in other languages is impossible to create by a programmer and has to be included by the author of a language.
 
-Rozważmy kolejny przykład. Dla poprawienia czytelności, zrezygnujemy z oznaczeń \(op_i\) na operacje powodujące efekty, zamiast tego nadamy im znaczące nazwy: \(get\) oraz \(put\). Operacje te mają sygnatury \(get: U \rightarrow (\mathbb{Z} \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\), \(put: \mathbb{Z} \rightarrow (U \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\). Spróbujemy wyrazić działanie tych dwóch operacji by otrzymać modyfikowalną komórkę pamięci. Ustalamy równania:
+Let's consider next example. For readability sake,
+In the next example, for readability sake instead of naming operations \(op_i\) we will use more meaningful names: \(get\) and \(put\). These operations have signatures \(get: U \rightarrow (\mathbb{Z} \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\), \(put: \mathbb{Z} \rightarrow (U \rightarrow \mathbb{Z}) \rightarrow \mathbb{Z}\). Let's define equalities that will make \(get\) and \(put\) behave like operations on mutable memory cell:
 
 \begin{itemize}
 \item \(\forall e.\ get(u, \fun{\_}{get(u, \fun{x}{e})}) \equiv get(u, \fun{x}{e})\)
 
-  kolejne odczyty z komórki bez jej modyfikowania dają takie same wyniki,
+  subsequent reads from the call without modifying it give same results,
 \item \(\forall e.\ get(u, \fun{n}{put(n, \fun{u}{e})}) \equiv e\)
 
-  umieszczenie w komórce wartości, która już tam się znajduje, nie wpływa na wynik obliczenia,
+  putting the value that is already there doesn't influence the result,
 \item \(\forall n.\ \forall f.\ put(n, \fun{u}{get(u, \fun{x}{f\ x})}) \equiv f\ n\)
 
-  obliczenie, które odczytuje wartość z komórki daje taki sam wynik, jak gdyby miało wartość komórki podaną wprost jako argument,
+  computation that reads from the cell gives the same result as if cell's value was provided directly as an argument,
 \item \(\forall n_1.\ \forall n_2.\ \forall e.\ put(n_1, \fun{u}{put(n_2, \fun{u}{e})}) \equiv put(n_2, \fun{u}{e})\)
 
-  komórka zachowuje się, jak gdyby pamiętała jedynie najnowszą włożoną do niej wartość.
+  the cell behaves as if it remembered only the most recent value.
 \end{itemize}
 
-Zauważmy, że choć nakładamy warunki na zewnętrzne skutki działania operacji \(get\) oraz \(put\), to w żaden sposób nie ograniczyliśmy swobody autora w implementacji uchwytów dla tych operacji.
+Let's notice that while we limit possible external behaviour of operations \(get\) and \(put\), handler's authors have freedom in implementing how the operations will behave internally.
 
 % W rozdziale 4 przyglądniemy się kilku przykładom uchwytów realizujących te operacje.
 % ^^^ Chyba jednak nie. Chociaż można dodać przykład, który agreguje historyczne wartości komórki i zwraca je w parze z wynikiem obliczenia.
 
-\section{Poszukiwanie sukcesu}
+\section{Looking for success}
 
-Kolejnym rodzajem efektu ubocznego, który rozważymy w tym rozdziale, jest niedeterminizm. Chcielibyśmy wyrażać obliczenia, w których pewne parametry mogą przyjmować wiele wartości, a ich dobór ma zostać dokonany tak, by spełnić pewien określony warunek. Przykładowo, mamy trzy zmienne \(x,\, y\) oraz \(z\) i chcemy napisać program sprawdzający, czy formuła \(\phi(x, y, z)\) jest spełnialna. W tym celu zdefiniujemy operację \(amb: U \rightarrow (B \rightarrow B) \rightarrow B\) związaną z efektem niedeterminizmu. Napiszmy obliczenie rozwiązujące nasz problem:
+The next example of side effect, that we will consider in this chapter, is nondeterminism. We would like to be able to express computations in which some parameters can have many values and their choice should be made in a way to satisfy some given conditions. For example, we have three variables \(x,\, y\) and \(z\) and we would like to check if logical formula \(\phi(x, y, z)\) is satisfiable. For this purpose we will define operation \(amb: U \rightarrow (B \rightarrow B) \rightarrow B\) that causes the side effect of nondeterminism. Let's write and expression that will solve our problem:
+
 \begin{equation}\begin{split}
   \handle{
     &\op{amb}{u}{\fun{x}{
@@ -134,9 +137,9 @@ Kolejnym rodzajem efektu ubocznego, który rozważymy w tym rozdziale, jest nied
   }{ \{ \ &\hcase{amb}{u\ \kappa}{ \kappa\ (T) \ \mathbf{or} \ \kappa\ (F) } \ \} }
 \end{split}\end{equation}
 
-Gdy definiowaliśmy efekt wyjątku, obliczenie nie było kontynuowane. W przypadku niedeterminizmu kontynuujemy obliczenie dwukrotnie -- podstawiając za niedeterministycznie określoną zmienną wartości raz prawdy, raz fałszu -- w czytelny sposób sprawdzamy wszystkie możliwe wartościowania, a w konsekwencji określamy czy formuła jest spełnialna.
+When we defined failure effect, the computation wasn't continued. In the case of nondeterminism we continue twice, substituting for the nondeterministic variable different values. This way, we can legibly check all possible valuations, and as the result determine if the formula is satisfiable.
 
-Możemy zauważyć, że gdybyśmy chcieli zamiast sprawdzania spełnialności, weryfikować czy formuła jest tautologią, wystarczy zmienić tylko jedno słowo -- zastąpić spójnik \(\mathbf{or}\) spójnikiem \(\mathbf{and}\) otrzymując nowy uchwyt:
+One can notice, that if we wanted to check is formula is a tautology, it would suffice to replace only a single word -- \(\mathbf{or}\) with \(\mathbf{and}\), thus getting a new handler:
 \begin{equation}\begin{split}
   \handle{
     &\op{amb}{u}{\fun{x}{
@@ -149,16 +152,16 @@ Możemy zauważyć, że gdybyśmy chcieli zamiast sprawdzania spełnialności, w
   }{ \{ \ &\hcase{amb}{u\ \kappa}{ \kappa\ (T) \ \mathbf{and} \ \kappa\ (F) } \ \} }
 \end{split}\end{equation}
 
-Przedstawiona konstrukcja efektów, operacji i uchwytów tworzy dualny mechanizm, w którym operacje są producentami efektów, a uchwyty ich konsumentami. Zabierając źródłom efektów ubocznych ich konkretne znaczenia semantyczne lub nakładając na nie jedynie proste warunki wyrażone równaniami, otrzymaliśmy niezwykle silne narzędzie umożliwiające proste, deklaratywne oraz -- co najważniejsze, w kontraście do popularnych języków programowania -- samodzielne konstruowanie zaawansowanych efektów ubocznych.
+Introduced construction of effects, operations and handlers creates dual mechanism, in which operations are producers of effects, and handlers are their consumers. By taking away from operations their semantic meaning, or only requiring satisfaction of simple equations, we got an incredibly powerful tool that let us -- in a simple, declarative way and crucially (in contrast to popular programming languages) single-handedly -- define own advanced side effects.
 
-\section{Dalsza lektura}
+\section{Further reading}
 
-Rozdział ten miał na celu w przystępny sposób wprowadzić idee, definicje i konstrukcje związane z efektami algebraicznymi i uchwytami, które będą fundamentem do zrozumienia ich wykorzystania w praktycznych przykładach oraz implementacji systemów kompilacji w dalszych rozdziałach. Czytelnicy zainteresowani głębszym poznaniem historii oraz rodowodu efektów algebraicznych i uchwytów mogą zapoznać się z następującymi materiałami:
+The intent of this chapter was to accessibly introduce ideas, definitions and constructions related to the subject of algebraic effect and handlers, which will be a foundation for understanding practical examples and implementation of build systems in the next chapters. Readers that are interested in diving deeper into the history and origin of algebraic effects and handlers are advised to get acquainted with following materials:
 
 \begin{itemize}
-\item ,,An Introduction to Algebraic Effects and Handlers'' autorstwa Matija Pretnara \cite{pretnar2015introduction},
-\item notatki oraz seria wykładów Andreja Bauera pt. ,,What is algebraic about algebraic effects and handlers?'' \cite{bauer2018algebraic} dostępne w formie tekstowej oraz nagrań wideo w serwisie YouTube,
-\item prace Plotkina i Powera \cite{plotkin2001semantics, plotkin2002computational} oraz Plotkina i Pretnara \cite{plotkin2013handling} -- jeśli czytelnik chce poznać jedne z pierwszych wyników prowadzących do efektów algebraicznych oraz wykorzystania uchwytów,
-\item społeczność skupiona wokół tematu efektów algebraicznych agreguje zasoby z nimi związane w repozytorium \cite{effectsbibliography} w serwisie GitHub.
+\item ,,An Introduction to Algebraic Effects and Handlers'' by Matija Pretnar \cite{pretnar2015introduction},
+\item notes and series of lectures by Andrej Bauer title ,,What is algebraic about algebraic effects and handlers?'' \cite{bauer2018algebraic} available as both text and videos on YouTube,
+\item works of Plotkin with Power \cite{plotkin2001semantics, plotkin2002computational}, and with Pretnar \cite{plotkin2013handling} -- if the reader wants to see one of the first results leading to algebraic effects and usage of handlers,
+\item community gathered around the subject of algebraic effects accumulates related resources in a repository \cite{effectsbibliography} on GitHub.
 
 \end{itemize}
