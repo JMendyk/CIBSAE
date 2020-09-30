@@ -1,56 +1,56 @@
 
 \newcommand{\file}[1]{\texttt{#1}}
 
-\chapter{Omówienie załączonego kodu źródłowego}
+\chapter{Notes on the attached source code}
 
-\section{Podział implementacji na pliki}
+\section{Division of implementation into files}
 
 \begin{itemize}
-\item \file{Common.he} oraz \file{Signature.he} -- definicje podstawowych typów oraz sygnatur,
-\item \file{Store.he} -- efekt zasobu oraz uchwyty dla niego,
-\item \file{Schedulers.he} -- implementacje planistów,
-\item \file{Rebuilders.he} -- implementacje rekompilatorów,
-\item \file{Traces.he} -- funkcje do interakcji ze śladami,
-\item \file{Track.he} -- implementacje funkcji \helinl{run} oraz \helinl{track},
-\item \file{Systems.he} -- przykłady definicji omawianych systemów,
-\item \file{Spreadsheet.he} -- implementacja obiektów związanych z arkuszami kalkulacyjnymi,
-\item \file{scratch.he} -- demonstracja wykorzystania systemów w celu kompilacji przykładowych zadań,
-\item \file{Utils.he} -- implementacje funkcji pomocniczych,
-\item \file{PatchedWriter.he} -- rozszerzenie modułu \helinl{Writer} z biblioteki standardowej,
-\item \file{State.he} -- implementacja efektu modyfikowalnego stanu wraz z uchwytami,
-\item \file{Logger.he} -- moduł umożliwiający śledzenie działania programu,
-\item \file{SchedulersWithLogging.he} -- implementacje planistów wzbogacone o wyświetlanie informacji diagnostycznych
+\item \file{Common.he} and \file{Signature.he} -- definitions of basic types and signatures,
+\item \file{Store.he} -- Store effect and handlers for it,
+\item \file{Schedulers.he} -- implementations of schedulers,
+\item \file{Rebuilders.he} -- implementations of rebuilders,
+\item \file{Traces.he} -- functions for interacting with traces,
+\item \file{Track.he} -- implementations of \helinl{run} and \helinl{track} functions,
+\item \file{Systems.he} -- example definitions of described systems,
+\item \file{Spreadsheet.he} -- implementations of entities related to spreadsheets,
+\item \file{scratch.he} -- (demo) usage of build systems to build exemplary tasks,
+\item \file{Utils.he} -- helper functions,
+\item \file{PatchedWriter.he} -- extension of \helinl{Writer} module from standard library,
+\item \file{State.he} -- implementation of mutable state effect along with handlers,
+\item \file{Logger.he} -- utility module for tracking programs' behaviour,
+\item \file{SchedulersWithLogging.he} -- implementation of schedulers as in \file{Schedulers.he} enriched with runtime diagnostic messages about their behaviour
 \end{itemize}
 
-\section{Implementacje śladów}
+\section{Implementations of traces}
 
-Dokładny opis śladów w rozdziale 5 został pominięty, gdyż nie wydają się one być ciekawą częścią implementacji systemów kompilacji. Jednak dla porządku ich implementacje są przedstawione poniżej.
+Description of traces in chapter 5 was omitted, since they didn't seem like an interesting part of implementation. However, for orderliness it's implementations are provided here.
 
-\subsection{Typ śladów}
+\subsection{Trace types}
 
-Dla śladów definiujemy typ analogiczny to tego z oryginalnej implementacji w Haskellu.
+For traces we define a type analogous to the one from original implementation in Haskell.
 
 \begin{minipage}{\textwidth}
   \lstinputlisting[style=Haleff-long, linerange={13-14}]{../src/Traces.he}
 \end{minipage}
 
-Warto zwrócić uwagę, że kompilacja zadań z użyciem \helinl{fetch} w funkcjach weryfikujących lub konstruujących ślady odbywa się w kontekście specjalnego uchwytu, który zwraca nie wartości lecz ich skróty.
+It is worth noting, that building of tasks using \helinl{fetch} in verifying and constructive traces happens in a specialised handler, which returns hashes instead of plain values.
 
-\subsection{Ślady weryfikujące}
+\subsection{Verifying traces}
 
 \begin{minipage}{\textwidth}
   \lstinputlisting[style=Haleff-long, linerange={18-28}]{../src/Traces.he}
 \end{minipage}
 
-\subsection{Ślady konstruktywne}
+\subsection{Constructive traces}
 
 \begin{minipage}{\textwidth}
   \lstinputlisting[style=Haleff-long, linerange={37-49}]{../src/Traces.he}
 \end{minipage}
 
-W funkcjach \helinl{constructCT} oraz \helinl{deepDependencies} wykorzystywany jest efekt \helinl{Writer}. W \BSaLC{} wykorzystywane były typ \haskinl{Maybe} i funkcja \haskinl{catMaybes} oraz list comprehensions. Autor zachęcony brakiem infrastruktury wokół \helinl{Some} (odpowiednika \haskinl{Maybe} w Helium) postanowił wypróbować moduł \helinl{Writer} i zobaczyć jaki da to efekt.
+In functions \helinl{constructCT} and \helinl{deepDependencies} we are using \helinl{Writer} effect. In \BSaLC{} type \haskinl{Maybe}, function \haskinl{catMaybes} and list comprehensions were used instead. The author, encouraged by lack of infrastructure around \helinl{Some} (Helium's counterpart of \haskinl{Maybe}), decided to test \helinl{Writer} module and see what results it gives.
 
-\subsection{Głębokie ślady konstruktywne}
+\subsection{Deep constructive traces}
 
 \begin{minipage}{\textwidth}
   \lstinputlisting[style=Haleff-long, linerange={53-73}]{../src/Traces.he}
