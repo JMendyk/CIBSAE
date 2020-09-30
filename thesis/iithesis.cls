@@ -79,7 +79,7 @@
 
 \DeclareOption{polish}       {\setboolean{Polish@Main}{true} \PassOptionsToPackage{polish,english}{babel}}
 \DeclareOption{english}      {\setboolean{Polish@Main}{false}\PassOptionsToPackage{english,polish}{babel}}
-\DeclareOption{lic}          {\renewcommand \@thesislevel {licencjacka}}
+\DeclareOption{lic}          {\renewcommand \@thesislevel {Bachelor }}
 \DeclareOption{inz}          {\renewcommand \@thesislevel {in\.zynierska}}
 \DeclareOption{mgr}          {\renewcommand \@thesislevel {magisterska} \renewcommand \@studydegree {II}}
 \DeclareOption{longabstract} {\setboolean{Long@Abstract} {true} }
@@ -182,14 +182,14 @@
   \begin{center}
   \renewcommand \fmlinebreak {\\ &}
   \renewcommand \and         {\\[0.85em] &}
-  \large Praca \@thesislevel\\[0.85em]
+  \large \@thesislevel thesis\\[0.85em]
   \begin{tabular}[t]{rl}
-  \textbf{Promotor\if@many{zy}{}:} & \@advisor
+  \textbf{Supervisor\if@many{zy}{}:} & \@advisor
   \end{tabular}\end{center}
   \vfil\vfil\vfil\vfil
-  \begin{center}Uniwersytet Wroc\l{}awski\\
-  Wydzia\l{} Matematyki i Informatyki\\
-  Instytut Informatyki\end{center}
+  \begin{center}University of Wroc\l{}aw\\
+  Faculty of Mathematics and Computer Science\\
+  Institute of Computer Science\end{center}
 }
 
 \setlength{\parindent}{2em}
