@@ -1,24 +1,24 @@
 
 \newcommand{\inl}[1]{\lstinline[style=haskell-inl]{#1}}
 
-\chapter{O systemach kompilacji (i ich klasyfikacji)}
+\chapter{About build systems (and their categorisation)}
 \label{chapter-bsalc}
 
-Systemy kompilacji, choć są wykorzystywane w praktycznie wszystkich projektach programistycznych, są przez ich użytkowników na ogół zaniedbywane, traktowane jak zło konieczne, a czasem nawet wywołują lęk oraz złość. Mimo tak dużej popularności i większego~--~niż mogłoby się wydawać~--~stopnia skomplikowania, nie cieszyły się specjalnym zainteresowaniem ze strony badaczy. Przyglądnęli się im jednak bliżej Andrey Mokhov, Neil Mitchell oraz Simon Peyton Jones w artykułach \BSaLC\cite{mokhov2018build} oraz \BSaLCTP\cite{mokhov2020build}. W tym rozdziale prześledzimy ich kroki i omówimy wyniki które otrzymali autorzy, aby w dalszej części pracy samodzielnie zaimplementować przedstawione systemy kompilacji w języku z efektami algebraicznymi oraz uchwytami.
+Build systems -- even though being used in almost all software project -- are often neglected by their users, treated as a necessary evil, sometimes even are a source of anxiety and anger. Despite their popularity and -- greater than one would expect -- level of complexity, they have rarely been an object of study by scientists. However, they became a central object of interest in a recent publications by Andrey Mokhov, Neil Mitchell and Simon Peyton Jones titled \BSaLC\cite{mokhov2018build} and \BSaLCTP\cite{mokhov2020build}. In this chapter we will follow their steps and discuss the results they got, in order to implement presented build systems using a language with algebraic effects and handlers later in this paper.
 
-\section{Przykłady systemów kompilacji}
+\section{Examples of build systems}
 
-Chcąc zrozumieć głębsze i nietrywialne relacje oraz podobieństwa między systemami kompilacji, przyglądnijmy się najpierw kilku przykładom takich systemów używanych w przemyśle.
+In order to understand deeper, non-trivial relations and similarities between build systems, let us look at a few examples of such systems used in the wild.
 
 \subsection{Make}
 
-Make jest bardzo popularnym, szeroko dostępnym oraz względnie starym systemem kompilacji. Konfiguruje się go przez tworzenie plików zwanych \textit{makefile'ami}, które definiują zadania, zależności między nimi oraz sposób ich zbudowania. Rozważmy przykład konfiguracji dla systemu Make do kompilacji prostego programu w języku C.
+Make is a very popular, widely available and relatively old build system. It is configured using files called \textit{makefiles}, which define tasks, dependencies between them and how each task should be built. Let us consider example configuration for a simple program written in C.
 
 \pagebreak
 
 \lstset{language=make}
 
-\begin{lstlisting}[basicstyle=\scriptsize\ttfamily, float=h, title={Przykładowa konfiguracja systemu Make}]
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily, float=h, title={Example configuration for Make}]
   util.o: util.h util.c
       gcc -c util.c
 
@@ -29,97 +29,97 @@ Make jest bardzo popularnym, szeroko dostępnym oraz względnie starym systemem 
       gcc util.o main.o -o main.exe
 \end{lstlisting}
 
-Przedstawiona konfiguracja definiuje sposób budowania trzech zadań: \textit{util.o}, \textit{main.o} oraz \textit{main.exe}. W linii zawierającej definicję zadania zawarta jest informacja o innych zadaniach, od których definiowane zależy~--~np. dowiadujemy się że \textit{util.o} zależy od zadań (tutaj: plików) \textit{util.h} oraz \textit{util.c}, a zadanie jest realizowane przez wykonanie polecenia \textit{gcc~\nobreakdash-c~util.c}. Jeśli zadanie nie ma zdefiniowanego sposobu zbudowania, na przykład \textit{util.h} mówimy, że jest wejściem lub zadaniem wejściowym w tej konfiguracji.
+Above configuration defines build rules for three tasks: \textit{util.o}, \textit{main.o} and \textit{main.exe}. The line defining the tasks includes information about other tasks that the current one depends on, for instance \textit{util.o} depends on tasks (here: files) \textit{util.h} and \textit{util.c}, and the task is built by executing \textit{gcc~\nobreakdash-c~util.c}. If some task doesn't have build rule defined, for example \textit{util.h}, we will call it an input (task) in such configuration.
 
-Wszystkie informacje o zależnościach między zadaniami są wyrażone w tym jednym pliku \textit{makefile}. Użytkownik, chcąc zbudować zadanie \textit{main.exe}, uruchamia program używając polecenia \textit{make~main.exe}. Po uruchomieniu system określi, które zadania mają zostać zbudowane, by zrealizować otrzymane żądanie. Z racji tego, że procedura budowania zadań przebiega tak samo, niezależnie od wyników podzadań, będziemy o takim systemie mówić, że ma statyczne zależności. Dla takich systemów naturalnym porządkiem, w którym zadania powinny być budowane jest porządek topologiczny. W ten sposób każde zadanie będzie wykonane ,,na świeżych'' zależnościach. W przeciwnym razie mogłaby istnieć potrzeba zbudowania zadania jeszcze raz.
+All information about dependencies between tasks are defined in single \textit{makefile}. When the user wants to build task \textit{main.exe}, they execute the program using command \textit{make~main.exe}. Then, the system will determine which tasks need to be updated and built in order to satisfy user's request. Since the procedure of build tasks is the same, independently from the results of subtasks, we will say that the build system has static dependencies. For such systems, a natural ordering of tasks in which they should be built is a topological order. This way each task will be built using ,,fresh'' values of its dependencies. Otherwise, there could be a need to execute some tasks multiple times.
 
-Zauważmy, że przy ponownym uruchomieniu budowania może nie być potrzeby wykonywania niektórych zadań gdyż wejścia, od których zależą nie uległy, zmianie. Ta obserwacja prowadzi nas do konceptu minimalności, którą autorzy definiują następująco:
+Let us notice, that during subsequent builds, system may not need to rebuild some tasks if values of their inputs didn't change. This observation leads us to the concept of minimality, which is defined by the authors as:
 
-\definition{(Minimalność)}{
-  Mówimy, że system kompilacji jest minimalny, gdy w trakcie budowania każde zadanie jest wykonane co najwyżej raz i tylko gdy w przechodnim domknięciu zadań, od których zależy, istnieje takie zadanie wejściowe, które zmieniło swoją wartość od czasu ostatniego budowania.
+\definition{(Minimality)}{
+  A build system is minimal if it executes tasks at most once per build, and only if they transitively depend on inputs that changed since the previous build.
 }
 
-Dla Make'a informacją, które zadania należy zbudować ponownie są czasy modyfikacji plików, od których zależy zadanie~--~jeśli plik wynikowy zadania jest starszy niż wejścia, to znaczy, że zadanie powinno być ponownie zbudowane.
+For determining which tasks should be rebuilt, Make uses file modification times. If the file corresponding to the task is older than file of one of its dependencies, the task should be rebuilt.
 
-Należy też zauważyć, że dla pewnych konfiguracji może nie istnieć porządek topologiczny z nimi związany, gdyż istnieje cykl w zależnościach między zadaniami~--~nie będziemy jednak rozważać takich przypadków.
+We should notice that for come configurations topological order of tasks might not exist, because there are circular dependencies between tasks -- we will assume that is not a case from now on.
 
 \subsection{Excel}
 
-Może się to wydawać zaskakujące, ale o arkuszach kalkulacyjnych (np. programie Excel) możemy myśleć jak o systemach kompilacji. Komórki, których wartości są podane wprost uznajemy za zadania wejściowe, zaś formuły dla pozostałych komórek są definicjami sposobu budowania wartości dla nich. Przy takiej interpretacji, arkusze kalkulacyjne stają się bardzo przyjemnym oraz przydatnym przykładem systemu kompilacji.
+It may seem surprising, but we can think about spreadsheets (for example in Excel) as build systems. Cells, whose values are provided directly are input tasks, while formulas for the other cells are build instructions. With that interpretation, spreadsheets become an interesting and useful example of build systems.
 
-Rozważmy teraz przykład arkusza kalkulacyjnego przedstawiony przez autorów oryginalnego artykułu, by łatwiej myśleć o tym rodzaju systemu:
+Let us consider an example of a spreadsheet document presented by the authors of the original paper:
 
 \begin{tabular}{ l c r }
   A1: 10 & B1: INDIRECT(``A"\,\&\,C1) & C1: 1 \\
   A2: 20 & &
 \end{tabular}
 
-Funkcja INDIRECT dynamicznie określa, z której komórki zostanie pobrana wartość, a operator \(\&\) jest składaniem napisów. Gdy C1 = 1, wartością komórki B1 będzie wartość A1, zaś gdy C1 = 2, wartość zostanie pobrana z A2. Jak widzimy, komórki których wartości są wykorzystywane do obliczenia B1 zależą od wartości C1. W tej sytuacji mówimy o dynamicznych zależnościach między komórkami (a ogólniej, w kontekście systemów kompilacji -- zadaniami). Tutaj mamy tylko jeden stopień pośredniości, bo zależności B1 są determinowane przez wejście C1. Ogólniej, stopień pośredniości może być dowolnie duży. W takiej sytuacji mechanizm z sortowaniem topologicznym wykorzystywany w Make'u nie będzie właściwy, gdyż nie możemy a priori -- bez spoglądnięcia na stany innych komórek -- ustalić właściwego porządku budowania zadań.
+Function INDIRECT dynamically determines from which cell value will be read, and operator \(\&\) is just string concatenation. When C1 = 1, value of the cell B1 will be the same as A1, and when C1 = 2, the value will be read from A2. As we can see, cells whose values are used to compute value of B1 depend on the value of C1. In such cases we say the task has (and more generally system supports) dynamic dependencies. Here we only have one level of indirection because dependencies of B1 are chosen by C1. However, in a more general case level of indirection can by arbitrarily large. As the result, solution based on topological sorting is not suitable because we can't determine the dependencies beforehand -- without checking values of cells.
 
-Porządkowanie komórek w procesie ich obliczania jest w Excelu trochę bardziej skomplikowane. Mechanizm utrzymuje komórki w ciągu (zwanym łańcuchem). W procesie budowania Excel oblicza wartości komórek zgodnie ze skonstruowanym ciągiem. W sytuacji gdy komórka A potrzebuje wyniku innej, jeszcze nie obliczonej komórki N, Excel dokonuje restartu -- przerywa obliczanie A i przesuwa N przed A w ciągu oraz wznawia obliczanie wartości zaczynając od N. Po zakończeniu budowania, otrzymany ciąg komórek ma taką własność, że ponowne budowanie przy niezmienionych wejściach odbędzie się bez restartów. Ciąg pełni funkcję aproksymacji właściwego porządku obliczania komórek. Chcąc określić, które komórki muszą być obliczone ponownie, Excel dla każdej komórki utrzymuje informację czy jest ona brudna. Komórki stają się brudne, gdy:
+Ordering of cells during build is a little more complicated in Excel. The systems maintains a sequence of cells (called chain). During the build process Excel build cells in the order determined by the chain. When cell A depends on other cell N, which has not been built yet, Excel performs a restart -- stops execution of task A, shifts N in front of A in the chain and resume building starting from cell N. When the build is finished, resulting chain has an interesting property, that when the build process is executed again without changing inputs, the build will finish without restarts. The chain acts as an approximation of proper task ordering. In order to determine, which cells needs to be rebuilt, Excel maintains a dirty bit for each cell. Cell is dirty, when:
 \begin{itemize}
-\item są wejściem i ich wartość zostanie zmieniona,
-\item ich formuła zostanie zmieniona,
-\item zawierają w formule funkcje, które uniemożliwiają statyczne określenie zależności -- jak na przykład INDIRECT czy IF.
+\item it's an input whose value has changed,
+\item it's formula has changed, 
+\item contains formula with a function that prevents static determining of dependencies -- such as INDIRECT or IF.
 \end{itemize}
 
 \pagebreak
 
-Łatwo zauważyć, że Excel nie jest zatem minimalnym systemem budowania, gdyż z nadmiarem przyjmuje, które komórki muszą być obliczone ponownie. Ponadto, Excel śledzi nie tylko zmiany w wartościach wejść, ale także definicjach budowania zadań (formułach), co jest rzadką własnością w systemach kompilacji. Na ogół zmiana specyfikacji zadań wymusza na użytkowniku manualne rozpoczęcie pełnego procesu budowania.
+It is easy to see, that Excel is not a minimal build system, because it over-approximates which cells need to be rebuilt. However, Excel tracks not only changes in inputs but also tasks definitions (that is formulas), which is a rare property in the world of build systems called self-tracking. Usually, change of task definition requires performing full build process by the user.
 
 \subsection{Shake}
 
-Shake jest systemem kompilacji, w którym zadania definiuje się pisząc programy w języku specjalnego przeznaczenia osadzonym w Haskellu. Można w nim tworzyć konfiguracje z dynamicznymi zależnościami. Jednak w przeciwieństwie do Excela, Shake ma własność minimalności.
+Shake is a build system, in which tasks are defined as tasks in a domain specific language embedded in Haskell. It supports dynamic dependencies and (in contrast to Excel) is minimal.
 
-Zamiast konstruować ciąg zadań, jak robi to Excel, Shake generuje w trakcie budowania graf zależności. Ponadto, w przypadku wystąpienia zadania zależnego od innego dotychczas nieobliczonego, wstrzymuje wykonanie aktualnego i rozpoczyna budowanie wymaganego zadania. Gdy to się uda, wraca do wstrzymanego zadania znając już potrzebny wynik, by wznowić budowanie.
+Instead of constructing a chain, Shake generates dependency graph at runtime. In the case of building task whose dependency is not yet ready, Shake suspends building of current tasks and begins build of the required tasks. When it is done, suspended task is resumed since it's dependency is now finished.
 
-Inną własnością, którą posiada Shake, jest możliwość wykonywania wczesnego odcięcia -- w sytuacji, gdy jakieś zadanie zostało obliczone ponownie, ale jego wynik się nie zmienia, nie ma potrzeby ponownego obliczania zadań, które od niego zależą. Make i Excel nie posiadają takiej optymalizacji.
+Other property that Shake has is ability to perform early cut-off -- when some task has finished rebuilding but its value hasn't changed, there is no need to force rebuild of tasks that depend on this one. Make and Excel don't have such optimisation.
 
 \subsection{Bazel}
 
-Ostatnim przykładem systemu kompilacji jest Bazel, który powstał w odpowiedzi na zapotrzebowanie ze strony dużych zespołów pracujących nad oprogramowaniem znacznej wielkości. W takich projektach wiele osób może niezależnie budować te same fragmenty oprogramowania, co prowadzi do marnowania zasobów obliczeniowych oraz czasu programistów.
+The last example of a build system is Bazel, which was created as an answer to the growing need from large teams working on software projects of substantial size. In such project many people might build the same code fragments, which leads to waste of computational resources and time of programmers.
 
-Bazel jest chmurowym systemem budowania -- gdy użytkownik chce zbudować oprogramowanie, system komunikuje się z serwerem i sprawdza, które z zadań mają niezmienione wejścia oraz czy zostały już przez kogoś zbudowane. Bazel skopiuje wyniki takich zadań do komputera użytkownika oszczędzając mu czas. Jako że pojedynczy programista na ogół wykonuje zmiany zamknięte w zaledwie kilku modułach, wyniki wielu zadań pozostają niezmienne i jedynie niewielka część z zadań będzie musiała być ponownie zbudowana.
+Bazel is a cloud build system -- when the user wants to perform a build, the systems connects to the server and checks, inputs of which tasks hasn't change and if they have already been built by someone else. Bazel saves time of the programmer by downloading results of such tasks. Moreover, since single programmer usually performs modifications in only couple of modules, outputs of many tasks don't change and only a small part of them need rebuilding.
 
-System śledzi zmiany sprawdzając wartości funkcji skrótu plików źródłowych. Gdy skróty pliku na komputerze użytkownika oraz serwerze systemu nie są zgodne, zadanie jest uznawane ze nieaktualne i budowane od nowa. Następnie wynik oraz nowe wartości funkcji skrótu są zapisywane na serwerze, funkcjonującym dla użytkowników jako ,,pamięć podręczna'' wyników budowania zadań.
+The systems tracks the changes by checking hashes of source files. When checksum of a file on computer and on the server differ, task is considered out-of-date and rebuilt. Next, the result and new checksum are stored on the server, functioning as a ,,cache'' for build results.
 
-Bazel nie wspiera aktualnie dynamicznych zależności. W procesie budowania wykorzystuje mechanizm restartowania zadań, a w celu określenia, które zadania muszą być przebudowane, utrzymuje wartości i skróty wyników zadań oraz historię wykonanych komend budowania.
+Bazel currently doesn't support dynamic dependencies. During the build process it uses the restarting mechanism, and for determining which tasks need rebuilding in stores values and it's hashes of task along with history of executed build commands.
 
-\subsection{Wnioski}
+\subsection{Conclusions}
 
-Przedstawione cztery systemy kompilacji pokazały nam różne stopnie dowolności dane autorowi zadań co do stopnia skomplikowania ich obliczania. Poznaliśmy mechanizmy służące budowaniu zadań i optymalizacje, które zmniejszają liczbę niepotrzebnie obliczanych zadań. Ich wykorzystanie umożliwia niektórym systemom kompilacji osiągnięcie minimalności.
+Four discussed build systems presented different degrees of freedom given to task authors. We learned about mechanisms used for building tasks and optimisations, which decrease the number of tasks that are unnecessarily built. Their usage enable some of the systems to achieve minimality.
 
-\section{Abstrakcyjnie o systemach kompilacji}
+\section{Build systems abstractly}
 
-Po przedstawieniu aktualnego stanu rzeczy, autorzy proponują nomenklaturę i abstrakcyjną reprezentację przestrzeni związanej z systemami kompilacji.
+After discussing current state of affair, authors introduce us to the terminology and abstract representation of the space of build systems.
 
-\subsection{Nomenklatura}
+\subsection{Terminology}
 
-Obiektem, na którym operuje system kompilacji jest zasób (Store), który kluczom przypisuje wartości. W przypadku Excela jest to arkusz złożony z komórek, zaś w Make'u system plików. Celem systemu jest zmodyfikowanie stanu zasobu w takich sposób, by wartość związana ze wskazanym przez użytkownika kluczem stała się aktualna. System ma pamięć w formie utrzymywanych trwałych informacji na potrzeby kolejnych uruchomień. Użytkownik dostarcza opis zadań w formie instrukcji określających jak mają być skonstruowane w oparciu o wyniki innych zadań.
+An object on which build systems work is called a store, which assigns values to keys. In the case of Excel it is a spreadsheet document, and for Make it is a filesystem. The goal of the build system is modifying the store in order to bring the value associated with the key provided by the user up to date. System has a memory in the form of persistent information for the needs of later executions. The user provides description of tasks in the form of instructions explaining how each task should be built using outputs of other tasks.
 
-System kompilacji otrzymuje definicje zadań, zasób na którym działa oraz klucz, który ma zostać zaktualizowany, wraz z jego zależnościami. Po zakończeniu działania, wartość w Store związana ze wskazanym kluczem ma być aktualna.
+Build system receives task definitions, a store and a key. After the build is finished, the value in store associated with the key should be up to date.
 
-\subsection{Zasób oraz zadania}
+\subsection{Store and tasks}
 
 \lstset{style=haskell-style}
 
-Autorzy proponują następującą abstrakcyjną reprezentację zadania oraz zadań (jako kompletu definicji tychże):
+Authors introduce following abstract representation of task and tasks (as a set of their definitions):
 
 \begin{lstlisting}
 newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
 type Tasks c k v = k -> Maybe (Task c k v)
 \end{lstlisting}
 
-Zadanie jest parametryzowane typem kluczy \textit{k} oraz zwracanej wartości \textit{v}. Swoją wartość oblicza korzystając z dostarczonej funkcji służącej uzyskiwaniu wartości innych zadań. Jak widzimy, wartość nie jest zwracana wprost, a w nieznanym nośniku \textit{f}, który spełnia jednak warunek \textit{c}. Przykładami warunków w tym kontekście będą \textit{Applicative} oraz \textit{Monad}.
+The task is parameterised by a type of the key \textit{k} and return value \textit{v}. It computes its value using provided function used for getting values of other tasks. As we can see, the value is not provided directly, but instead in an unknown carrier \textit{f}, belonging to class \textit{c}. An examples of classes are \textit{Applicative} and \textit{Monad}.
 
-Grupa zadań jest funkcją, która kluczowi być może przyporządkowuje definicję jak skonstruować zadanie identyfikowane wskazanym kluczem. Zadania wejściowe nie mają do swoich kluczy przyporządkowanych definicji, a ich wartości są pobierane ze Store'a. Przykładowo, następującą instancję arkusza kalkulacyjnego:
+A group of tasks is a function, which maybe associates a key with a definition of how to build a task identified by that key. Input tasks don't have definitions associated with their keys, and their values are accessed from the store. For instance, following example of spreadsheet document:
 
 \begin{tabular}{ l l }
   A1: 10 & B1: A1 + A2 \\
   A2: 20 & B2: 2 * B1
 \end{tabular}
 
-możemy wyrazić w naszej abstrakcji tak:
+can be expressed using our abstraction as:
 
 \begin{lstlisting}
 sprsh1 :: Tasks Applicative String Integer
@@ -128,7 +128,7 @@ sprsh1 "B2" = Just $ Task $ \fetch -> ((*2) <$> fetch "B1")
 sprsh1 _    = Nothing
 \end{lstlisting}
 
-Zasób jest abstrakcyjnym typem danych parametryzowanym typami kluczy, wartości oraz trwałej informacji wykorzystywanej przez system kompilacji:
+The store is an abstract type parameterised by types of keys, values and persistent build information:
 
 \begin{lstlisting}
 data Store i k v
@@ -139,11 +139,11 @@ getValue :: k -> Store i k v -> v
 putValue :: Eq k => k -> v -> Store i k v -> Store i k v
 \end{lstlisting}
 
-Autorzy definiują podstawowe operacje na zasobie do konstruowania go, pozyskiwania i aktualizacji trwałej informacji oraz wartości kluczy.
+Authors define basic operations on a store for constructing it, and for getting and setting persistent information and values of keys.
 
-\subsection{System kompilacji}
+\subsection{Build systems}
 
-Typ systemu kompilacji wynika wprost z jego definicji -- otrzymuje zadania, zasób oraz klucz, a po zakończeniu działania, wartość w Store związana ze wskazanym kluczem ma być aktualna:
+Type of a build systems comes directly from its definition -- it gets tasks, a store and a key:
 
 \begin{lstlisting}
 type Build c i k v = Tasks c k v -> k -> Store i k v -> Store i k v
@@ -151,7 +151,7 @@ type Build c i k v = Tasks c k v -> k -> Store i k v -> Store i k v
 
 \pagebreak
 
-Rozważmy implementację bardzo prostego systemu budowania wyrażonego z użyciem przedstawionej abstrakcji:
+Let us consider an implementation of a simple build system expressed using our abstraction:
 
 \begin{lstlisting}
 busy :: Eq k => Build Applicative () k v
@@ -165,9 +165,9 @@ busy tasks key store = execState (fetch key) store
                         return v
 \end{lstlisting}
 
-System \textit{busy} uruchamia obliczenie zadania w kontekście modyfikowalnego stanu, służy on spamiętywaniu wartości obliczonych zadań. Gdy zadanie ma być obliczone, jeśli jest wejściowym, to odczytana zostaje jego wartość ze Store'a, w przeciwnym razie zostaje wykonana jego definicja. System ten, podobnie jak kolejne, które zobaczymy później, składa się głównie z funkcji \textit{fetch}, która determinuje jego sposób działania. System \textit{busy} nie jest oczywiście minimalny, chociaż działa poprawnie i jest punktem początkowym do konstrukcji właściwych systemów.
+System \textit{busy} starts evaluation of a task in context of mutable state, which is used to remember values of built tasks. When the task is to be built, and it is an input task, its value is read from the store. Otherwise, the task is executed according to its definition. This build system, like the ones we will see later, mainly consists of the definition of function \textit{fetch}, which determines its operation. The \textit{busy} system is obviously not minimal, however it is correct and is a good starting point for creating true build systems.
 
-System taki możemy łatwo uruchomić na przykładowym zasobie. Będzie on słownikiem realizowanym przez funkcję -- w ten sposób możemy łatwo ustalić wartość domyślną dla wszystkich wejściowych pól:
+This systems can be easily executed on sample store, which will be a dictionary implemented as a function -- this way we can set a default value for all input tasks:
 
 \begin{lstlisting}
 > store = initialise () (\key -> if key == "A1" then 10 else 20)
@@ -178,29 +178,30 @@ System taki możemy łatwo uruchomić na przykładowym zasobie. Będzie on słow
 60
 \end{lstlisting}
 
-System działa i daje poprawne wyniki. Widzimy też, że przydaje nam się skwantyfikowanie ogólne parametru \textit{f} w definicji zadania:
+The system works and returns valid results. We can also see, that the existential qualification of \textit{f} from the task definition is useful:
 
 \begin{lstlisting}
   newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
 \end{lstlisting}
 
-W tym przypadku \inl{c = Applicative} oraz \inl{f = State (Store () k v) v}, w ten sposób funkcja \inl{fetch} może jako efekt uboczny wykonywać operacje na modyfikowalnym stanie opakowującym Store.
+In this case \inl{c = Applicative} and \inl{f = State (Store () k v) v}, thus function \inl{fetch} can perform side effect of modifying a mutable state which wraps the store.
 
-\subsection{Polimorficzność zadania}
+\subsection{Polymorphic task}
 
-Opakowanie wartości wynikowej umożliwia wykonywanie obliczeń z efektami ubocznymi, zaś kwantyfikator ogólny daje autorowi systemu kompilacji pełną swobodę doboru struktury, która będzie właściwa do jego potrzeb. W przypadku systemu \inl{busy} jest to modyfikowalny stan, w którym przechowywany jest zasób.
+Wrapping a result value let us perform side effects, and existential quantification gives the author of the build system freedom to choose a structure, which will be right for their need. In the case of \inl{busy} it was mutable state for holding the state.
 
-Gdyby \inl{f} było w pełni dowolne, nie dałoby się nic pożytecznego z nim zrobić, stąd musi być ograniczone przez pewne \inl{c}. Co zaskakujące, to ograniczenie definiuje jak skomplikowane mogą być zależności między zadaniami. Rozważmy trzy popularne (i jedną dodatkową) klasy typów w Haskellu:
+If \inl{f} was completely arbitrary, nothing useful could be done with it, thus we require it to belong to some class \inl{c}. What is surprising, such requirement defines how complicated dependencies between tasks can be. Let us consider three popular (and one extra) type classes in Haskell:
 \begin{itemize}
-\item \inl{Functor} -- umożliwia nakładanie funkcji na wartość, którą opakowuje. Myśląc graficznie -- pracując z funktorem, tworzymy ciąg obliczeń modyfikujących wartość.
-\item \inl{Applicative} -- umożliwia scalanie wielu wartości przez nakładanie na nie funkcji. Tutaj obliczenia prezentują się jako skierowany graf acykliczny.
-\item \inl{Monad} -- w tym przypadku otrzymujemy dowolny graf, który jest ponadto dynamiczny (ze względu na wartości wynikowe). W procesie obliczeń możemy wyłuskiwać wartości i podejmować w oparciu o nie decyzje.
-\item \inl{Selective}\cite{mokhov2019selective} -- jest formą pośrednią między funktorami aplikatywnymi, a monadami. Możliwe jest podejmowanie decyzji w oparciu o wyniki, jednak opcje do wyboru są zdefiniowane statycznie.
+\item \inl{Functor} -- gives possibility to apply functions to wrapped values. In visual terms -- with functor we perform sequence of computations that modify a value.
+\item \inl{Applicative} -- enables merging of multiple values using a provided function. In this case, computations are directed acyclic graphs.
+\item \inl{Monad} -- we get an arbitrary graph, which can dynamically change (based on result values). Here we can inspect wrapped values and make decisions based on that.
+\item \inl{Selective}\cite{mokhov2019selective} -- is an intermediate form between applicatives and monads. It lets us perform decisions based on results, but the decision's options are known statically.
 \end{itemize}
 
-Autorzy dokonują więc niezwykle ciekawego odkrycia: zadania, w których typ \inl{f} jest funktorem aplikatywnym, mogą mieć jedynie statyczne zależności, zaś dynamiczne są możliwe gdy \inl{f} jest monadą!
+The authors come to an unexpected conclusion: tasks in which type \inl{f} is an applicative can only have static dependencies, while dynamic dependencies are possible when \inl{f} is a monad!
 
-Tak więc, przykład z INDIRECT w Excelu -- korzystając z naszej abstrakcji -- możemy w Haskellu przedstawić następująco:
+
+Thus, an example with INDIRECT in Excel -- by using our abstraction -- can be expressed in Haskell like this:
 
 \begin{lstlisting}
 sprsh3 :: Tasks Monad String Integer
@@ -210,9 +211,9 @@ sprsh3 "B1" = Just $ Task $ \fetch -> do
 sprsh3 _ = Nothing
 \end{lstlisting}
 
-Jednocześnie widzimy, że nie moglibyśmy wyrazić go z użyciem funktora aplikatywnego, gdyż nie mielibyśmy jak wyłuskać wartości komórki z wywołania \inl{fetch "C1"}.
+At the same time we see that we couldn't have used \inl{Applicative} type class, since we wouldn't be able to access the wrapped return value of \inl{fetch "C1"}.
 
-Autorzy czynią kolejną obserwację, że nie tylko w teorii istnieje możliwość skonstruowania grafu zależności w zadaniach o statycznych zależnościach, ale także w praktyce -- realizuje to w Haskellu zaskakująco prosta funkcja \inl{dependencies}:
+The authors make the next observation, that not only in theory it is possible to construct dependency graph in case of static dependencies, but also in practise -- as presented by this surprisingly simple Haskell function \inl{dependencies}:
 
 \begin{lstlisting}
 dependencies :: Task Applicative k v -> [k]
@@ -221,9 +222,9 @@ dependencies task = getConst $ run task (\k -> Const [k]) where
   run (Task task) fetch = task fetch
 \end{lstlisting}
 
-Obliczenie wykonujemy korzystając z funktora \inl{Const}, który jest funktorem aplikatywnym, gdy pracuje na monoidach -- w tym przypadku listach. Jak widzimy, nigdzie nie jest wspomniany Store, co idzie w zgodzie z intuicją, że w przypadku zależności statycznych nie jest on nam potrzebny.
+The computations are performed using the \inl{Const} functor which is an applicative when working on monoids -- in this case lists. As we can see, we aren't using store, which is consistent with our intuition, that for the case of static dependencies the store is not needed.
 
-Jednocześnie nie moglibyśmy w takich sposób poznać zależności zadań z monadą, czyli dynamicznymi zależnościami, gdyż typ \inl{Const} nie jest monadą. Najlepszym przybliżeniem funkcji \inl{dependencies} jest \inl{track}, która śledzi wywołania funkcji pozyskującej wartość zadania z wykorzystaniem transformera monad \inl{WriteT}:
+Moreover, we could not possibly compute dependencies in the case of monadic tasks, since \inl{Const} is not a monad. The best approximation of \inl{dependencies} is \inl{track}, which tracks calls of the \inl{fetch} function using monad transformer \inl{WriteT}:
 
 \begin{lstlisting}
 track :: Monad m => Task Monad k v -> (k -> m v) -> m (v, [(k, v)])
@@ -233,7 +234,7 @@ track task fetch = runWriterT $ run task trackingFetch
     trackingFetch k = do v <- lift (fetch k); tell [(k, v)]; return v
 \end{lstlisting}
 
-W tym przypadku musimy już niestety pracować z zasobem. Przykładowo, możemy przetestować funkcję \inl{track} korzystając z monady \inl{IO}, a wartości wprowadzając za pomocą klawiatury:
+However, here we unfortunately need to use the store. We can test our \inl{track} function using for example an \inl{IO} monad, by providing values from keyboard:
 
 \begin{lstlisting}
 > fetchIO k = do putStr (k ++ ": "); read <$> getLine
@@ -248,55 +249,58 @@ A2: 20
 
 \end{lstlisting}
 
-\section{Planiści i rekompilatorzy}
+\section{Schedulers and rebuilders}
 
-Autorzy proponują konstrukcję, w której system kompilacji jest definiowany przez dwa mechanizmy:
-\begin{itemize}
-\item planistę (scheduler) -- który decyduje w jakiej kolejności zadania powinny być budowane oraz
-\item rekompilatora (rebuilder) -- który określa czy dane zadanie powinno być ponownie zbudowane, czy raczej wystarczy odczytać jego wartość wynikową ze Store'a.
-\end{itemize}
-
-Nie robiąc tego wprost rozważaliśmy już różne przykłady schedulerów i rebuilderów. Autorzy wyszczególniają trzy rodzaje planistów:
+Mokhov et al. present a construction, in which build systems are defined by two mechanisms:
 
 \begin{itemize}
-\item topologicznego (topological) -- który wykorzystuje fakt, że zadania mają statyczne zależności,
-\item restartującego (restarting) -- który gdy w czasie obliczania zadania napotka na inne, niezaktualizowane zadanie, przerywa obliczanie bieżącego i kiedyś zacznie je od nowa,
-\item wstrzymującego (suspending) -- który zamiast zaczynać od nowa, wstrzymuje jedynie obliczanie zadania do czasu uzyskania żądanej wartości.
+\item scheduler -- which determines the order in which tasks should be built,
+\item rebuilder -- which decides if given tasks should be rebuilt or if instead its value can be read from the store.
 \end{itemize}
 
-Autorzy abstrakcyjnie przedstawiają planistów i rekompilatorów jako typy:
+While not doing it explicitly, we have already discussed different examples of schedulers and rebuilder. The authors specify three types of schedulers:
+
+\begin{itemize}
+\item topological -- which uses the fact that it works only with static dependencies,
+\item restarting -- which in case of dependency on not built task stops execution of the current one and will restart it later,
+\item suspending -- which instead of stopping only suspends execution of current task until it computes required value.
+\end{itemize}
+
+Mokhov et al. give schedulers and rebuilders following types:
 
 \begin{lstlisting}
 type Scheduler c i ir k v = Rebuilder c ir k v -> Build c i k v
 type Rebuilder c ir k v = k -> v -> Task c k v -> Task (MonadState ir) k v
 \end{lstlisting}
 
-Tak więc, system kompilacji powstaje przez scalenie jakiegoś schedulera z jakimś rebuilderem. Rebuilder otrzymując klucz zadania oraz jego aktualną wartość i sposób obliczania tworzy nowe zadanie, które w oparciu o wnioski rekompilatora albo zbuduje zadanie i zagreguje dane dla rebuildera na potrzeby kolejnych uruchomień, albo zwróci wartość ze Store'a jeśli jest ona aktualna.
+%% v: znaczna zmiana zdania względem polskiej wersji
 
-W przypadku rekompilatorów różnorodność jest trochę większa, wyszczególniamy rebuildery oparte o:
+As such, build systems are created by joining some scheduler with some rebuilder. Rebuilders modify the task, which based on rebuilders findings will either build the original task and store information for rebuilder for next builds, or will return value from store it it's up to date.
+
+In the case of rebuilders, variety is a bit larger, we specify rebuilders based on:
 \begin{itemize}
-\item brudny bit -- czy to w formie dosłownego bitu dla każdej komórki, jak to ma miejsce w Excelu, czy nietrywialnie przez weryfikowanie dat modyfikacji jak w Make'u -- mechanizm jest oparty na oznaczaniu wszystkich zadań wejściowych, których wartości się zmieniły od ostatniego uruchomienia systemu.
-\item ślady weryfikujące -- które w procesie budowania rejestrują wartości funkcji skrótu uzyskanych wyników zadań i pamiętają, że na przykład zadanie A, gdy miało wartość o skrócie 1 było zależne od zadania B, gdy to miało wartość o skrócie 2. W sytuacji, gdy skróty są zgodne uznaje się, że ponowne obliczenie nie jest potrzebne.
-\item ślady konstruktywne -- podobne do poprzedników, jednak funkcja skrótu jest funkcją identycznościową. Innymi słowy -- spamiętujemy całe wartości wynikowe zadań.
-\item głębokie ślady konstruktywne -- zamiast rejestrować wartości bezpośrednich zależności, rejestrowane są wartości zadań wejściowych od których zadanie zależy (niezależnie czy bezpośrednio czy nie). Wadą tego mechanizmu jest brak wsparcia dla niedeterministycznych zadań, które rozważają autorzy w dalszej części swojej publikacji oraz brak możliwości wykonania wczesnego odcięcia, gdyż nie spoglądamy na wartości od których zadanie zależy bezpośrednio.
+\item dirty bit -- either in a form of literal bit (as in Excel) or in some other way such as by comparing file modification dates (as in Make) -- the mechanism is based on marking tasks if their inputs has changed.
+\item verifying traces -- which during the build process accumulate hashes of results and remember that for instance: task A, when it had hash 1, depended on task B which at the time had hash 2. When hashes are equal, we assume that rebuild is not needed.
+\item constructive traces -- same as verifying ones, but whole values are remembered instead of only their hashes,
+\item deep constructive traces -- instead of tracking values of immediate dependencies, tracked are the values of input tasks that the task depends on. The flaw of this mechanism is no support for nondeterministic task, which are considered by Mokhov et al., and for performing early cut-off since we aren't looking at only immediate dependencies.
 \end{itemize}
 
-Sposób skategoryzowania systemów kompilacji przedstawiony przez autorów prowadzi do podziału przestrzeni systemów na 12 komórek, z czego 8 jest zamieszkałych przez istniejące rozwiązania:
+Presented by Mokhov et al. categorisation of build systems leads us to division of the systems space into 12 cells, of which 8 are inhabited by existing system:
 
 \begin{tabular}{r | c c c}
 \hline
-                             & \multicolumn{3}{c}{Planista} \\
-Rekompilator                 & Topologiczny & Restartujący & Wstrzymujący \\
+                         & \multicolumn{3}{c}{Scheduler} \\
+Rebuilder                & Topological & Restarting & Suspending \\
 \hline
-Brudny bit                   & Make         & Excel        & - \\
-Ślady weryfikujące           & Ninja        & -            & Shake \\
-Ślady konstruktywne          & CloudBuild   & Bazel        & -\\
-Głębokie ślady konstruktywne & Buck         & -            & Nix \\
+Dirty bit                & Make        & Excel      & - \\
+Verifying traces         & Ninja       & -          & Shake \\
+Constructive traces      & CloudBuild  & Bazel      & -\\
+Deep constructive traces & Buck        & -          & Nix \\
 \hline
 \end{tabular}
 
-\section{Implementowanie systemów}
+\section{Implementing build systems}
 
-Mając już ustaloną klasyfikację oraz definicje abstrakcyjnych konstrukcji i typów w Haskellu, można zaimplementować planistów i rekompilatorów. Wtedy utworzenie implementacji znanych systemów kompilacji (a nawet tych, które dotychczas były tylko pustymi polami w tabeli) jest zwykłym zaaplikowaniem rebuildera do schedulera. Wszystkie implementacje przedstawione przez autorów \BSaLC{} są dostępne w tekstach artykułów \cite{mokhov2018build, mokhov2020build} oraz w repozytorium\footnote{\url{https://github.com/snowleopard/build}} w serwisie GitHub. W rozdziale 5 zobaczymy, jak implementacja takich systemów wygląda w języku z efektami algebraicznymi i uchwytami.
+Having established categorisation of build systems and definitions of abstract constructions and types in Haskell, we are ready to implement schedulers and rebuilders. Then, creating implementations of known build system (and even those which until now were only empty cells in our table) is just a matter of applying rebuilders to schedulers. All implementations by authors of \BSaLC{} are available in their publications \cite{mokhov2018build, mokhov2020build} and in a repository\footnote{\url{https://github.com/snowleopard/build}} on GitHub. In chapter five we will see, how implementation of these build systems looks in a language with algebraic effects and handlers.
 
 \undef\inl
