@@ -1,87 +1,87 @@
 
 \newcommand{\inl}[1]{\lstinline[style=Haleff-inl]{#1}}
 
-\chapter{Efekty algebraiczne i uchwyty w~praktyce}
+\chapter{Algebraic effects and handlers in practise}
 
-\section{Języki programowania z efektami algebraicznymi}
+\section{Programming languages with algebraic effects}
 
-Zainteresowanie efektami algebraicznymi oraz uchwytami doprowadziło do powstania w ostatnich latach wielu bibliotek dla języków popularnych w środowisku akademickim i pasjonatów języków funkcyjnych -- Haskella (extensible-effects\footnote{\url{https://hackage.haskell.org/package/extensible-effects}},
+Interest in the subject of algebraic effects and handlers lead in the recent years to creation of multiple libraries for languages popular in the academic and functional language enthusiast communities -- for Haskell (extensible-effects\footnote{\url{https://hackage.haskell.org/package/extensible-effects}},
 fused-effects\footnote{\url{https://hackage.haskell.org/package/fused-effects}},
-polysemy\footnote{\url{http://hackage.haskell.org/package/polysemy}}), Scali
+polysemy\footnote{\url{http://hackage.haskell.org/package/polysemy}}), Scala
 (Effekt\footnote{\url{https://github.com/b-studios/scala-effekt}},
 atnos-org/eff\footnote{\url{https://github.com/atnos-org/eff}})
-i Idris (Effects \footnote{\url{https://www.idris-lang.org/docs/current/effects_doc/}}).
+and Idris (Effects \footnote{\url{https://www.idris-lang.org/docs/current/effects_doc/}}).
 
-Związana z językiem OCaml jest inicjatywa ocaml-multicore\footnote{\url{https://github.com/ocaml-multicore/ocaml-multicore/wiki}}, której celem jest stworzenie implementacji OCamla ze wsparciem dla współbieżności oraz współdzielonej pamięci, a cel ten jest realizowany przez wykorzystanie konceptu efektów i uchwytów.
+Related to the OCaml language, is an initiative ocaml-multicore\footnote{\url{https://github.com/ocaml-multicore/ocaml-multicore/wiki}}, whose members aim to create an implementation of OCaml that supports concurrency and shared memory by expressing these concepts using effects and handlers.
 
-Badania nad efektami i uchwytami przyczyniły się także do powstania kilku eksperymentalnych języków programowania w których efekty i uchwyty są obywatelami pierwszej kategorii. Do języków tych należą:
+Research regarding effects and handlers also lead to introduction of a few experimental programming languages in which effects and handlers are first-class citizens. To name a few examples:
 \begin{itemize}
-\item Eff\footnote{\url{https://www.eff-lang.org/}} -- powstający z inicjatywy Andreja Bauera i Matija Pretnara język o ML-podobnej składni,
-\item Frank\footnote{\url{https://github.com/frank-lang/frank}} \cite{DBLP:journals/corr/LindleyMM16} -- pod przewodnictwem Sama Lindley'a, Conora McBride'a oraz Craiga McLaughlin'a, projektowany z tęsknoty do ML'a, a jednocześnie upodobania do Haskell-owej dyscypliny,
-\item Koka\footnote{\url{https://github.com/koka-lang/koka}} -- kierowany przez Daana Leijena z Microsoft projekt badawczy; Koka ma składnię inspirowaną JavaScriptem,
-\item Helium\footnote{\url{https://bitbucket.org/pl-uwr/helium/src/master/}} \cite{biernacki2019abstracting} -- powstały w Instytucie Informatyki Uniwersytetu Wrocławskiego, z ML-podobnym systemem modułów i lekkimi naleciałościami z Haskella.
+\item Eff\footnote{\url{https://www.eff-lang.org/}} -- created by Andrej Bauer and Matija Pretnar language with ML-like syntax,
+\item Frank\footnote{\url{https://github.com/frank-lang/frank}} \cite{DBLP:journals/corr/LindleyMM16} -- initiated by Sam Lindley, Conor McBride and Craig McLaughlin, motivated by longing for ML and penchant for Haskell's discipline,
+\item Koka\footnote{\url{https://github.com/koka-lang/koka}} -- lead by Daan Leijen from Microsoft research project; Koka has syntax inspired by JavaScript,
+\item Helium\footnote{\url{https://bitbucket.org/pl-uwr/helium/src/master/}} \cite{biernacki2019abstracting} -- created at University of Wroc\l{}aw's Institue of Computer Science, with ML-like module system and small traces of Haskell.
 \end{itemize}
 
 \section{Helium}
 
 \lstset{language=Haleff, showstringspaces=false}
 
-Używając właśnie języka Helium zobaczymy, jak w praktyce wygląda programowanie z efektami algebraicznymi oraz uchwytami, zaś w następnym rozdziale spróbujemy zaimplementować wyniki uzyskane w \BSaLC\cite{mokhov2018build, mokhov2020build}. Po raz pierwszy Helium pojawia się w \cite{biernacki2019abstracting}, służąc za narzędzie do eksperymentowania i umożliwienia konstrukcji bardziej skomplikowanych przykładów oraz projektów w celu przetestowania efektów i uchwytów w praktyce.
+Using the Helium language we will see in practise how programming with algebraic effects and handlers looks like, and in the next chapter we will try to implement results from \BSaLC{} \cite{mokhov2018build, mokhov2020build}. The first time Helium appears in \cite{biernacki2019abstracting}, by serving as a tool for experimenting and constructing more complicated examples and projects for testing effects and handlers in practise.
 
-Rozważmy przykład prostego programu napisanego w Helium, w którym definiujemy pomocniczą funkcję \inl{is_negative} ustalającą, czy liczba jest ujemna oraz funkcję \inl{question}, która pyta użytkownika o liczbę i informuje, czy liczba ta jest ujemna:
+Let us consider an example of a simple program written in Helium, in which we define a helper function \inl{is_negative} telling if a given number is negative and a function \inl{question}, which asks the user for a number and informs if that number is negative:
 
 \lstinputlisting{code_examples/syntax.he}
 
-Sygnatura funkcji \inl{is_negative} wyznaczona przez system typów Helium -- to jak łatwo się domyślić -- \inl{Int -> Bool}. Gdy jednak zapytamy środowisko uruchomieniowe o typ funkcji \inl{question} otrzymamy interesującą sygnaturę \inl{Unit ->[IO] Unit}. W Helium informacje o efektach występujących w trakcie obliczania funkcji są umieszczone w sygnaturach funkcji w kwadratowych nawiasach. W przypadku funkcji \inl{question}, jej obliczenie powoduje wystąpienie efektu ubocznego związanego z mechanizmem wejścia/wyjścia. 
+It is easy to guess that signature of the function \inl{is_negative} as determined by the Helium's type system is \inl{Int -> Bool}. However, when we ask the runtime environment about the type of function \inl{question} we will receive an interesting signature \inl{Unit ->[IO] Unit}. In Helium information about effects occurring during computation of a function are included in function signatures in square brackets. In the case of \inl{question}, its execution causes occurrence of a side effect related to input/output.
 
 \begin{lstlisting}
 printStr: String ->[IO] Unit
 readInt: Unit ->[IO] Int
 \end{lstlisting}
 
-System inferencji typów wiedząc, że operacje we/wy są zadeklarowane z powyższymi sygnaturami wnioskuje, że skoro wystąpienia tychże operacji w kodzie \inl{question} nie są obsługiwane przez uchwyt, to efekt \inl{IO} wyjdzie poza tą funkcję.
+Type inference system knowing that i/o-operations are declared with above signatures and they are not wrapped by any handler concludes that \inl{IO} effect will leak from the \inl{question} function.
 
-Efekty \inl{IO} oraz \inl{RE} (runtime error) są szczególne, gdyż są dla nich zadeklarowane globalne uchwyty w bibliotece standardowej -- jeśli efekt nie zostanie obsłużony i dotrze do poziomu środowiska uruchomieniowego, to ono zajmie się jego obsługą. Dla efektu \inl{IO} środowisko skorzysta ze standardowego wejścia/wyjścia, zaś w przypadku wystąpienia efektu \inl{RE}, obliczenie zostanie przerwane ze stosownym komunikatem błędu.
+Effects \inl{IO} and \inl{RE} (runtime error) are special, since for them there global handlers declared in the standard library. If the effect instance is not handled and surfaces to the runtime environment, the global handler will take care of it. For effect \inl{IO} environment uses standard input/output, while for \inl{RE} computation will be halted with appropriate error message.
 
-\section{Przykłady implementacji uchwytów}
+\section{Examples of handler implementations}
 
-\subsection{Błąd}
+\subsection{Error}
 
-Zaimplementujemy kilka efektów ubocznych, zaczynając od efektu błędu, wraz z uchwytami dla nich. W Helium efekt oraz powodujące go operacje definiuje się następująco:
+Let us implement a couple of side effects, starting from error effect, including handlers for them. In Helium effect and operations that cause it are defined like this:
 
 \lstinputlisting{code_examples/error1__signature.he}
 
-Stwórzmy funkcję podobną do \inl{question} z tym, że nie będzie ona ,,lubić'' wartości ujemnych:
+We will create function similar to \inl{question}, however it won't ,,like'' negative numbers:
 
 \lstinputlisting[firstline=7, lastline=18]{code_examples/error2__inline_abort.he}
 
-Zdefiniowaliśmy efekt uboczny \inl{Error} wraz z operacją \inl{error}, która go powoduje. Operacja ta jest parametryzowana wartością typu \inl{Unit}, a jej (możliwy) wynik to także wartość z \inl{Unit}. Definiujemy też funkcję \inl{main}, w której wywołujemy \inl{no\_negatives\_question}. Jednakże obliczenie wykonujemy w uchwycie, w którym definiujemy co ma się wydarzyć, gdy w czasie obliczenia wystąpi efekt błędu spowodowany operacją \inl{error}. W tym przypadku mówimy, że będzie to skutkowało wypisaniem wiadomości na standardowe wyjście. Nie wznawiamy obliczenia, stąd błąd skutkuje zakończeniem nadzorowanego obliczenia. Jeśli uruchomimy teraz program i podamy ujemną liczbę, zakończy się on komunikatem zdefiniowanym w uchwycie, a tekst ,,Question finished'' nie zostanie wypisany. Zgodnie z oczekiwaniami -- obliczenie \inl{no\_negatives\_question} nie zostało kontynuowane po wystąpieniu błędu.
+We defined an \inl{Error} side effect with effectful operation \inl{error}. This operation is parameterised by type \inl{Unit} and its (possible) value is also of type \inl{Unit}. Moreover, we define function \inl{main}, which calls \inl{no\_negatives\_question}. However, the computation is performed inside a handler, which defines what should happen if error effect will occur causes by \inl{error} operation. In this case, we will write a message to standard output. We will not be resuming the computation, thus the error will stop the handled computation. If we execute our program and input a negative number, the program will halt with message as defined in handler, and ,,Question finished'' will not be displayed. As expected \inl{no\_negatives\_question} was not resumed after error occurred.
 
-Jeśli pewnego uchwytu zamierzamy używać wiele razy, możemy przypisać mu identyfikator -- w Helium uchwyty są wartościami:
+If we want to use the same handler multiple times, we can assign it to an identifier -- in Helium handlers are values:
 
 \lstinputlisting[firstline=7, lastline=10]{code_examples/error3__reused_handler.he}
 
-zmodyfikujmy funkcję \inl{main} by korzystać ze zdefiniowanego uchwytu:
+let us modify function \inl{main} to use the defined handler:
 
 \lstinputlisting[firstline=12, lastline=13]{code_examples/error3__reused_handler.he}
 
-Na potrzeby przykładu możemy rozważyć ,,spokojniejszy'' uchwyt dla wystąpień \inl{error}, który wypisze ostrzeżenie o błędzie ale będzie kontynuował obliczenie:
+For example's sake, let us consider more ,,peaceful'' handler for \inl{error}, that will display a warning but will not stop the computation:
 
 \lstinputlisting[firstline=7, lastline=10]{code_examples/error4__warn_not_abort.he}
 
-Jeśli skorzystamy z tego uchwytu w programie, po wyświetleniu ostrzeżenia obliczenie \inl{no\_negatives\_question} zostanie wznowione i na ekranie zobaczymy komunikat ,,Question finished''. Specjalna funkcja \inl{resume}, dostępna w uchwycie reprezentuje kontynuację obliczenia, które zostało przerwane wystąpieniem operacji powodującej efekt uboczny.
+If we use this handler in our program, after displaying a warning the execution of \inl{no\_negatives\_question} will resume and message ,,Question finished'' will be outputted. Special function \inl{resume}, available in handler corresponds to continuation of computation which has been paused when effectful operation was encountered.
 
-\subsection{Niedeterminizm}
+\subsection{Nondeterminism}
 
-Powróćmy do problemu, który w rozdziale drugim był inspiracją do rozważania niedeterminizmu -- sprawdzanie czy formuła jest spełnialna oraz czy jest tautologią. Przedstawiliśmy wtedy uchwyty dla obu tych problemów w naszej notacji. Implementacja efektu niedeterminizmu, operacji \inl{amb} oraz uchwytów wraz z wykorzystaniem ich wygląda następująco:
+Let us go back to the problem from chapter 2 which was an inspiration for considering nondeterminism -- checking if logical formula is satisfiable and if is a tautology. We introduced two handlers for both instances of our problems. Implementation of nondeterminism's effect, operation \inl{amb} and handlers along with their usages is as follows:
 
 \lstinputlisting[linerange={1-7}]{code_examples/nondet1__simple.he}
 \pagebreak
 \lstinputlisting[linerange={8-22}]{code_examples/nondet1__simple.he}
 
-Będziemy sprawdzać, czy formuła wyrażona za pomocą funkcji \inl{formula1} jest spełnialna. W tym celu w \inl{main} -- wewnątrz uchwytu -- niedeterministycznie ustalamy wartości zmiennych \inl{x}, \inl{y}, \inl{z}, po czym obliczamy wartość \inl{formula1}. Wartość obsługiwanego wyrażenia, którą przypisujemy do zmiennej \inl{ret}, jest następnie wykorzystana do wypisania komunikatu. Ponadto -- w celu demonstracji możliwości języka -- w uchwytach zamiast kontynuować obliczenie używając \inl{resume}, przypisujemy kontynuacji nazwę \inl{r}.
+We will be verifying if formula represented by a function \inl{formula1} is satisfied. To do so, in \inl{main} -- inside the handler -- we nondeterministically set values of variables \inl{x}, \inl{y}, \inl{z}, and compute \inl{formula1}. Value of handled expression, which we assign to \inl{ret} is used to display the message. Moreover, to demonstrate capabilities of the language, instead of using \inl{resume} we name the continuation function as \inl{r}.
 
-W Helium uchwyty mogą posiadać przypadki nie tylko dla operacji związanych z jakimś efektem ale także dwa specjalne: \inl{return} oraz \inl{finally}. Pierwszy jest wykonywany, gdy obliczenie pod kontrolą uchwytu kończy się zwracając wynik. Przypadek \inl{return} jako argument otrzymuje wynik obliczenia. Zaś \inl{finally} otrzymuje jako argument obliczenie obsługiwane przez uchwyt i jest uruchamiane na początku działania uchwytu. Domyślnie przypadki zwracają otrzymane wartości.% te są zaimplementowane jako:
+In Helium handlers can have cases not only for effectful operations but also for two special cases: \inl{return} and \inl{finally}. The first one is executed when computation which is wrapped by the handler finishes with some value and its argument is exactly this value. For the case of \inl{finally}, it receives as argument whole computation inside the handler and is run at the beginning of handler's execution. By default both handlers plainly return received values.
 
 %% \begin{lstlisting}
 %% handler
@@ -92,19 +92,19 @@ W Helium uchwyty mogą posiadać przypadki nie tylko dla operacji związanych z 
 
 %% ^ usunięte gdyż powodowało problemy dla LaTeX'a, a nic nie wnosiło (prócz nieprawidłowego wyrażenia w Helium)
 
-Możemy je jednak sprytnie wykorzystać. Przykładowo, zamiast tylko sprawdzać czy formuła jest spełnialna, możemy sprawdzić przy ilu wartościowaniach jest prawdziwa:
+We can cleverly use them. For instance, instead of just checking if formula is satisfiable, we can count the number of valuations that make it true:
 
 \lstinputlisting[linerange={5-16}]{code_examples/nondet2__count_sats.he}
 
-Gdy obliczenie się kończy -- zamiast zwracać, czy formuła jest spełniona -- zwracamy 1 albo 0, w zależności, czy formuła przy aktualnym wartościowaniu jest spełniona. Gdy obsługujemy niedeterministyczny wybór, kontynuujemy obliczenie dla obu możliwych wartości boolowskich po czym dodajemy wyniki. Wykorzystując \inl{finally} możemy włączyć komunikat o liczbie wartościowań do uchwytu:
+When computation is finished, instead of returning boolean value telling if formula was satisfied, we return 1 or 0. While handling nondeterministic choice we resume computation with both boolean values and add the results. By using \inl{finally} we can include the message about number of valuations into the handler:
 
 \lstinputlisting[firstline=5, lastline=17]{code_examples/nondet3__count_and_write_sats.he}
 
-Tutaj wykorzystanie \inl{finally} jest lekkim nadużyciem, jak jednak za chwilę zobaczymy, konstrukcja ta jest bardzo przydatna.
+Here we abuse \inl{finally} for example's sake, however we will soon see that this construct is really useful.
 
-\subsection{Modyfikowalny stan}
+\subsection{Mutable state}
 
-Rozważmy następujący przypadek dla \inl{return} w uchwycie:
+Let us consider handler's case for \inl{return}:
 
 \begin{lstlisting}
 handler
@@ -113,46 +113,46 @@ handler
 end
 \end{lstlisting}
 
-Wartość obliczenia, zamiast być jego wynikiem, jest funkcją. Co za tym idzie, w tym uchwycie kontynuacje nie będą funkcjami zwracającymi wartości, lecz funkcje. W ten sposób możemy parametryzować dalsze obliczenia nie tylko wartościami zwracanymi przez operacje (zgodnie z ich sygnaturą), ale także wymyślonymi przez nas -- autorów uchwytu. Zauważmy jednak, że parametr ten nie jest widoczny w obsługiwanym obliczeniu, a jedynie w uchwycie. Co więcej, skoro wynik obsługiwanego obliczenia jest teraz funkcją, a nie wartością, to -- by użytkownik uchwytu nie zauważył niezgodności typów -- musimy funkcję tą uruchomić z jakimś parametrem. Tutaj właśnie przychodzi naturalny moment na wykorzystanie konstrukcji \inl{finally}.
+Final value of the computation, instead of being a simple value, is a function. As the result, in this handler continuations are not simple values but functions. This way we can parameterise continuations not only with values returned by operations (according to their signatures), but also with our -- handler author's -- own. Let us notice, that since the result of handled computation is now a function and not a simple value -- in order for the handler's user not to notice type mismatch -- we need to execute this function with some parameter. This is a great moment to use \inl{finally} construct.
 
-Definiujemy efekt stanu z operacją jego odczytu oraz modyfikacji:
+We define state effect with operations for reading and modifying it:
 
 \lstinputlisting[lastline=3]{code_examples/state1__basics.he}
 
-Efekt, jak i operacje są parametryzowane typem wartości stanu. Zdefiniujemy teraz standardowy uchwyt dla efektu stanu. Skorzystamy z faktu, że uchwyty są w Helium wartościami, stąd w szczególności mogą być wynikiem funkcji. Funkcja ta będzie u nas parametryzowana wartością początkową stanu:
+The effect and its operations are parameterised by types of stored state. Now let us define a standard handler for state effect. We will take advantage of the fact that handlers are values in Helium, and as such can be a resulting value of a function. The function will be parameterised by state's initial value:
 
 \lstinputlisting[firstline=5, lastline=11]{code_examples/state1__basics.he}
 
-Gdy obliczenie się kończy, zamiast wartość zwracamy funkcję, która ignoruje argument (będzie nim bieżąca wartością stanu), a zwraca właściwy wynik obliczenia. W konsekwencji przypadki dla operacji też muszą być funkcjami. Dla \inl{put} nie musimy odczytywać aktualnej wartości stanu, stąd wartość tą ignorujemy. Obliczenie wznawiamy z wartością jednostkową. Jak jednak wiemy, wynikiem nie będzie zwykła wartość, lecz funkcja. Podajemy jej nowy stan, którym parametryzowana była operacja \inl{put}. W przypadku \inl{get} postępujemy podobnie -- jednak tym razem odczytamy argument funkcji i przekażemy go do kontynuacji. Niezmiennie kontynuacja zwraca funkcję, której przekażemy aktualną wartość stanu. Pozostaje rozstrzygnąć, co zrobić w przypadku \inl{finally}. Skoro jednak przerobiliśmy obliczenie ze zwracającego wartość do takiego, które zwraca funkcję oczekującą wartości stanu, to możemy podać mu wartość początkową -- określoną przez użytkownika uchwytu.
+We the computation is finished, instead of returning a value we return a function which ignores its argument (that is current state's value) and returns said value. As the result, cases for operations need to return functions. For \inl{put} we don't read state and resume computation with updated value. However, as we know resumed computation still requires one argument, which we provide from operation's parameter. In case of \inl{get} we read current state's value and resume computation by providing said value both as argument for continuation and as next state value. Finally, we have to decide what to do in the case of \inl{finally}. Since we transformed the computation from returning simple value to the one returning a function that expects value of state, we can call it with initial value of state -- provided by handler's user.
 
-Jeśli chcemy, aby obliczenie zwracało nie tylko wartość wynikową, ale także końcowy stan, wystarczy że zmodyfikujemy przypadek dla \inl{return}:
+If we want to return not only result of computation but also final value of state, we just modify handler's case for \inl{return}:
 
 \lstinputlisting[firstline=5, lastline=11]{code_examples/state2__run_state.he}
 
-Dzięki zdefiniowanemu efektowi ubocznemu, operacjom oraz uchwytom możemy teraz łatwo wykonywać obliczenia ze stanem:
+Now, after defining the side effect, its operations and handlers, we can perform computations with mutable state:
 
 %% \lstinputlisting[firstline=7, lastline=24]{code_examples/state3__example.he}
 \lstinputlisting[linerange={7-11}]{code_examples/state3__example.he}
 \pagebreak
 \lstinputlisting[linerange={13-22}]{code_examples/state3__example.he}
 
-\subsection{Efekt rekursji}
+\subsection{Effect of recursion}
 
-W niektórych językach ML-podobnych (jak na przykład OCaml czy Helium) chcąc, by w ciele definicji funkcji był widoczny jej identyfikator, trzeba zadeklarować ją używając słów kluczowych \inl{let rec}:
+In some ML-like languages (such as OCaml or Helium) in order for function's identifier to be available inside its body, we need to declare the function using keyword \inl{let rec}:
 
 \lstinputlisting[firstline=2, lastline=5]{code_examples/rec1__rec.he}
 
-Co ciekawe, dzięki własnym efektom i operacjom możemy tworzyć funkcje rekurencyjne, które nie używają jawnie rekursji:
+Surprisingly, thanks to possibility to define custom effects and operations, we can create recursive function that don't appear as such:
 
 \lstinputlisting[firstline=2, lastline=13]{code_examples/rec2__effect.he}
 
-Konstrukcja \inl{handle `a in ...} służy doprecyzowaniu, który efekt ma być obsłużony przez uchwyt -- jest przydatna w przypadku niejednoznaczności, gdy używamy wielu instancji tego samego efektu lub dla ułatwienia rozumienia kodu.
+The \inl{handle `a in ...} construct lets us give labels to effect instances created by handlers -- it is useful in ambiguous cases when we use multiple instances of the same effect or for better readability.
 
-Korzystając z efektu rekursji, możemy także definiować funkcje wzajemnie rekurencyjne:
+Using the effect of recursion, we can also define functions that are mutually recursive:
 
 \lstinputlisting[firstline=5, lastline=23]{code_examples/rec3__mutual.he}
 
-Utrzymujemy informację, która funkcja jest aktualnie wykonywana i gdy prosi o wywołanie rekurencyjne, uruchamiamy obliczanie drugiej funkcji, po czym wynik przekazujemy do kontynuacji.
+We keep an information which function is currently executed and when it asks to perform recursive call, we execute the other function, and finally give back the return value.
 
 % 
 % Może jeszcze współbieżność kooperatywna?
@@ -161,9 +161,9 @@ Utrzymujemy informację, która funkcja jest aktualnie wykonywana i gdy prosi o 
 % ale zawierałaby trochę szumu w postaci kolejkowania zadań.
 %
 
-\subsection{Wiele efektów naraz -- porażka i niedeterminizm}
+\subsection{Multiple effects at once -- failure and nondeterminism}
 
-Na koniec rozdziału zobaczymy jak łatwo w Helium komponuje się efekty. Definiujemy efekty niedeterminizmu i porażki oraz bardzo proste uchwyty dla tych efektów:
+As the last example in this chapter, we will see how easy it is to compose effects in Helium. Let us define effects of nondeterminism and failure and very simple handlers for them:
 
 \lstinputlisting[linerange={1-13}]{code_examples/fail_and_amb.he}
 
@@ -171,20 +171,20 @@ Na koniec rozdziału zobaczymy jak łatwo w Helium komponuje się efekty. Defini
 
 %% \lstinputlisting[firstline=7, lastline=15]{code_examples/fail_and_amb.he}
 
-Definiujemy teraz funkcję sprawdzającą, czy otrzymana formuła z trzema zmiennymi wolnymi jest spełnialna:
+We now define a function that checks if given formula with three free variables is satisfiable:
 
 \lstinputlisting[linerange={17-23}]{code_examples/fail_and_amb.he}
 
-Jeśli formuła przy ustalonym wartościowaniu nie jest spełniona, powoduje efekt porażki. Zwróćmy uwagę w jakiej kolejności są umieszczone uchwyty -- niedeterminizmu na zewnątrz, zaś porażki wewnątrz. W ten sposób, gdy wystąpi porażka, jej uchwyt zwróci fałsz, w wyniku czego nastąpi powrót do ostatniego punktu niedeterminizmu, w którym jest jeszcze wybór. Dzięki temu wartość \inl{is\_sat f} jest równa fałszowi tylko, gdy przy każdym wartościowaniu nastąpi porażka. Zobaczmy teraz funkcję sprawdzającą, czy otrzymana formuła jest tautologią:
+If formula with given valuation is not satisfied, failure effect occurs. Let us bring our attention to the order of handlers -- nondeterminism on the outside, failure on the inside. Thus, when failure occurs, its handler will return false and backtracking to last available choice will be performed by handler of nondeterminism. As the result, value of\inl{is\_sat f} is equal to false if and only if failure occurred for each valuation. Now let us consider a function that check if formula is a tautology:
 
 \lstinputlisting[linerange={25-31}]{code_examples/fail_and_amb.he}
 
-Tutaj uchwyt dla porażki znajduje się na zewnątrz -- wystąpienie porażki oznacza, że istnieje wartościowanie przy którym formuła nie jest prawdziwa, a w konsekwencji nie może być tautologią. Możemy teraz napisać zgrabną funkcję, która wypisze nam czy \inl{formula1} jest spełnialna oraz czy jest tautologią:
+Here, handler of failure is on the outside -- occurrence of failure during nondeterministic valuation means that there is a valuation that makes the formula not satisfied, an thus the formula is not a tautology. We can now write a nice function that will tell us if \inl{formula1} is satisfiable and if it is a tautology:
 
 \lstinputlisting[linerange={33-42}]{code_examples/fail_and_amb.he}
 
-Z łatwością napisaliśmy program, który korzysta z wielu efektów ubocznych jednocześnie, mimo że żaden z nich (ani uchwyty) nie wiedzą o istnieniu drugiego. Łączenie efektów jest bardzo proste, a kolejność w jakiej umieszczamy uchwyty umożliwia nam łatwe i czytelne definiowanie zachowania programu w przypadku wystąpienia któregokolwiek z efektów.
+Without hassle we wrote a program, that uses multiple effects at the same time, despite neither of them knowing about the other one. Combining effects is very easy, and order in which we handle them let us make simple and readable definitions of program behaviours in the case when some effectful operation is encountered.
 
-Dzięki językowi Helium przyjrzeliśmy się z bliska efektom algebraicznym oraz uchwytom, zobaczyliśmy przykłady implementacji uchwytów oraz rozwiązań prostych problemów. Jesteśmy gotowi do podjęcia próby zaimplementowania systemów kompilacji z użyciem efektów i uchwytów -- czego dokonamy w następnym rozdziale.
+Thanks to Helium, we got a better look at algebraic effects and handlers, we saw examples of handlers and their implementations, and solutions to sample problems. We are now ready to start implementing build systems using effects and handlers -- which we will do in the next chapter.
 
 \undef\inl
