@@ -1,15 +1,16 @@
 
-\chapter{Systemy kompilacji z użyciem efektów algebraicznych i uchwytów}
-\chaptermark{Systemy z użyciem efektów i uchwytów}
+\chapter{Build systems using algebraic effects and handlers}
+
+\chaptermark{Systems using effects and handlers}
 \label{chapter-bsue}
 
-W tym rozdziale powtórzymy implementację systemów kompilacji przedstawioną w \BSaLC\cite{mokhov2018build}, jednak dokonamy jej w języku programowania Helium używając efektów i uchwytów. Na początku wymyślimy własne odpowiedniki abstrakcyjnych struktur z Haskella związanych z systemami, następnie zaimplementujemy wszystkie rekompilatory oraz wszystkich (poza jednym) planistów. Na koniec przyglądniemy się czym charakteryzuje się pominięty planista i poznamy przykłady innych implementacji systemów inspirowanych wynikami Mokhov'a i innych.
+In this chapter we will repeat implementation of build systems as presented in \BSaLC\cite{mokhov2018build}, however we will with Helium using algebraic effects and handlers. For starters we will come up with counterparts for Haskell abstract types related to build systems, and later we will implement all rebuilders and all but one schedulers. Finally, we will see what characterises the absent scheduler and learn about other implementation attempts inspired by work of Mokhov et al.
 
-\section{Pomysł, typy i idea}
+\section{Concept and types}
 
-Przypomnijmy sobie reprezentacje składowych implementacji z Haskella oraz wprowadźmy ich odpowiedniki w Helium.
+Let us go back to components of Haskell implementation and figure out its counterparts in Helium.
 
-\subsection{Zasób (Store)}
+\subsection{Store}
 
 \begin{lstlisting}[style=haskell-style]
 data Store i k v
@@ -20,17 +21,17 @@ getValue :: k -> Store i k v -> v
 putValue :: Eq k => k -> v -> Store i k v -> Store i k v
 \end{lstlisting}
 
-Autorzy \BSaLC\cite{mokhov2018build} reprezentowali Store jako typ z operacjami odczytu i zapisu trwałej informacji dla systemu oraz wartości wynikowych. Każdorazowo jednak, zasób był przechowywany w modyfikowalnym stanie. Możemy więc uprościć implementację przez scalenie zasobu z modyfikowalnym stanem przez uczynienie \haskinl{Store} efektem, a działania na nim operacjami powodującymi ten efekt.
+Authors of \BSaLC\cite{mokhov2018build} represented the store as a type with read and write functions for persistent information and task results. However, each time it was used was inside some mutable state. Thus, we can simplify our implementation by merging the store with mutable state by making \haskinl{Store} an effect, and turning its functions into effectful operations.
 
 \lstinputlisting[language=Haleff, firstline=5, lastline=9]{../src/Store.he}
 
-Podobnie jak \haskinl{Store} w oryginalnej implementacji, \helinl{StoreEff} jest parametryzowany typem trwałej informacji, kluczy oraz wartości wynikowych kompilacji. Równania dla niego są analogiczne jak dla zwykłego modyfikowanego stanu z dokładnością do ustalenia klucza w operacjach na wartościach wynikowych. Definiujemy ponadto uchwyt \helinl{funStoreHandler}, w którym słownik klucz--wartość zadania utrzymywany jest przez funkcję -- jak w przykładach w \BSaLC{}.
+Similarly as in original implementation of \haskinl{Store}, \helinl{StoreEff} is parameterised by types of persistent information as well as keys and values of tasks. Equations for its operations are analogous to the ones of mutable state but with a fixed key for operations related to result values. Additionally, we define a handler called \helinl{funStoreHandler}, in which the key--value dictionary is represented as a function -- like in examples from \BSaLC{}.
 
 \lstinputlisting[language=Haleff, firstline=38, lastline=52]{../src/Store.he}
 
-Implementacja jest zbliżona do przykładu modyfikowalnego stanu z rozdziału~4. Dla porządku wartość początkowa trwałej informacji oraz słownika wartości jest opakowana w typ \helinl{FunStoreType I K V}.
+The implementation is similar to mutable state from chapter~4. For sanity, initial persistent information and return value dictionary is wrapped in \helinl{FunStoreType I K V} type.
 
-Jako że Helium, podobnie jak inne języki używające ML-owego systemu modułów, nie posiada klas typów znanych z Haskella, definiujemy kilka sygnatur odpowiadających klasom typów użytym w oryginalnej implementacji. W przypadku \helinl{funStoreHandler} moduł o sygnaturze \helinl{Comparable K} jest używany do porównywania kluczy identyfikujących zadania. Można zauważyć, że alternatywnym rozwiązaniem byłoby reprezentowanie odpowiedników klas typów jako efekty.
+Since Helium, like other ML-like languages, does not have typeclasses known in Haskell, we define couple of signatures corresponding to typeclasses used in original implementation. For the case of \helinl{funStoreHandler} module with signature \helinl{Comparable K} is used for comparing keys that identify tasks. One can notice, that an alternative approach could be to represent typeclasses as effects and related functions as effectful operations.
 
 \begin{minipage}[t]{.45\textwidth}
 
@@ -43,15 +44,15 @@ Jako że Helium, podobnie jak inne języki używające ML-owego systemu modułó
 
 \end{minipage}
 
-\subsection{Modyfikowalny stan}
+\subsection{Mutable state}
 
-Implementację modyfikowalnego stanu zobaczyliśmy w przykładach w rozdziale 4 i wykorzystamy ją konstruując systemy kompilacji. Nazwy uchwytom dla stanu, w zależności od zwracanych wartości, nadajemy zgodnie z ich odpowiednikami w Haskellu -- \haskinl{runState}, \haskinl{evalState}, \haskinl{execState}. Definiujemy także proste funkcje \helinl{gets} i \helinl{modify}, które używając podanego przekształcenia odpowiednio odczytują i modyfikują stan, oraz nieco bardziej skomplikowaną funkcję \helinl{embedState}.
+We saw an implementation of mutable state effect in chapter 4 and we use it here. Names for handlers of state, depending on the return value, are assigned as in corresponding functions in Haskell -- \haskinl{runState}, \haskinl{evalState}, \haskinl{execState}. We also define simple helper functions \helinl{gets} and \helinl{modify}, which use provided transformation for reading and modifying state, accordingly. Moreover, we define slightly more complicated function \helinl{embedState}. 
 
-\lstinputlisting[language=Haleff, linerange={6-7,33-37}, float=h, title={Definicje \helinl{gets}, \helinl{modify} oraz \helinl{embedState}}]{../src/State.he}
+\lstinputlisting[language=Haleff, linerange={6-7,33-37}, float=h, title={Definitions of \helinl{gets}, \helinl{modify} and \helinl{embedState}}]{../src/State.he}
 
-Funkcja \helinl{embedState} tworzy uchwyt dla efektu modyfikowalnego stanu, w którym modyfikacje -- zamiast być wykonywane przez uchwyt -- są przekazywane podanym funkcjom \helinl{getter} oraz \helinl{setter}, które w czasie swojego działania mogą powodować jakiś efekt uboczny. Z takiego zanurzenia modyfikowalnego stanu w innym efekcie będziemy korzystać podczas implementacji planistów, którzy trwałą informację z zasobu będą przekazywać do rekompilatorów jako właśnie modyfikowalny stan.
+The \helinl{embedState} function creates a handler for mutable state effect, in which operations -- instead of being done by handler itself -- are passed to provided \helinl{getter} and \helinl{setter} functions, that cause some unknown side effect while being executed. We will use such embedding of mutable state in some other effect for implementing schedulers, which will pass persistent information to rebuilders as embedded mutable state.
 
-\begin{lstlisting}[language=Haleff, float=h, title={Przykład wykorzystania \helinl{embedState}}]
+\begin{lstlisting}[language=Haleff, float=h, title={Usage example of \helinl{embedState}}]
 handle `store in
     (* ... *)
     handle `state in
@@ -61,24 +62,24 @@ handle `store in
 with (* ... *)
 \end{lstlisting}
 
-\subsection{Zadanie i efekt kompilacji}
+\subsection{Task and build effect}
 
-W oryginalnej implementacji zadanie było funkcją przyjmującą procedurę kompilacji wskazanego zadania, a wynik był zwracany w jakimś typie \haskinl{f} ograniczonym przez klasę typów \haskinl{c}.
+In \BSaLC{} task was a function that took operation responsible for building requested tasks, and the return result was wrapped in some type \haskinl{f} that belonged to typeclass \haskinl{c}.
 
 \begin{lstlisting}[style=haskell-style]
 newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
 type Tasks c k v = k -> Maybe (Task c k v)
 \end{lstlisting}
 
-Możemy jednak zauważyć, że kompilacja zadania jest oczywistym efektem ubocznym działania systemu kompilacji, stąd w naszej implementacji zamiast przekazywać funkcję, która była przez autorów zazwyczaj nazywana \haskinl{fetch}, zdefiniujemy efekt \helinl{BuildEff}, który będzie występował w czasie kompilacji zadań. Z efektem tym związana będzie jedna operacja \helinl{fetch}.
+We can notice however, that building a task is an obvious case of a side effect of build system execution, thus in our implementation instead of providing a function usually called \haskinl{fetch}, we will define a \helinl{BuildEff} effect which will occur during task building. The effect will have one associated operation called \helinl{fetch}.
 
 \lstinputlisting[language=Haleff, linerange={11-15}]{../src/Common.he}
 
-Zadanie będzie funkcją wymagającą informacji o instancji efektu budowania i będzie polimorficzna ze względu na typ kluczy i wartości oraz ewentualnych efektów ubocznych nie będących efektem budowania (będzie to przydatne przy implementacji rebuilderów). Zwróćmy uwagę, że definicja typu zadania nie zawiera informacji analogicznych do klasy typów \haskinl{c}, której element \haskinl{f} ,,opakowywał'' wynik w oryginalnej implementacji -- do tej różnicy powrócimy w dalszej części rozdziału.
+The task will be a function taking an instance of \helinl{BuildEff} and will be polymorphic in types of keys, values and possible side effects different from build effect (this will be useful while implementing rebuilders). Let us notice, that compared to original implementation, definition of task does not include information analogous to typeclass \haskinl{c}, whose member \haskinl{f} wrapped the result value -- we will go back to the subject of this difference later in the chapter.
 
-\subsection{Kompilacja, planista, rekompilator}
+\subsection{Build, scheduler, rebuilder}
 
-Pozostaje zdefiniować trzy ostatnie typy związane ze wspomnianymi w podtytule obiektami.
+What is left is to define three types mentioned in the above heading.
 
 \begin{lstlisting}[style=haskell-style]
 type Build c i k v = Tasks c k v -> k -> Store i k v -> Store i k v
@@ -86,51 +87,51 @@ type Scheduler c i ir k v = Rebuilder c ir k v -> Build c i k v
 type Rebuilder c ir k v = k -> v -> Task c k v -> Task (MonadState ir) k v
 \end{lstlisting}
 
-Kompilacja, tak jak w oryginalnej implementacji, wymagać będzie wskazania zbioru zadań oraz klucza który ma być zbudowany. Ponadto w naszej implementacji kompilacja powoduje efekt uboczny zmiany zasobu.
+Building, like in Haskell, takes a set of tasks and the key to build. However, in our implementation instead of also taking a store, our build has a related side effect.
 
-Nasi planiści także będą mieli sygnatury zbliżone do swoich odpowiedników z Haskella, wzbogacone oczywiście o efekt uboczny zasobu, a także moduł definiujący opisane wcześniej podstawowe działania na kluczach i wartościach.
+Our planners will also have signatures similar to its Haskell equivalents, but of course enriched with store's side effect, and with module that defines previously mentioned basic operations on keys and values.
 
 \lstinputlisting[language=Haleff, linerange={17-19}]{../src/Common.he}
 
-Rebuilder przypomina swój odpowiednik z oryginalnej implementacji. Jednak, zamiast zwracać zadanie ze zmienionym \textit{constraint'em}, zadanie jest wzbogacone o dodatkowy efekt stanu mogący występować w czasie kompilacji zadania.
+The \helinl{Rebuilder} type looks almost like the one from original implementation. However, instead of returning a task with modified constraint, the task has new possible side effect that can occur while the task is built.
 
-\section{Przykład: system busy}
+\section{An example: system busy}
 
-Skoro ustaliliśmy jak abstrakcja systemów kompilacji w Haskellu przenosi się na naszą w Helium, możemy spróbować zaimplementować prosty system budowania \haskinl{busy} przedstawiony przez autorów.
+since we finished defining how abstraction of build systems from Haskell relates to our implementation in Helium, we can write our version of \haskinl{busy} build system.
 
-\lstinputlisting[language=Haleff, linerange={16-28}, float=h, title={System kompilacji \haskinl{busy}}]{../src/Schedulers.he}
+\lstinputlisting[language=Haleff, linerange={16-28}, float=h, title={The \haskinl{busy} build system}]{../src/Schedulers.he}
 
-Rdzeniem implementacji, podobnie jak oryginalnej w Haskellu, jest definicja uchwytu (tam: funkcji) dla \helinl{fetch}. Jego ciało to przetłumaczenie oryginalnej implementacji z tą różnicą, że zamiast kontynuować obliczenie niejawnie -- przez zwracanie wyniku -- jest ono kontynuowane jawnie przez wywołanie \helinl{resume} w ciele uchwytu.
+The core of the implementation, as in Haskell, is definition of handler (there: function) for \helinl{fetch}. Its body is almost a plain translation of original implementation, with a slight difference that instead of resuming the computation implicitly -- by returning a value -- it is continued explicitly be calling \helinl{resume} inside handler's body.
 
-\section{Implementacja śladów}
+\section{Implementation of traces}
 
-Podobnie jak w \BSaLC{}, implementacje funkcji pracujących ze śladami nie są interesujące -- w naszym przypadku odpowiadają oryginałom poza kilkoma szczegółami w postaci wykorzystania efektu \helinl{Writer} zamiast infrastruktury zbudowanej wokół typu \haskinl{Maybe} oraz list comprehensions w Haskellu. Implementacje wraz z komentarzami dostępne są w Dodatku A oraz kodzie źródłowym.
+As in \BSaLC{}, implementation of functions that operate on traces are not particularly interesting -- in our cases they almost fully correspond to original ones with exception of using \helinl{Writer} effect instead of Haskell's infrastructure built around \haskinl{Maybe} type and list comprehensions. Implementation with some remarks is available in appendix A and in the source code.
 
-\section{Uruchamianie i śledzenie działań}
+\section{Running and tracking tasks}
 
-W implementacjach planistów i rekompilatorów będziemy chcieli uruchamiać zadania oraz śledzić od jakich zadań zależy aktualnie rozważane. W tym celu, podobnie jak autorzy \BSaLC{}, definiujemy prostą funkcję \helinl{run} oraz nieco ciekawszą \helinl{track}.
+While implementing schedulers and rebuilder we will want to execute tasks and track its dependencies. To do so, just like authors of \BSaLC{} did, we will define a simple function \helinl{run} and slightly more interesting \helinl{track}.
 
 \lstinputlisting[language=Haleff, linerange={12-13,20-29}]{../src/Track.he}
 
-Funkcja \helinl{track} otrzymuje etykietę \helinl{`b} uchwytu dla efektu kompilacji oraz zadanie \helinl{task}, które ma być uruchomione pod jego nadzorem, a \helinl{track} ma wyznaczyć zadania, od których \helinl{task} zależy. W tym celu konstruowany jest dodatkowy uchwyt \helinl{hTrack}, pod nadzorem którego uruchamiamy zadanie. W sytuacji, gdy uruchomione zadanie potrzebuje wyniku innego zadania, \helinl{hTrack} ,,przechwyci'' wystąpienie \helinl{fetch} i oddeleguje wystąpienie operacji do uchwytu o etykiecie \helinl{`b}, a następnie odnotuje, że miało miejsce wywołanie \helinl{fetch}.
+The \helinl{track} function takes a label \helinl{`b}, that corresponds to the handler of an instance of build effect, and a task which should be supervised by said handler. The \helinl{track} function is responsible for tracking dependencies of a given task. To do so, an additional handler \helinl{hTrack} is created which will handle the given task. In the case of task requiring a dependency, \helinl{hTrack} will intercept the call to \helinl{fetch} and delegate it to the handler label with \helinl{`b}, to finally note that a call to \helinl{fetch} took place.
 
-Implementacja funkcji \helinl{track} jest ciekawym przykładem skonstruowania pośrednika (proxy) pomiędzy obliczeniem, które ma efekty uboczne, a właściwym dla niego uchwytem.
+Implementation of \helinl{track} is an interesting example of constructing an effect proxy between proper computation and some specialised handler.
 
 \pagebreak
 
-\section{Implementacje systemów kompilacji}
+\section{Implementing build systems}
 
 \subsection{Excel}
 
 \lstinputlisting[style=Haleff-long, linerange={13-14}]{../src/Systems.he}
 
-Już na starcie widzimy, że udało nam się dopełnić obietnicy, którą postulują autorzy \BSaLC{} -- systemy kompilacji powstają przez zaaplikowanie rekompilatora do planisty.
+Right at the beginning we see that the promise given by authors of \BSaLC{} was fulfilled -- build systems are created by applying rebuilders to schedulers.
 
-Funkcja \helinl{dirtyBitRebuiler} modyfikuje zadanie tak, aby przy uruchomieniu sprawdzało, czy klucz zadania jest oznaczony jako brudny. Gdy tak jest, zadanie zostanie skompilowane, w przeciwnym razie można wykorzystać wartość dostarczoną do rekompilatora, gdyż to ją zwróciłoby wykonanie pierwotnego zadania. 
+The \helinl{dirtyBitRebuilder} modifies the task, so when executed it will check if key is marked as dirty. If that is the case, the task will be built. Otherwise, the provided value can be returned, since that would be result of building of the initial task.
 
 \lstinputlisting[style=Haleff-long, linerange={36-39}]{../src/Rebuilders.he}
 
-W planiście restartującym utrzymujemy łańcuch, który ma aproksymować kolejność kompilacji, w której minimalizujemy liczbę restartów. Działanie rozpoczyna się od wykorzystania łańcucha z poprzedniej kompilacji, a jego wersję wykorzystywaną i modyfikowaną w czasie działania utrzymujemy w instancji stanu o etykiecie \helinl{`chain}. Ponadto, w stanie \helinl{`done} odnotowujemy, które zadania skompilowaliśmy w tej instancji procesu, aby nie musieć uruchamiać ich ponownie oraz tworzymy uchwyt, wykorzystując opisaną wcześniej funkcję \helinl{embedState} dla modyfikowalnego stanu odpowiadającego trwałej informacji systemu kompilacji.
+In the restarting handler we maintain a chain, which should approximate the order of building tasks which minimises the number of restarts. The execution begins with reuse of chain from last build and its modified version will be stored in an instance of mutable state label \helinl{`chain}. Moreover, in \helinl{`done} state we accumulate tasks which has already been built in this build run, so we do not have to build them again. Then we define a handler for mutable state corresponding to persistent information using the \helinl{embedState} function introduced earlier in the chapter.
 
 \lstinputlisting[style=Haleff-long, linerange={56-71}]{../src/Schedulers.he}
 \vspace{-1.25em}
@@ -142,27 +143,27 @@ W planiście restartującym utrzymujemy łańcuch, który ma aproksymować kolej
         modifyInfo (mapSnd (fn _ => resultChain))
 \end{lstlisting}
 
-Właściwa część implementacji tego planisty składa się z uchwytu efektu kompilacji \helinl{restartingHandler} oraz funkcji \helinl{loop}. Funkcja ta wykonuje zadania w kolejności zadanej przez łańcuch z poprzedniej instancji, modyfikując zadania z użyciem rekompilatora, po czym je uruchamiając. Jednocześnie konstruowany jest nowy łańcuch, który jest wartościową zwracaną przez \helinl{loop}.
+The core part of this scheduler's implementation consists of build effect handler \helinl{restartingHandler} and function \helinl{loop}. This function executes tasks in the order determined by the chain from previous build, modifies the tasks using rebuilder and finally executes them. Concurrently, new chain is constructed and will be returned by \helinl{loop}.
 
 \lstinputlisting[style=Haleff-long, linerange={72-99}]{../src/Schedulers.he}
 
-W czasie kompilacji zadania wystąpienia \helinl{fetch} są przechwytywane przez uchwyt, który sprawdza, czy zadanie jest już obliczone. W przeciwnym razie modyfikuje łańcuch tak, by potrzebne zadanie znalazło się przed zadaniem aktualnie obliczanym. W uchwycie wykorzystana jest opcja dla \helinl{return}, która odnotowuje, że zadanie skończyło się kompilować, a następnie wywołuje \helinl{loop}.
+During task's build process calls to \helinl{fetch} are intercepted by the handler and checked if requested task has already been built. If that is not the case, the chain is modified so that requested task is in front of the one being currently built. In the handler we use \helinl{return} case for noting that the task was finished and for calling \helinl{loop}.
 
 \subsection{Shake}
 
 \lstinputlisting[style=Haleff-long, linerange={16-17}]{../src/Systems.he}
 
-W systemie Shake rebuilder wykorzystuje ślady weryfikujące. Rekompilator używając \helinl{verifyVT} sprawdza, czy zadanie jest świeże. Jeśli tak, nie musi być obliczane ponownie. W przeciwnym razie zadanie jest kompilowane pod nadzorem funkcji \helinl{track}, która akumuluje listę bezpośrednich zależności zadania, by utworzyć z nich nowe ślady do trwałego zachowania z użyciem \helinl{recordVT}.
+In the Shake build system, rebuilder uses verifying traces. With \helinl{verifyVT} the rebuilder checks if the task is ,,fresh''. If so, it does not need to be built again. Otherwise, the task is built while being supervised by \helinl{track} which accumulates task's dependencies and creates new traces that will be recorded later by \helinl{recordVT}.
 
 \pagebreak
 
 \lstinputlisting[style=Haleff-long, linerange={43-49}]{../src/Rebuilders.he}
 
-Implementacja planisty wstrzymującego jest znacznie krótsza od restartującego. Utrzymujemy tylko dwa stany: pierwszy (\helinl{`done}) dla odnotowania już skompilowanych zadań oraz drugi dla osadzenia trwałej informacji w stanie na potrzeby działania rekompilatora -- podobnie jak w planiście restartującym.
+The implementation of suspending scheduler is significantly shorter. We have only to mutable values: the first one (\helinl{`done}) for remembering already built tasks and the other one for embedding persistent information for the needs of the rebuilder -- just like in restarting scheduler.
 
 \lstinputlisting[style=Haleff-long, linerange={30-54}]{../src/Schedulers.he}
 
-Uchwyt \helinl{suspendingHandler} jest niezwykle prosty -- wywołuje jedynie funkcję \helinl{build}, po czym wznawia kompilację z wynikiem potrzebnego zadania uzyskanym ze Store'a. Procedura \helinl{build} sprawdza, czy zadanie jest nietrywialne (czy nie jest wejściem) oraz czy nie zostało już obliczone. Wtedy konstruowane jest nowe zadanie z użyciem rekompilatora, po czym następuje jego uruchomienie. W innych przypadkach zadanie jest aktualne i na pewno nie ma potrzeby kompilować go ponownie.
+The \helinl{suspendingHandler} is incredibly simple -- it just calls \helinl{build} function and resumes the computation with result read from the store. In \helinl{build}, task is checked for being non-trivial (not an input) and if it has not already been built. In such case, new task is constructed with the help from rebuilder and then executed. Otherwise, the task is up to date and there is not need to build it.
 
 \subsection{CloudShake}
 
@@ -170,7 +171,7 @@ Uchwyt \helinl{suspendingHandler} jest niezwykle prosty -- wywołuje jedynie fun
 
 \lstinputlisting[style=Haleff-long, linerange={59-69}]{../src/Rebuilders.he}
 
-W przypadku śladów konstruktywnych rebuilder sprawdza, czy podana wartość zadania jest już wśród znanych wartości. W przeciwnym razie można zwrócić dowolną znaną wartość lub -- gdy żadna wartość nie jest znana -- następuje kompilacja zadania. Podobnie jak w przypadku rekompilatora opartego o ślady weryfikujące, tutaj kompilacja też odbywa się ze śledzeniem zadań, od których kompilowane zależy.
+In thee case of constructive traces, the rebuilder checks if provided value is in the set of known values. Otherwise any known value can be returned or -- if no values are known -- the task is built. As with the rebuilder using verifying traces, dependencies are tracked while task is being built.
 
 %% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../src/Schedulers.he}
 
@@ -178,20 +179,20 @@ W przypadku śladów konstruktywnych rebuilder sprawdza, czy podana wartość za
 
 \lstinputlisting[style=Haleff-long, linerange={22-23}]{../src/Systems.he}
 
-Rekompilator używający głębokich śladów konstruktywnych przypomina swoich poprzedników. Jednak -- zgodnie ze swoją nazwą -- sprawdza, od których zadań wejściowych w istocie badane zadanie zależy.
+The rebuilder that uses deep constructive traces is similar to its predecessors. However, as the name suggests, it checks on which input tasks the current one depends.
 
 \lstinputlisting[style=Haleff-long, linerange={73-84}]{../src/Rebuilders.he}
 
 %% \lstinputlisting[style=Haleff-long, linerange={30-54}]{../src/Schedulers.he}
 
-\section{Nieobecny planista topologiczny}
+\section{Absent topological scheduler}
 
-Jak zobaczyliśmy w rozdziale 3, planiści restartujący i wstrzymujący radzą sobie z zadaniami o dynamicznych jak i statycznych zależnościach. Inaczej sytuacja ma się w przypadku planisty topologicznego, który działa jedynie z zadaniami o statycznych zależnościach, które w \BSaLC{} są modelowane z wykorzystaniem klasy \haskinl{Applicative}.
+As we have seen in chapter~3, restarting and suspending schedulers can deal with both dynamic and static dependencies. That is not the case for the topological scheduler, which only supports tasks with static dependencies, which are modelled in \BSaLC{} as members of \haskinl{Applicative} typeclass.
 
-Wydaje się, że nie mamy jak uniemożliwić zadaniom inspekcję wyników wywołań \helinl{fetch}. Moglibyśmy opakowywać je w nieznany twórcy zadania typ, co wydaje się powracać do oryginalnej implementacji. Oddalamy się jednak od efektów algebraicznych i uchwytów będących tematem tej pracy, stąd nie będziemy badać dokładniej tematu modelowania statycznych zależności.
+It seems, that we have no away of stopping inspection of values returned from calls to \helinl{fetch}. We could try to wrap them in a type not known to the task's author, which seems to be a step towards the original implementation. That way, we are moving away from algebraic effects and handlers which are the topic of with paper, thus we will not study the subject of modelling static dependencies.
 
-\section{Istniejące podejścia do implementacji w innych językach}
+\section{Existing implementations in other languages}
 
-Opisane wyżej wyniki są pierwszą -- według wiedzy autora -- próbą implementacji systemów kompilacji inspirowanych \BSaLC{} używając języka z efektami algebraicznymi oraz uchwytami. W \BSaLCTP{} Mokhov i inni wspominają jednak o dwóch znanych im próbach implementacji systemów kompilacji w popularnych językach programowania: Rust\cite{translation_rust} oraz Kotlin\cite{translation_kotlin}. Jak jednak zauważają, w obu przypadkach ograniczenia użytych języków doprowadziły do utracenia precyzji i schludności rozwiązań w porównaniu z oryginalną implementacją w Haskellu.
+The results presented above are the first -- to author's knowledge -- attempt to implement build systems inspired by \BSaLC{} using algebraic effects and handlers. Having said that, in \BSaLCTP{} Mokhov et al. mention two attempts of implementing build systems in popular programming languages: Rust\cite{translation_rust} and Kotlin\cite{translation_kotlin}. However, in both cases limitations of used languages lead to loss of precision and cleanliness compared to Haskell implementation.
 
-O ile brak planisty topologicznego w naszej implementacji rzeczywiście oddala nas od oryginału, o tyle planiści oraz rekompilatorzy zaimplementowani przez nas -- z dokładnością do różnic składniowych języków -- nie odbiegają jakością oraz czytelnością od swoich pierwowzorów.
+While lack of topological scheduler does space us away from original implementation, the rest of schedulers and rebuilder that we implemented -- ignoring syntactic differences between languages -- are of similar quality and readability as their originals.
