@@ -1,6 +1,6 @@
 # Categorization and implementation of build systems using algebraic effects
 
-For English README click [here](#English). The paper is currently only available in Polish, I am actively working on translating it into English.
+For English README click [here](#English). The paper was originally written in Polish and a working-in-progress English translation of the paper in available as a preview.
 
 ## Polish
 
@@ -12,7 +12,7 @@ Praca w przystępny sposób wprowadza czytelnika do zagadnienia efektów algebra
 
 ### Pełen tekst pracy
 
-Praca w formacie PDF znajduje się w pliku `thesis/CIBSAE.pdf`.
+Praca w formacie PDF znajduje się w pliku `thesis_polish/CIBSAE.pdf`.
 
 ### Demo
 
@@ -30,7 +30,7 @@ The reader is introduced to the algebraic effects and handlers in an accessible 
 
 ### Full text
 
-Paper in PDF format is located in `thesis/CIBSAE.pdf` (for now only in Polish, English version is comming).
+Paper in PDF format is located in `thesis_english/CIBSAE.pdf` (preview version).
 
 ### Demo
 
