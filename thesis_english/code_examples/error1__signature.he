@@ -1,0 +1,2 @@
+signature Error =
+| error : Unit => Unit

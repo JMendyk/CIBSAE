@@ -1,0 +1,306 @@
+
+\newcommand{\inl}[1]{\lstinline[style=haskell-inl]{#1}}
+
+\chapter{About build systems (and their categorisation)}
+\label{chapter-bsalc}
+
+Build systems -- even though being used in almost all software project -- are often neglected by their users, treated as a necessary evil, sometimes even are a source of anxiety and anger. Despite their popularity and -- greater than one would expect -- level of complexity, they have rarely been an object of study by scientists. However, they became a central object of interest in a recent publications by Andrey Mokhov, Neil Mitchell and Simon Peyton Jones titled \BSaLC\cite{mokhov2018build} and \BSaLCTP\cite{mokhov2020build}. In this chapter we will follow their steps and discuss the results they got, in order to implement presented build systems using a language with algebraic effects and handlers later in this paper.
+
+\section{Examples of build systems}
+
+In order to understand deeper, non-trivial relations and similarities between build systems, let us look at a few examples of such systems used in the wild.
+
+\subsection{Make}
+
+Make is a very popular, widely available and relatively old build system. It is configured using files called \textit{makefiles}, which define tasks, dependencies between them and how each task should be built. Let us consider example configuration for a simple program written in C.
+
+\pagebreak
+
+\lstset{language=make}
+
+\begin{lstlisting}[basicstyle=\scriptsize\ttfamily, float=h, title={Example configuration for Make}]
+  util.o: util.h util.c
+      gcc -c util.c
+
+  main.o: util.h main.c
+      gcc -c main.c
+
+  main.exe: util.o main.o
+      gcc util.o main.o -o main.exe
+\end{lstlisting}
+
+Above configuration defines build rules for three tasks: \textit{util.o}, \textit{main.o} and \textit{main.exe}. The line defining the tasks includes information about other tasks that the current one depends on, for instance \textit{util.o} depends on tasks (here: files) \textit{util.h} and \textit{util.c}, and the task is built by executing \textit{gcc~\nobreakdash-c~util.c}. If some task doesn't have build rule defined, for example \textit{util.h}, we will call it an input (task) in such configuration.
+
+All information about dependencies between tasks are defined in single \textit{makefile}. When the user wants to build task \textit{main.exe}, they execute the program using command \textit{make~main.exe}. Then, the system will determine which tasks need to be updated and built in order to satisfy user's request. Since the procedure of build tasks is the same, independently from the results of subtasks, we will say that the build system has static dependencies. For such systems, a natural ordering of tasks in which they should be built is a topological order. This way each task will be built using ,,fresh'' values of its dependencies. Otherwise, there could be a need to execute some tasks multiple times.
+
+Let us notice, that during subsequent builds, system may not need to rebuild some tasks if values of their inputs didn't change. This observation leads us to the concept of minimality, which is defined by the authors as:
+
+\definition{(Minimality)}{
+  A build system is minimal if it executes tasks at most once per build, and only if they transitively depend on inputs that changed since the previous build.
+}
+
+For determining which tasks should be rebuilt, Make uses file modification times. If the file corresponding to the task is older than file of one of its dependencies, the task should be rebuilt.
+
+We should notice that for come configurations topological order of tasks might not exist, because there are circular dependencies between tasks -- we will assume that is not a case from now on.
+
+\subsection{Excel}
+
+It may seem surprising, but we can think about spreadsheets (for example in Excel) as build systems. Cells, whose values are provided directly are input tasks, while formulas for the other cells are build instructions. With that interpretation, spreadsheets become an interesting and useful example of build systems.
+
+Let us consider an example of a spreadsheet document presented by the authors of the original paper:
+
+\begin{tabular}{ l c r }
+  A1: 10 & B1: INDIRECT(``A"\,\&\,C1) & C1: 1 \\
+  A2: 20 & &
+\end{tabular}
+
+Function INDIRECT dynamically determines from which cell value will be read, and operator \(\&\) is just string concatenation. When C1 = 1, value of the cell B1 will be the same as A1, and when C1 = 2, the value will be read from A2. As we can see, cells whose values are used to compute value of B1 depend on the value of C1. In such cases we say the task has (and more generally system supports) dynamic dependencies. Here we only have one level of indirection because dependencies of B1 are chosen by C1. However, in a more general case level of indirection can by arbitrarily large. As the result, solution based on topological sorting is not suitable because we can't determine the dependencies beforehand -- without checking values of cells.
+
+Ordering of cells during build is a little more complicated in Excel. The systems maintains a sequence of cells (called chain). During the build process Excel build cells in the order determined by the chain. When cell A depends on other cell N, which has not been built yet, Excel performs a restart -- stops execution of task A, shifts N in front of A in the chain and resume building starting from cell N. When the build is finished, resulting chain has an interesting property, that when the build process is executed again without changing inputs, the build will finish without restarts. The chain acts as an approximation of proper task ordering. In order to determine, which cells needs to be rebuilt, Excel maintains a dirty bit for each cell. Cell is dirty, when:
+\begin{itemize}
+\item it's an input whose value has changed,
+\item it's formula has changed, 
+\item contains formula with a function that prevents static determining of dependencies -- such as INDIRECT or IF.
+\end{itemize}
+
+\pagebreak
+
+It is easy to see, that Excel is not a minimal build system, because it over-approximates which cells need to be rebuilt. However, Excel tracks not only changes in inputs but also tasks definitions (that is formulas), which is a rare property in the world of build systems called self-tracking. Usually, change of task definition requires performing full build process by the user.
+
+\subsection{Shake}
+
+Shake is a build system, in which tasks are defined as tasks in a domain specific language embedded in Haskell. It supports dynamic dependencies and (in contrast to Excel) is minimal.
+
+Instead of constructing a chain, Shake generates dependency graph at runtime. In the case of building task whose dependency is not yet ready, Shake suspends building of current tasks and begins build of the required tasks. When it is done, suspended task is resumed since it's dependency is now finished.
+
+Other property that Shake has is ability to perform early cut-off -- when some task has finished rebuilding but its value hasn't changed, there is no need to force rebuild of tasks that depend on this one. Make and Excel don't have such optimisation.
+
+\subsection{Bazel}
+
+The last example of a build system is Bazel, which was created as an answer to the growing need from large teams working on software projects of substantial size. In such project many people might build the same code fragments, which leads to waste of computational resources and time of programmers.
+
+Bazel is a cloud build system -- when the user wants to perform a build, the systems connects to the server and checks, inputs of which tasks hasn't change and if they have already been built by someone else. Bazel saves time of the programmer by downloading results of such tasks. Moreover, since single programmer usually performs modifications in only couple of modules, outputs of many tasks don't change and only a small part of them need rebuilding.
+
+The systems tracks the changes by checking hashes of source files. When checksum of a file on computer and on the server differ, task is considered out-of-date and rebuilt. Next, the result and new checksum are stored on the server, functioning as a ,,cache'' for build results.
+
+Bazel currently doesn't support dynamic dependencies. During the build process it uses the restarting mechanism, and for determining which tasks need rebuilding in stores values and it's hashes of task along with history of executed build commands.
+
+\subsection{Conclusions}
+
+Four discussed build systems presented different degrees of freedom given to task authors. We learned about mechanisms used for building tasks and optimisations, which decrease the number of tasks that are unnecessarily built. Their usage enable some of the systems to achieve minimality.
+
+\section{Build systems abstractly}
+
+After discussing current state of affair, authors introduce us to the terminology and abstract representation of the space of build systems.
+
+\subsection{Terminology}
+
+An object on which build systems work is called a store, which assigns values to keys. In the case of Excel it is a spreadsheet document, and for Make it is a filesystem. The goal of the build system is modifying the store in order to bring the value associated with the key provided by the user up to date. System has a memory in the form of persistent information for the needs of later executions. The user provides description of tasks in the form of instructions explaining how each task should be built using outputs of other tasks.
+
+Build system receives task definitions, a store and a key. After the build is finished, the value in store associated with the key should be up to date.
+
+\subsection{Store and tasks}
+
+\lstset{style=haskell-style}
+
+Authors introduce following abstract representation of task and tasks (as a set of their definitions):
+
+\begin{lstlisting}
+newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
+type Tasks c k v = k -> Maybe (Task c k v)
+\end{lstlisting}
+
+The task is parameterised by a type of the key \textit{k} and return value \textit{v}. It computes its value using provided function used for getting values of other tasks. As we can see, the value is not provided directly, but instead in an unknown carrier \textit{f}, belonging to class \textit{c}. An examples of classes are \textit{Applicative} and \textit{Monad}.
+
+A group of tasks is a function, which maybe associates a key with a definition of how to build a task identified by that key. Input tasks don't have definitions associated with their keys, and their values are accessed from the store. For instance, following example of spreadsheet document:
+
+\begin{tabular}{ l l }
+  A1: 10 & B1: A1 + A2 \\
+  A2: 20 & B2: 2 * B1
+\end{tabular}
+
+can be expressed using our abstraction as:
+
+\begin{lstlisting}
+sprsh1 :: Tasks Applicative String Integer
+sprsh1 "B1" = Just $ Task $ \fetch -> ((+)  <$> fetch "A1" <*> fetch "A2")
+sprsh1 "B2" = Just $ Task $ \fetch -> ((*2) <$> fetch "B1")
+sprsh1 _    = Nothing
+\end{lstlisting}
+
+The store is an abstract type parameterised by types of keys, values and persistent build information:
+
+\begin{lstlisting}
+data Store i k v
+initialise :: i -> (k -> v) -> Store i k v
+getInfo :: Store i k v -> i
+putInfo :: i -> Store i k v -> Store i k v
+getValue :: k -> Store i k v -> v
+putValue :: Eq k => k -> v -> Store i k v -> Store i k v
+\end{lstlisting}
+
+Authors define basic operations on a store for constructing it, and for getting and setting persistent information and values of keys.
+
+\subsection{Build systems}
+
+Type of a build systems comes directly from its definition -- it gets tasks, a store and a key:
+
+\begin{lstlisting}
+type Build c i k v = Tasks c k v -> k -> Store i k v -> Store i k v
+\end{lstlisting}
+
+\pagebreak
+
+Let us consider an implementation of a simple build system expressed using our abstraction:
+
+\begin{lstlisting}
+busy :: Eq k => Build Applicative () k v
+busy tasks key store = execState (fetch key) store
+  where
+    fetch :: k -> State (Store () k v) v
+    fetch k = case tasks k of
+        Nothing   -> gets (getValue k)
+        Just task -> do v <- run task fetch
+                        modify (putValue k v)
+                        return v
+\end{lstlisting}
+
+System \textit{busy} starts evaluation of a task in context of mutable state, which is used to remember values of built tasks. When the task is to be built, and it is an input task, its value is read from the store. Otherwise, the task is executed according to its definition. This build system, like the ones we will see later, mainly consists of the definition of function \textit{fetch}, which determines its operation. The \textit{busy} system is obviously not minimal, however it is correct and is a good starting point for creating true build systems.
+
+This systems can be easily executed on sample store, which will be a dictionary implemented as a function -- this way we can set a default value for all input tasks:
+
+\begin{lstlisting}
+> store = initialise () (\key -> if key == "A1" then 10 else 20)
+> result = busy sprsh1 "B2" store
+> getValue "B1" result
+30
+> getValue "B2" result
+60
+\end{lstlisting}
+
+The system works and returns valid results. We can also see, that the existential qualification of \textit{f} from the task definition is useful:
+
+\begin{lstlisting}
+  newtype Task c k v = Task (forall f. c f => (k -> f v) -> f v)
+\end{lstlisting}
+
+In this case \inl{c = Applicative} and \inl{f = State (Store () k v) v}, thus function \inl{fetch} can perform side effect of modifying a mutable state which wraps the store.
+
+\subsection{Polymorphic task}
+
+Wrapping a result value let us perform side effects, and existential quantification gives the author of the build system freedom to choose a structure, which will be right for their need. In the case of \inl{busy} it was mutable state for holding the state.
+
+If \inl{f} was completely arbitrary, nothing useful could be done with it, thus we require it to belong to some class \inl{c}. What is surprising, such requirement defines how complicated dependencies between tasks can be. Let us consider three popular (and one extra) type classes in Haskell:
+\begin{itemize}
+\item \inl{Functor} -- gives possibility to apply functions to wrapped values. In visual terms -- with functor we perform sequence of computations that modify a value.
+\item \inl{Applicative} -- enables merging of multiple values using a provided function. In this case, computations are directed acyclic graphs.
+\item \inl{Monad} -- we get an arbitrary graph, which can dynamically change (based on result values). Here we can inspect wrapped values and make decisions based on that.
+\item \inl{Selective}\cite{mokhov2019selective} -- is an intermediate form between applicatives and monads. It lets us perform decisions based on results, but the decision's options are known statically.
+\end{itemize}
+
+The authors come to an unexpected conclusion: tasks in which type \inl{f} is an applicative can only have static dependencies, while dynamic dependencies are possible when \inl{f} is a monad!
+
+
+Thus, an example with INDIRECT in Excel -- by using our abstraction -- can be expressed in Haskell like this:
+
+\begin{lstlisting}
+sprsh3 :: Tasks Monad String Integer
+sprsh3 "B1" = Just $ Task $ \fetch -> do
+    c1 <- fetch "C1"
+    fetch ("A" ++ show c1)
+sprsh3 _ = Nothing
+\end{lstlisting}
+
+At the same time we see that we couldn't have used \inl{Applicative} type class, since we wouldn't be able to access the wrapped return value of \inl{fetch "C1"}.
+
+The authors make the next observation, that not only in theory it is possible to construct dependency graph in case of static dependencies, but also in practise -- as presented by this surprisingly simple Haskell function \inl{dependencies}:
+
+\begin{lstlisting}
+dependencies :: Task Applicative k v -> [k]
+dependencies task = getConst $ run task (\k -> Const [k]) where
+  run :: c f => Task c k v -> (k -> f v) -> f v
+  run (Task task) fetch = task fetch
+\end{lstlisting}
+
+The computations are performed using the \inl{Const} functor which is an applicative when working on monoids -- in this case lists. As we can see, we aren't using store, which is consistent with our intuition, that for the case of static dependencies the store is not needed.
+
+Moreover, we could not possibly compute dependencies in the case of monadic tasks, since \inl{Const} is not a monad. The best approximation of \inl{dependencies} is \inl{track}, which tracks calls of the \inl{fetch} function using monad transformer \inl{WriteT}:
+
+\begin{lstlisting}
+track :: Monad m => Task Monad k v -> (k -> m v) -> m (v, [(k, v)])
+track task fetch = runWriterT $ run task trackingFetch
+  where
+    trackingFetch :: k -> WriterT [(k, v)] m v
+    trackingFetch k = do v <- lift (fetch k); tell [(k, v)]; return v
+\end{lstlisting}
+
+However, here we unfortunately need to use the store. We can test our \inl{track} function using for example an \inl{IO} monad, by providing values from keyboard:
+
+\begin{lstlisting}
+> fetchIO k = do putStr (k ++ ": "); read <$> getLine
+> track (fromJust $ sprsh2 "B1") fetchIO
+C1: 1
+B2: 10
+(10,[("C1",1),("B2",10)])
+> track (fromJust $ sprsh2 "B1") fetchIO
+C1: 2
+A2: 20
+(20,[("C1",2),("A2",20)])
+
+\end{lstlisting}
+
+\section{Schedulers and rebuilders}
+
+Mokhov et al. present a construction, in which build systems are defined by two mechanisms:
+
+\begin{itemize}
+\item scheduler -- which determines the order in which tasks should be built,
+\item rebuilder -- which decides if given tasks should be rebuilt or if instead its value can be read from the store.
+\end{itemize}
+
+While not doing it explicitly, we have already discussed different examples of schedulers and rebuilder. The authors specify three types of schedulers:
+
+\begin{itemize}
+\item topological -- which uses the fact that it works only with static dependencies,
+\item restarting -- which in case of dependency on not built task stops execution of the current one and will restart it later,
+\item suspending -- which instead of stopping only suspends execution of current task until it computes required value.
+\end{itemize}
+
+Mokhov et al. give schedulers and rebuilders following types:
+
+\begin{lstlisting}
+type Scheduler c i ir k v = Rebuilder c ir k v -> Build c i k v
+type Rebuilder c ir k v = k -> v -> Task c k v -> Task (MonadState ir) k v
+\end{lstlisting}
+
+%% v: znaczna zmiana zdania względem polskiej wersji
+
+As such, build systems are created by joining some scheduler with some rebuilder. Rebuilders modify the task, which based on rebuilders findings will either build the original task and store information for rebuilder for next builds, or will return value from store it it's up to date.
+
+In the case of rebuilders, variety is a bit larger, we specify rebuilders based on:
+\begin{itemize}
+\item dirty bit -- either in a form of literal bit (as in Excel) or in some other way such as by comparing file modification dates (as in Make) -- the mechanism is based on marking tasks if their inputs has changed.
+\item verifying traces -- which during the build process accumulate hashes of results and remember that for instance: task A, when it had hash 1, depended on task B which at the time had hash 2. When hashes are equal, we assume that rebuild is not needed.
+\item constructive traces -- same as verifying ones, but whole values are remembered instead of only their hashes,
+\item deep constructive traces -- instead of tracking values of immediate dependencies, tracked are the values of input tasks that the task depends on. The flaw of this mechanism is no support for nondeterministic task, which are considered by Mokhov et al., and for performing early cut-off since we aren't looking at only immediate dependencies.
+\end{itemize}
+
+Presented by Mokhov et al. categorisation of build systems leads us to division of the systems space into 12 cells, of which 8 are inhabited by existing system:
+
+\begin{tabular}{r | c c c}
+\hline
+                         & \multicolumn{3}{c}{Scheduler} \\
+Rebuilder                & Topological & Restarting & Suspending \\
+\hline
+Dirty bit                & Make        & Excel      & - \\
+Verifying traces         & Ninja       & -          & Shake \\
+Constructive traces      & CloudBuild  & Bazel      & -\\
+Deep constructive traces & Buck        & -          & Nix \\
+\hline
+\end{tabular}
+
+\section{Implementing build systems}
+
+Having established categorisation of build systems and definitions of abstract constructions and types in Haskell, we are ready to implement schedulers and rebuilders. Then, creating implementations of known build system (and even those which until now were only empty cells in our table) is just a matter of applying rebuilders to schedulers. All implementations by authors of \BSaLC{} are available in their publications \cite{mokhov2018build, mokhov2020build} and in a repository\footnote{\url{https://github.com/snowleopard/build}} on GitHub. In chapter five we will see, how implementation of these build systems looks in a language with algebraic effects and handlers.
+
+\undef\inl

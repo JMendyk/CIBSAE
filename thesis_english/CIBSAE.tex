@@ -1,0 +1,150 @@
+% Opcje klasy 'iithesis' opisane sa w komentarzach w pliku klasy. Za ich pomoca
+% ustawia sie przede wszystkim jezyk i rodzaj (lic/inz/mgr) pracy, oraz czy na
+% drugiej stronie pracy ma byc skladany wzor oswiadczenia o autorskim wykonaniu.
+\documentclass[english,lic,shortabstract]{iithesis}
+
+\usepackage[utf8]{inputenc}
+
+%% Makra dla tytułów, które pojawiają się także w streszczeniu
+\newcommand{\BSaLC}{,,Build systems {\`a} la carte''}
+\newcommand{\BSaLCTP}{,,Build systems {\`a} la carte: Theory and practice''}
+
+%%%%% DANE DO STRONY TYTUŁOWEJ
+% Niezaleznie od jezyka pracy wybranego w opcjach klasy, tytul i streszczenie
+% pracy nalezy podac zarowno w jezyku polskim, jak i angielskim.
+% Pamietaj o madrym (zgodnym z logicznym rozbiorem zdania oraz estetyka) recznym
+% zlamaniu wierszy w temacie pracy, zwlaszcza tego w jezyku pracy. Uzyj do tego
+% polecenia \fmlinebreak.
+\polishtitle    {Kwalifikacja i implementacja\fmlinebreak systemów kompilacji z użyciem\fmlinebreak efektów algebraicznych}
+\englishtitle   {Categorisation and implementation\fmlinebreak of build systems using\fmlinebreak algebraic effects}
+\polishabstract {Efekty algebraiczne i uchwyty to nowe podejście do ujarzmienia efektów ubocznych. Systemy kompilacji, choć są rozbudowanymi i wykorzystującymi skomplikowane algorytmy programami, nie cieszą się zainteresowaniem badaczy. Zmienia się to jednak za sprawą ,,Build systems à la carte'' autorstwa Mokhov'a i innych, którzy podchodzą do tematu systemów kompilacji w sposób abstrakcyjny oraz przedstawiają ich kwalifikację i implementację z użyciem języka programowania Haskell.
+Praca w przystępny sposób wprowadza czytelnika do zagadnienia efektów algebraicznych i uchwytów. Zostają one opisane w teoretyczny, a dzięki wykorzystaniu języka programowania Helium, także w praktyczny sposób. Zwieńczeniem pracy jest powtórzenie implementacyjnych wyników Mokhov'a i innych korzystając z języka Helium. W konsekwencji możliwe jest porównanie obu implementacji oraz zaobserwowanie jak wygląda programowanie z efektami algebraicznymi i uchwytami.}
+\englishabstract{Algebraic effects and handlers are a new way to deal with side effects. Build systems, despite being advanced computer programs that use sophisticated algorithms, are rarely the object of study. Recently, this has changed due to Mokhov et al. who in ,,Build systems à la carte'' approach the subject in an abstract way, thus introducing categorisation and implementation of build system using programming language Haskell.
+The reader is introduced to the algebraic effects and handlers in an accessible way by presenting the subject both in theory and practice -- the latter by using the programming language Helium. The crowning part of the paper is implementation of concepts introduced by Mokhov et al. in Helium. As the result, it is possible to compare those two implementations, and to see how programming with algebraic effects and handlers looks like.}
+% w pracach wielu autorow nazwiska mozna oddzielic poleceniem \and
+\author         {Jakub Mendyk}
+% w przypadku kilku promotorow, lub koniecznosci podania ich afiliacji, linie
+% w ponizszym poleceniu mozna zlamac poleceniem \fmlinebreak
+\advisor        {dr Filip Sieczkowski}
+\date          {Wrocław 2020} % 4 września 2020}                     % Data zlozenia pracy
+% Dane do oswiadczenia o autorskim wykonaniu
+\transcriptnum {301111}                     % Numer indeksu
+\advisorgen    {dr. Filipa Sieczkowskiego} % Nazwisko promotora w dopelniaczu
+%%%%%
+
+%%%%% WLASNE DODATKOWE PAKIETY
+%
+%\usepackage{graphicx,listings,amsmath,amssymb,amsthm,amsfonts,tikz}
+\usepackage{cite}
+\usepackage{amsmath, amsfonts, amsthm, xfrac}
+\usepackage{stmaryrd} % double brackets
+\usepackage{listingsutf8}
+\usepackage[usenames,dvipsnames]{xcolor}
+
+%%%%% WŁASNE DEFINICJE I POLECENIA
+%
+\theoremstyle{definition} \newtheorem*{definition}{Definicja}
+%\theoremstyle{remark} \newtheorem{remark}[definition]{Observation}
+%\theoremstyle{plain} \newtheorem{theorem}[defini"tion]{Theorem}
+%\theoremstyle{plain} \newtheorem{lemma}[definition]{Lemma}
+%\renewcommand \qeds"ymbol {\ensuremath{\square}}
+% ...
+%%%%%
+
+\lstdefinestyle{haskell-style}{
+  language=Haskell,
+  inputencoding=utf8,
+  extendedchars=true,
+  alsodigit=!\$\%&*+-./:<=>?@^_~,
+  sensitive=true,
+  morecomment=[l]{--},
+  %% morecomment=[s]{(*}{*)},
+  morestring=[b]",
+  basicstyle=\small\ttfamily,
+  keywordstyle=\bf\ttfamily\color[rgb]{0,.3,.7},
+  commentstyle=\color[rgb]{0.133,0.545,0.133},
+  stringstyle={\color[rgb]{0.75,0.49,0.07}},
+  morekeywords={Applicative, Selective, State, MonadState, Store, Task, Tasks, Build, Scheduler, Rebuilder},
+  upquote=true,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  literate=*{`}{{`}}{1}
+            {=>}{$\Rightarrow{}$}{1}
+            {->}{$\rightarrow{}$}{1}
+}
+
+\lstdefinestyle{haskell-inl}{
+  style=haskell-style,
+  basicstyle=\ttfamily
+}
+
+\lstdefinelanguage{Haleff}{
+  morekeywords=[1]{forall, data, let, rec, and, in, val, type, Type, signature, effect, Effect, fn, if, then, else},
+  morekeywords=[2]{match, handle, handler, resume, with, end, return, finally, open },
+%  lineskip=-0.1ex,
+  alsodigit=!\$\%&*+-./:<=>?@^_~,
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{(*}{*)},
+  morestring=[b]",
+  basicstyle=\small\ttfamily,
+  keywordstyle=\bf\ttfamily\color[rgb]{0,.3,.7},
+  commentstyle=\color[rgb]{0.133,0.545,0.133},
+  stringstyle={\color[rgb]{0.75,0.49,0.07}},
+  upquote=true,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=fullflexible,
+  keepspaces=true,
+  literate=*{`}{{`}}{1}
+            {'}{{'}}{1}
+}
+
+\lstdefinestyle{Haleff-inl}{
+  language=Haleff,
+  basicstyle=\ttfamily
+}
+
+\lstdefinestyle{Haleff-long}{
+  language=Haleff,
+  basicstyle=\scriptsize\ttfamily
+}
+
+\newcommand{\haskinl}[1]{\lstinline[style=haskell-inl]{#1}}
+\newcommand{\helinl}[1]{\lstinline[style=Haleff-inl]{#1}}
+
+\begin{document}
+
+%%%%% POCZĄTEK ZASADNICZEGO TEKSTU PRACY
+
+\input{1-introduction}
+
+\input{2-effects_in_theory}
+
+\input{3-build_systems_a_la_carte}
+
+\input{4-effects_in_practise}
+
+\input{5-build_systems_using_effects}
+
+\input{6-summary}
+
+%%%%% BIBLIOGRAFIA
+
+\nocite{biernacki2017handle}
+\nocite{biernacki2019binders}
+
+\nocite{pietersgeneralized}
+
+\nocite{peyton1993imperative}
+
+\bibliographystyle{unsrt} %{abbrv} % unsrt sortuje według kolejności wystąpień
+\bibliography{bibliography}
+
+\appendix
+\input{a-source_notes}
+
+\end{document}

@@ -1,0 +1,25 @@
+import syntax
+import error1__signature
+
+open syntax
+open error1__signature
+
+let no_negatives_question () =
+  printStr "What is your favourite number? ";
+  let num = readInt () in
+    if is_negative num
+       then error ()
+       else printStr "This number is nonnegative\n";
+    printStr "Question finished\n"
+
+let main () =
+  handle no_negatives_question () with
+  | error () => printStr "Error occured!\n"
+  end
+
+(* let warnOnError = *)
+(*   handler *)
+(*   | error () => printStr "Error occured, continuing...\n"; resume () *)
+(*   end *)
+
+(* let _ = main () *)

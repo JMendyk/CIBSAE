@@ -1,0 +1,18 @@
+import nondet
+
+open nondet
+
+let countSatsHandler =
+  handler
+  | return x => if x then 1 else 0
+  | amb () / r => r True + r False
+  end
+
+let main () =
+  let ret = handle
+              let (x, y, z) = (amb (), amb (), amb ()) in
+              formula1 x y z
+            with countSatsHandler in
+    printStr (stringOfInt ret ++ " satisfying interpretations\n")
+
+(* let _ = main () *)

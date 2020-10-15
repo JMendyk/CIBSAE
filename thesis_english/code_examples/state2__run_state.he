@@ -1,0 +1,11 @@
+import state1__basics
+
+open state1__basics
+
+let runState init =
+  handler
+  | return x  => fn s => (s, x)
+  | put  s    => fn _ => (resume ()) s
+  | get ()    => fn s => (resume  s) s
+  | finally f => f init
+  end

@@ -1,0 +1,25 @@
+
+signature Recurse (A: Type) (B: Type) =
+| recurse : A => B
+
+let is_even n = if n = 0 then True
+                else recurse (n - 1)
+
+let is_odd n = if n = 0 then False
+               else recurse (n - 1)
+
+let rec withMutualRec me init other =
+  handle `a in me `a init with
+  | recurse n => resume (withMutualRec other n me)
+  end
+
+let even n = withMutualRec is_even n is_odd
+
+let main () =
+  let n = 10 in
+  printInt n;
+  if even n
+  then printStr "is even"
+  else printStr "is odd"
+
+let _ = main ()

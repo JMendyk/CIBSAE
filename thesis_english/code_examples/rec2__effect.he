@@ -1,0 +1,17 @@
+
+signature Recurse (A: Type) (B: Type) =
+| recurse : A => B
+
+let fib n = if n = 0 then 0 else
+            if n = 1 then 1 else
+               recurse (n-1) + recurse (n-2)
+
+let rec withRecurse f init =
+  handle `a in f `a init with
+  | recurse n => resume (withRecurse f n)
+  end
+
+let main () =
+  printInt (withRecurse fib 10)
+
+(* let _ = main () *)

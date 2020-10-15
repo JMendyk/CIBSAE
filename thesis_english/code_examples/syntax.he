@@ -1,0 +1,9 @@
+let is_negative n = n < 0
+
+let question () =
+    printStr "What is your favourite number? ";
+    let num = readInt () in
+    if is_negative num
+       then printStr "This number is negative\n"
+       else printStr "This number is nonnegative\n";
+    printStr "Question finished\n"

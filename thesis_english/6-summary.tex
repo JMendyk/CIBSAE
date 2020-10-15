@@ -1,0 +1,17 @@
+
+\chapter{Summary and conclusions}
+
+The aim of this work was to introduce the reader and get interested in the subject of algebraic effects and handlers as well as to present new implementation of build systems following the steps of \BSaLC{}'s authors. The implementation in an experimental language Helium intended not only to demonstrate how programming with algebraic effect and handlers looks but also to observe how it differs from dealing with computation effects using monads in Haskell.
+
+Thanks to treating \helinl{fetch} as an effectful operation of building, and not as a task's argument, we were able to use capabilities of the language with effect and handlers in the central part of build systems implementation.
+
+Gained -- due to programming with effects and handlers instead of monads -- freedom of using multiple effects at the same time calmed our fears and encouraged us to experiment. Labelling of different instances of the same effect enabled us to maintain multiple values in mutable state without loss of readability or understanding of the source code. It let us create proxies between different effects.
+
+Representation of store, which was the object that build systems work on, as a side effect not only prevented us from needing to hold it in a mutable state, but also better showed its nature of being a persistent and external resource.
+
+What we lost, was precision in describing level of dependencies between tasks. Transparency in results of effectful operations, compared to wrapping the values with instances of applicative functors or monads, prevented easy representation of tasks with static dependencies.
+
+This problem however, was easy to spot from the start of working on own implementation of results from \BSaLC{}. Apart from that, during implementation process of build systems, the author didn't encounter any substantial obstacles in programming with algebraic effects and handlers. Others were related to limited experience of the author with Helium, experimental nature of this language and momentary issues of runtime environment with clear explanation where type mismatches came from.
+
+In summary, programming with algebraic effects and handlers is possible, is enjoyable and frees the author from limitations, that until now seemed to be impossible to avoid. As we have seen, one can try to repeat results done in a popular functional programming language, and with delight discover that implementation using effects and handlers is equally fascinating.
+

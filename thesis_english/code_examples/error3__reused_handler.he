@@ -1,0 +1,15 @@
+import error1__signature
+import error2__inline_abort
+
+open error1__signature
+open error2__inline_abort
+
+let abortOnError =
+  handler
+  | error () => printStr "Error occured!\n"
+  end
+
+let main () =
+  handle no_negatives_question () with abortOnError
+
+(* let _ = main () *)

@@ -1,0 +1,57 @@
+
+\newcommand{\file}[1]{\texttt{#1}}
+
+\chapter{Notes on the attached source code}
+
+\section{Division of implementation into files}
+
+\begin{itemize}
+\item \file{Common.he} and \file{Signature.he} -- definitions of basic types and signatures,
+\item \file{Store.he} -- Store effect and handlers for it,
+\item \file{Schedulers.he} -- implementations of schedulers,
+\item \file{Rebuilders.he} -- implementations of rebuilders,
+\item \file{Traces.he} -- functions for interacting with traces,
+\item \file{Track.he} -- implementations of \helinl{run} and \helinl{track} functions,
+\item \file{Systems.he} -- example definitions of described systems,
+\item \file{Spreadsheet.he} -- implementations of entities related to spreadsheets,
+\item \file{scratch.he} -- (demo) usage of build systems to build exemplary tasks,
+\item \file{Utils.he} -- helper functions,
+\item \file{PatchedWriter.he} -- extension of \helinl{Writer} module from standard library,
+\item \file{State.he} -- implementation of mutable state effect along with handlers,
+\item \file{Logger.he} -- utility module for tracking programs' behaviour,
+\item \file{SchedulersWithLogging.he} -- implementation of schedulers as in \file{Schedulers.he} enriched with runtime diagnostic messages about their behaviour
+\end{itemize}
+
+\section{Implementations of traces}
+
+Description of traces in chapter 5 was omitted, since they didn't seem like an interesting part of implementation. However, for orderliness it's implementations are provided here.
+
+\subsection{Trace types}
+
+For traces we define a type analogous to the one from original implementation in Haskell.
+
+\begin{minipage}{\textwidth}
+  \lstinputlisting[style=Haleff-long, linerange={13-14}]{../src/Traces.he}
+\end{minipage}
+
+It is worth noting, that building of tasks using \helinl{fetch} in verifying and constructive traces happens in a specialised handler, which returns hashes instead of plain values.
+
+\subsection{Verifying traces}
+
+\begin{minipage}{\textwidth}
+  \lstinputlisting[style=Haleff-long, linerange={18-28}]{../src/Traces.he}
+\end{minipage}
+
+\subsection{Constructive traces}
+
+\begin{minipage}{\textwidth}
+  \lstinputlisting[style=Haleff-long, linerange={37-49}]{../src/Traces.he}
+\end{minipage}
+
+In functions \helinl{constructCT} and \helinl{deepDependencies} we are using \helinl{Writer} effect. In \BSaLC{} type \haskinl{Maybe}, function \haskinl{catMaybes} and list comprehensions were used instead. The author, encouraged by lack of infrastructure around \helinl{Some} (Helium's counterpart of \haskinl{Maybe}), decided to test \helinl{Writer} module and see what results it gives.
+
+\subsection{Deep constructive traces}
+
+\begin{minipage}{\textwidth}
+  \lstinputlisting[style=Haleff-long, linerange={53-73}]{../src/Traces.he}
+\end{minipage}
